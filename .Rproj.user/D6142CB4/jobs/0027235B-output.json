@@ -1,0 +1,4 @@
+[2,"\n"]
+[1,"pandoc \n  to: html\n  output-file: example.html\n  standalone: true\n  section-divs: true\n  html-math-method: mathjax\n  wrap: none\n  default-image-extension: png\n  \nmetadata\n  document-css: false\n  link-citations: true\n  date-format: long\n  lang: en\n  title: embedpdf Example\n  \n"]
+[1,"Output created: docs\\example.html\n\nWatching files for changes\nBrowse at http://localhost:4278/example.html\n"]
+[1,"GET: / (404: Not Found)\n"]

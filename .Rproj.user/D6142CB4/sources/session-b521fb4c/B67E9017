@@ -1,26 +1,26 @@
 {
-    "id": "06169BE1",
-    "path": "C:/Github/embedpdf/README.md",
-    "project_path": "README.md",
-    "type": "markdown",
+    "id": "B67E9017",
+    "path": "C:/Github/embedpdf/example.qmd",
+    "project_path": "example.qmd",
+    "type": "quarto_markdown",
     "hash": "0",
     "contents": "",
     "dirty": false,
-    "created": 1681430204515.0,
+    "created": 1681431379907.0,
     "source_on_save": false,
     "relative_order": 2,
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "5,0",
-        "scrollLine": "0"
+        "cursorPosition": "44,26",
+        "scrollLine": "8"
     },
     "folds": "",
-    "lastKnownWriteTime": 1681430946,
+    "lastKnownWriteTime": 1681430665,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1681430946863,
+    "last_content_update": 1681430665,
     "read_only": false,
     "read_only_alternatives": []
 }
