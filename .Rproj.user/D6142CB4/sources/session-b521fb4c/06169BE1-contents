@@ -24,4 +24,4 @@ To embed a PDF file in your document, use the `{{< pdf URL >}}` shortcode. For e
 
 Here is the source code for a minimal example: [example.qmd](example.qmd).
 
-Here is the rendered version of the example: [example.html](example.html).
+Here is the rendered version of the example: [example.html](https://jmgirard.github.io/embedpdf/example.html).
