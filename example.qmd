@@ -2,11 +2,23 @@
 title: "embedpdf Example"
 ---
 
+<style>
+.pdf {
+  max-width: 100%;
+	width: 600px;
+	height: 600px;
+	border: 10px solid rgba(0,0,0,.2);
+	margin: 0;
+}
+</style>
+
+
 ## Embed from URL only
 
 `{{{< pdf dummy.pdf >}}}`
 
 {{< pdf dummy.pdf >}}
+
 
 ## Embed with width in pixels
 
@@ -14,11 +26,13 @@ title: "embedpdf Example"
 
 {{< pdf dummy.pdf width=600 >}}
 
+
 ## Embed with width in percent
 
 `{{{< pdf dummy.pdf width=100% >}}}`
 
 {{< pdf dummy.pdf width=100% >}}
+
 
 ## Embed with height in pixels
 
@@ -26,17 +40,56 @@ title: "embedpdf Example"
 
 {{< pdf dummy.pdf height=600 >}}
 
+
 ## Embed with both width and height
 
 `{{{< pdf dummy.pdf width=600 height=400 >}}}`
 
 {{< pdf dummy.pdf width=600 height=400 >}}
 
+
+## Embed with 1 px border
+
+`{{{< pdf dummy.pdf border=1 >}}}`
+
+{{< pdf dummy.pdf border=1 >}}
+
+
+## Embed with CSS class
+
+<style>
+  .myclass {
+    max-width: 100%;
+    width: 600px;
+    height: 600px;
+    border: 10px solid rgba(200,0,0,.2);
+    margin: 0;
+  }
+</style>
+
+```
+<style>
+.myclass {
+  max-width: 100%;
+  width: 600px;
+  height: 600px;
+  border: 10px solid rgba(200,0,0,.2);
+  margin: 0;
+}
+</style>
+```
+
+`{{{< pdf dummy.pdf class=myclass >}}}`
+
+{{< pdf dummy.pdf class=myclass >}}
+
+
 ## See backup when file doesn't exist
 
 `{{{< pdf missing.pdf >}}}`
 
 {{< pdf missing.pdf >}}
+
 
 ## You can also use embedpdf as an alias
 

@@ -60,6 +60,15 @@ ul.task-list li input[type="checkbox"] {
 
 </header>
 
+<style>
+.pdf {
+  max-width: 100%;
+    width: 600px;
+    height: 600px;
+    border: 10px solid rgba(0,0,0,.2);
+    margin: 0;
+}
+</style>
 <section id="embed-from-url-only" class="level2">
 <h2 class="anchored" data-anchor-id="embed-from-url-only">Embed from URL only</h2>
 <p><code>{{&lt; pdf dummy.pdf &gt;}}</code></p>
@@ -84,6 +93,34 @@ ul.task-list li input[type="checkbox"] {
 <h2 class="anchored" data-anchor-id="embed-with-both-width-and-height">Embed with both width and height</h2>
 <p><code>{{&lt; pdf dummy.pdf width=600 height=400 &gt;}}</code></p>
 <p><object data="dummy.pdf" type="application/pdf" width="600" height="400"><p>Unable to display PDF file. <a href="dummy.pdf">Download</a> instead.</p></object></p>
+</section>
+<section id="embed-with-1-px-border" class="level2">
+<h2 class="anchored" data-anchor-id="embed-with-1-px-border">Embed with 1 px border</h2>
+<p><code>{{&lt; pdf dummy.pdf border=1 &gt;}}</code></p>
+<p><object data="dummy.pdf" type="application/pdf" border="1"><p>Unable to display PDF file. <a href="dummy.pdf">Download</a> instead.</p></object></p>
+</section>
+<section id="embed-with-css-class" class="level2">
+<h2 class="anchored" data-anchor-id="embed-with-css-class">Embed with CSS class</h2>
+<style>
+  .myclass {
+    max-width: 100%;
+    width: 600px;
+    height: 600px;
+    border: 10px solid rgba(200,0,0,.2);
+    margin: 0;
+  }
+</style>
+<pre><code>&lt;style&gt;
+.myclass {
+  max-width: 100%;
+  width: 600px;
+  height: 600px;
+  border: 10px solid rgba(200,0,0,.2);
+  margin: 0;
+}
+&lt;/style&gt;</code></pre>
+<p><code>{{&lt; pdf dummy.pdf class=myclass &gt;}}</code></p>
+<p><object data="dummy.pdf" type="application/pdf" class="myclass"><p>Unable to display PDF file. <a href="dummy.pdf">Download</a> instead.</p></object></p>
 </section>
 <section id="see-backup-when-file-doesnt-exist" class="level2">
 <h2 class="anchored" data-anchor-id="see-backup-when-file-doesnt-exist">See backup when file doesn’t exist</h2>

@@ -1,6 +1,6 @@
 # embedpdf Extension For Quarto
 
-This extension provides support for embedding PDF files into Quarto HTML files (including RevealJS presentations). Each file will be added to your HTML file using the `<object type="application/pdf">` tag with a fallback message and download link (in case the browser is unable to display it). Just specify the path of the PDF file; you can also optionally change the displayed width (in pixels or percent) and height (in pixels).
+This extension provides support for embedding PDF files into Quarto HTML files (including RevealJS presentations). Each file will be added to your HTML file using the `<object type="application/pdf">` tag with a fallback message and download link (in case the browser is unable to display it). Just specify the path of the PDF file; you can also optionally change the displayed width, height, CSS class, and CSS style.
 
 ## Installing
 
@@ -18,6 +18,8 @@ To embed a PDF file in your document, use the `{{< pdf URL >}}` shortcode. For e
 ```
 {{< pdf dummy.pdf >}}
 {{< pdf dummy.pdf width=100% height=800 >}}
+{{< pdf dummy.pdf border=1 >}}
+{{< pdf dummy.pdf class=myclass >}}
 ```
 
 ## Example
