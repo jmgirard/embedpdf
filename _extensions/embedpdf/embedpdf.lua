@@ -52,7 +52,8 @@ function pdfobject(args)
   
   --detect html
   if quarto.doc.isFormat("html:js") then
-    return pandoc.RawInline('html', '<div id="results"></div><script src="https://unpkg.com/pdfobject@2.3.0/pdfobject.min.js"></script><script>let myPDF = PDFObject.embed("dummy.pdf", "#pdf", {forcePDFJS: true, PDFJS_URL: "/pdfjs/web/viewer.html"});let el = document.querySelector("#results");el.classList.add((myPDF) ? "success" : "fail");el.innerHTML = (myPDF) ? "PDFObject was successful!" : "Uh-oh, the embed didn\'t work.";</script>')
+    
+    return pandoc.RawInline('html', '<div id="results"></div><script src="https://unpkg.com/pdfobject@2.3.0/pdfobject.min.js"></script><script>let myPDF = PDFObject.embed("dummy.pdf", "#pdf", {forcePDFJS: true, PDFJS_URL: "/pdfjs/web/viewer.html"});</script>')
   else
   end
 end
