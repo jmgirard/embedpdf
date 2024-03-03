@@ -23,7 +23,7 @@ function pdf(args, kwargs)
   
   -- detect html
   if quarto.doc.isFormat("html:js") then
-    return pandoc.RawInline('html', '<object data="' .. data .. '" type="application/pdf"' .. width .. height .. class .. border .. '><p>Unable to display PDF file. <a href="' .. data .. '">Download</a> instead.</p></object>')
+    return pandoc.RawInline('html', '<object data="' .. data .. '" type="application/pdf"' .. width .. height .. class .. border .. '><embed src="' .. data .. '"' .. width .. height .. class .. border .. '/></object>')
   else
     return pandoc.Null()
   end
