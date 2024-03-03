@@ -74,32 +74,32 @@ ul.task-list li input[type="checkbox"] {
 <section id="embed-from-url-only" class="level2">
 <h2 class="anchored" data-anchor-id="embed-from-url-only">Embed from URL only</h2>
 <p><code>{{&lt; pdf dummy.pdf &gt;}}</code></p>
-<p><object data="dummy.pdf" type="application/pdf"><embed src="dummy.pdf"></object></p>
+<p><object data="dummy.pdf" type="application/pdf"><p>Unable to disply PDF; click here to <a href="dummy.pdf" download="">download</a>.</p></object></p>
 </section>
 <section id="embed-with-width-in-pixels" class="level2">
 <h2 class="anchored" data-anchor-id="embed-with-width-in-pixels">Embed with width in pixels</h2>
 <p><code>{{&lt; pdf dummy.pdf width=600 &gt;}}</code></p>
-<p><object data="dummy.pdf" type="application/pdf" width="600"><embed src="dummy.pdf" width="600"></object></p>
+<p><object data="dummy.pdf" type="application/pdf" width="600"><p>Unable to disply PDF; click here to <a href="dummy.pdf" download="">download</a>.</p></object></p>
 </section>
 <section id="embed-with-width-in-percent" class="level2">
 <h2 class="anchored" data-anchor-id="embed-with-width-in-percent">Embed with width in percent</h2>
 <p><code>{{&lt; pdf dummy.pdf width=100% &gt;}}</code></p>
-<p><object data="dummy.pdf" type="application/pdf" width="100%"><embed src="dummy.pdf" width="100%"></object></p>
+<p><object data="dummy.pdf" type="application/pdf" width="100%"><p>Unable to disply PDF; click here to <a href="dummy.pdf" download="">download</a>.</p></object></p>
 </section>
 <section id="embed-with-height-in-pixels" class="level2">
 <h2 class="anchored" data-anchor-id="embed-with-height-in-pixels">Embed with height in pixels</h2>
 <p><code>{{&lt; pdf dummy.pdf height=600 &gt;}}</code></p>
-<p><object data="dummy.pdf" type="application/pdf" height="600"><embed src="dummy.pdf" height="600"></object></p>
+<p><object data="dummy.pdf" type="application/pdf" height="600"><p>Unable to disply PDF; click here to <a href="dummy.pdf" download="">download</a>.</p></object></p>
 </section>
 <section id="embed-with-both-width-and-height" class="level2">
 <h2 class="anchored" data-anchor-id="embed-with-both-width-and-height">Embed with both width and height</h2>
 <p><code>{{&lt; pdf dummy.pdf width=600 height=400 &gt;}}</code></p>
-<p><object data="dummy.pdf" type="application/pdf" width="600" height="400"><embed src="dummy.pdf" width="600" height="400"></object></p>
+<p><object data="dummy.pdf" type="application/pdf" width="600" height="400"><p>Unable to disply PDF; click here to <a href="dummy.pdf" download="">download</a>.</p></object></p>
 </section>
 <section id="embed-with-1-px-border" class="level2">
 <h2 class="anchored" data-anchor-id="embed-with-1-px-border">Embed with 1 px border</h2>
 <p><code>{{&lt; pdf dummy.pdf border=1 &gt;}}</code></p>
-<p><object data="dummy.pdf" type="application/pdf" border="1"><embed src="dummy.pdf" border="1"></object></p>
+<p><object data="dummy.pdf" type="application/pdf" border="1"><p>Unable to disply PDF; click here to <a href="dummy.pdf" download="">download</a>.</p></object></p>
 </section>
 <section id="embed-with-css-class" class="level2">
 <h2 class="anchored" data-anchor-id="embed-with-css-class">Embed with CSS class</h2>
@@ -122,12 +122,35 @@ ul.task-list li input[type="checkbox"] {
 }
 &lt;/style&gt;</code></pre>
 <p><code>{{&lt; pdf dummy.pdf class=myclass &gt;}}</code></p>
-<p><object data="dummy.pdf" type="application/pdf" class="myclass"><embed src="dummy.pdf" class="myclass"></object></p>
+<p><object data="dummy.pdf" type="application/pdf" class="myclass"><p>Unable to disply PDF; click here to <a href="dummy.pdf" download="">download</a>.</p></object></p>
 </section>
 <section id="you-can-also-use-embedpdf-as-an-alias" class="level2">
 <h2 class="anchored" data-anchor-id="you-can-also-use-embedpdf-as-an-alias">You can also use embedpdf as an alias</h2>
 <p><code>{{&lt; embedpdf dummy.pdf &gt;}}</code></p>
-<p><object data="dummy.pdf" type="application/pdf"><embed src="dummy.pdf"></object></p>
+<p><object data="dummy.pdf" type="application/pdf"><p>Unable to disply PDF; click here to <a href="dummy.pdf" download="">download</a>.</p></object></p>
+</section>
+<section id="use-pdfobject-for-a-mobile-friendly-approach" class="level2">
+<h2 class="anchored" data-anchor-id="use-pdfobject-for-a-mobile-friendly-approach">Use pdfobject for a mobile-friendly approach</h2>
+<style>
+  .pdfobject-container {
+    max-width: 100%;
+    width: 600px;
+    height: 600px;
+    border: 10px solid rgba(0,0,200,.2);
+    margin: 0;
+  }
+</style>
+<pre><code>&lt;style&gt;
+.pdfobject-container {
+  max-width: 100%;
+  width: 600px;
+  height: 600px;
+  border: 10px solid rgba(0,0,200,.2);
+  margin: 0;
+}
+&lt;/style&gt;</code></pre>
+<p><code>{{&lt; pdfobject dummy.pdf my-pdf &gt;}}</code></p>
+<p></p><div id="my-pdf"></div><script src="https://unpkg.com/pdfobject"></script><script>PDFObject.embed("dummy.pdf", "#my-pdf");</script><p></p>
 </section>
 
 </main>

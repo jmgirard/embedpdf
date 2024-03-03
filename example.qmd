@@ -89,3 +89,32 @@ title: "embedpdf Example"
 `{{{< embedpdf dummy.pdf >}}}`
 
 {{< embedpdf dummy.pdf >}}
+
+## Use pdfobject for a mobile-friendly approach
+
+<style>
+  .pdfobject-container {
+    max-width: 100%;
+    width: 600px;
+    height: 600px;
+    border: 10px solid rgba(0,0,200,.2);
+    margin: 0;
+  }
+</style>
+
+```
+<style>
+.pdfobject-container {
+  max-width: 100%;
+  width: 600px;
+  height: 600px;
+  border: 10px solid rgba(0,0,200,.2);
+  margin: 0;
+}
+</style>
+```
+
+`{{{< pdfobject dummy.pdf my-pdf >}}}`
+
+{{< pdfobject dummy.pdf my-pdf >}}
+
