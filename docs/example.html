@@ -149,8 +149,8 @@ ul.task-list li input[type="checkbox"] {
   margin: 0;
 }
 &lt;/style&gt;</code></pre>
-<p><code>{{&lt; pdfjs dummy.pdf mypdf &gt;}}</code></p>
-<p></p><div><iframe id="pdf-js-viewer" src="/pdfjs/web/viewer.html?file=dummy.pdf" title="webviewer"></iframe></div><p></p>
+<p><code>{{&lt; pdfobject dummy.pdf mypdf &gt;}}</code></p>
+<p></p><div id="mypdf"></div><script src="https://unpkg.com/pdfobject"></script><script>PDFObject.embed("../../dummy.pdf", "#mypdf", {forcePDFJS: true, PDFJS_URL: "/pdfjs/web/viewer.html"});</script><p></p>
 </section>
 
 </main>
