@@ -84,13 +84,6 @@ title: "embedpdf Example"
 {{< pdf dummy.pdf class=myclass >}}
 
 
-## See backup when file doesn't exist
-
-`{{{< pdf missing.pdf >}}}`
-
-{{< pdf missing.pdf >}}
-
-
 ## You can also use embedpdf as an alias
 
 `{{{< embedpdf dummy.pdf >}}}`
