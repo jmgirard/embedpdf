@@ -23,7 +23,7 @@ function pdf(args, kwargs)
   
   -- detect html
   if quarto.doc.isFormat("html:js") then
-    return pandoc.RawInline('html', '<object data="' .. data .. '" type="application/pdf"' .. width .. height .. class .. border .. '><p>Unable to disply PDF; click here to <a href="' .. data .. '" download>download</a>.</p></object>')
+    return pandoc.RawInline('html', '<object data="' .. data .. '" type="application/pdf"' .. width .. height .. class .. border .. '><iframe src="' .. data .. '" ' .. width .. height .. class .. '>This browser does not support PDFs. Please download the PDF to view it: <a href="' .. data .. '">Download PDF</a></iframe></object>')
   else
     return pandoc.Null()
   end
@@ -34,15 +34,25 @@ function embedpdf(...)
   return pdf(...)
 end
 
-function pdfobject(args, kwargs)
+function pdfjs(args, kwargs)
   local data = pandoc.utils.stringify(args[1])
-  local id = pandoc.utils.stringify(args[2])
   
   -- detect html
   if quarto.doc.isFormat("html:js") then
-    return pandoc.RawInline('html', '<div id="' .. id .. '"></div><script src="https://unpkg.com/pdfobject"></script><script>PDFObject.embed("' .. data .. '", "#' .. id .. '");</script>')
+    return pandoc.RawInline('html', '<div><iframe id="pdf-js-viewer" src="/pdfjs/web/viewer.html?file=' .. data .. '" title="webviewer"></iframe></div>')
   else
     return pandoc.Null()
   end
   
+end
+
+
+function pdfobject(args)
+  local data = pandoc.utils.stringify(args[1])
+  
+  --detect html
+  if quarto.doc.isFormat("html:js") then
+    return pandoc.RawInline('html', '<div id="results"></div><script src="https://unpkg.com/pdfobject@2.3.0/pdfobject.min.js"></script><script>let myPDF = PDFObject.embed("dummy.pdf", "#pdf", {forcePDFJS: true, PDFJS_URL: "/pdfjs/web/viewer.html"});let el = document.querySelector("#results");el.classList.add((myPDF) ? "success" : "fail");el.innerHTML = (myPDF) ? "PDFObject was successful!" : "Uh-oh, the embed didn\'t work.";</script>')
+  else
+  end
 end

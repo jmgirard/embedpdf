@@ -114,7 +114,7 @@ title: "embedpdf Example"
 </style>
 ```
 
-`{{{< pdfobject dummy.pdf my-pdf >}}}`
+`{{{< pdfjs dummy.pdf >}}}`
 
-{{< pdfobject dummy.pdf my-pdf >}}
+{{< pdfjs dummy.pdf  >}}
 
