@@ -44,8 +44,7 @@ function pdfjs(args, kwargs, ...)
   
   -- detect html
   if quarto.doc.isFormat("html:js") then
-    quarto.doc.add_format_resource("pdfjs")
-    return pandoc.RawInline('html', '<div><iframe src="/pdfjs/web/viewer.html?file=../' .. data .. '" ' .. class .. '></iframe></div>')
+    return pandoc.RawInline('html', '<div><iframe src="/pdfjs/web/viewer.html?file=../../' .. data .. '" ' .. class .. '></iframe></div>')
   else
     return pandoc.Null()
   end
