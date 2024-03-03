@@ -132,7 +132,7 @@ ul.task-list li input[type="checkbox"] {
 <section id="use-pdfobject-for-a-mobile-friendly-approach" class="level2">
 <h2 class="anchored" data-anchor-id="use-pdfobject-for-a-mobile-friendly-approach">Use pdfobject for a mobile-friendly approach</h2>
 <style>
-  .pdfobject-container {
+  #mypdf {
     max-width: 100%;
     width: 600px;
     height: 600px;
@@ -141,7 +141,7 @@ ul.task-list li input[type="checkbox"] {
   }
 </style>
 <pre><code>&lt;style&gt;
-.pdfobject-container {
+#mypdf {
   max-width: 100%;
   width: 600px;
   height: 600px;
@@ -149,7 +149,7 @@ ul.task-list li input[type="checkbox"] {
   margin: 0;
 }
 &lt;/style&gt;</code></pre>
-<p><code>{{&lt; pdfjs dummy.pdf &gt;}}</code></p>
+<p><code>{{&lt; pdfjs dummy.pdf mypdf &gt;}}</code></p>
 <p></p><div><iframe id="pdf-js-viewer" src="/pdfjs/web/viewer.html?file=dummy.pdf" title="webviewer"></iframe></div><p></p>
 </section>
 
