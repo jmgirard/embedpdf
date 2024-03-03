@@ -90,10 +90,10 @@ title: "embedpdf Example"
 
 {{< embedpdf dummy.pdf >}}
 
-## Use pdfobject for a mobile-friendly approach
+## Use PDF.js for a mobile-friendly approach
 
 <style>
-  #mypdf {
+  .mypdf {
     max-width: 100%;
     width: 600px;
     height: 600px;
@@ -114,10 +114,6 @@ title: "embedpdf Example"
 </style>
 ```
 
-`{{{< pdfobject dummy.pdf mypdf >}}}`
+`{{{< pdfjs dummy.pdf class=mypdf >}}}`
 
-{{< pdfobject dummy.pdf mypdf >}}
-
-`{{{< pdfjs dummy.pdf mypdf >}}}`
-
-{{< pdfjs dummy.pdf mypdf >}}
+{{< pdfjs dummy.pdf class=mypdf >}}

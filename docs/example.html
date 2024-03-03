@@ -129,10 +129,10 @@ ul.task-list li input[type="checkbox"] {
 <p><code>{{&lt; embedpdf dummy.pdf &gt;}}</code></p>
 <p><object data="dummy.pdf" type="application/pdf"><iframe src="dummy.pdf">This browser does not support PDFs. Please download the PDF to view it: <a href="dummy.pdf">Download PDF</a></iframe></object></p>
 </section>
-<section id="use-pdfobject-for-a-mobile-friendly-approach" class="level2">
-<h2 class="anchored" data-anchor-id="use-pdfobject-for-a-mobile-friendly-approach">Use pdfobject for a mobile-friendly approach</h2>
+<section id="use-pdf.js-for-a-mobile-friendly-approach" class="level2">
+<h2 class="anchored" data-anchor-id="use-pdf.js-for-a-mobile-friendly-approach">Use PDF.js for a mobile-friendly approach</h2>
 <style>
-  #mypdf {
+  .mypdf {
     max-width: 100%;
     width: 600px;
     height: 600px;
@@ -149,10 +149,8 @@ ul.task-list li input[type="checkbox"] {
   margin: 0;
 }
 &lt;/style&gt;</code></pre>
-<p><code>{{&lt; pdfobject dummy.pdf mypdf &gt;}}</code></p>
-<p></p><div id="mypdf"></div><script src="https://unpkg.com/pdfobject"></script><script>PDFObject.embed("../../dummy.pdf", "#mypdf", {forcePDFJS: true, PDFJS_URL: "/pdfjs/web/viewer.html"});</script><p></p>
-<p><code>{{&lt; pdfjs dummy.pdf mypdf &gt;}}</code></p>
-<p></p><div class="mypdf"><iframe src="/pdfjs/web/viewer.html?file=../../dummy.pdf"></iframe></div><p></p>
+<p><code>{{&lt; pdfjs dummy.pdf class=mypdf &gt;}}</code></p>
+<p></p><div><iframe src="/pdfjs/web/viewer.html?file=../../dummy.pdf" class="mypdf"></iframe></div><p></p>
 </section>
 
 </main>

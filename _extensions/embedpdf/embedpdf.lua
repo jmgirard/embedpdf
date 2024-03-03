@@ -1,5 +1,5 @@
 function pdf(args, kwargs)
-  local data = pandoc.utils.stringify(args[1])
+  local data = pandoc.utils.stringify(args[1]) or pandoc.utils.stringify(kwargs['file'])
   local width = pandoc.utils.stringify(kwargs['width'])
   local height = pandoc.utils.stringify(kwargs['height'])
   local class = pandoc.utils.stringify(kwargs['class'])
@@ -34,27 +34,20 @@ function embedpdf(...)
   return pdf(...)
 end
 
-function pdfjs(args, kwargs)
+function pdfjs(args, kwargs, ...)
   local data = pandoc.utils.stringify(args[1])
-  local class = pandoc.utils.stringify(args[2])
+  local class = pandoc.utils.stringify(kwargs['class'])
+  
+  if class ~= '' then
+    class = 'class="' .. class .. '" '
+  end
   
   -- detect html
   if quarto.doc.isFormat("html:js") then
-    return pandoc.RawInline('html', '<div class="' .. class .. '"><iframe src="/pdfjs/web/viewer.html?file=../../' .. data .. '"></iframe></div>')
+    quarto.doc.add_format_resource("pdfjs")
+    return pandoc.RawInline('html', '<div><iframe src="/pdfjs/web/viewer.html?file=../../' .. data .. '" ' .. class .. '></iframe></div>')
   else
     return pandoc.Null()
   end
   
-end
-
-
-function pdfobject(args)
-  local data = pandoc.utils.stringify(args[1])
-  local id = pandoc.utils.stringify(args[2])
-  
-  --detect html
-  if quarto.doc.isFormat("html:js") then
-    return pandoc.RawInline('html', '<div id="' .. id .. '"></div><script src="https://unpkg.com/pdfobject"></script><script>PDFObject.embed("../../' .. data .. '", "#' .. id .. '", {forcePDFJS: true, PDFJS_URL: "/pdfjs/web/viewer.html"});</script>')
-  else
-  end
 end
