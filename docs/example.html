@@ -141,7 +141,7 @@ ul.task-list li input[type="checkbox"] {
   }
 </style>
 <pre><code>&lt;style&gt;
-#mypdf {
+.mypdf {
   max-width: 100%;
   width: 600px;
   height: 600px;
@@ -151,6 +151,8 @@ ul.task-list li input[type="checkbox"] {
 &lt;/style&gt;</code></pre>
 <p><code>{{&lt; pdfobject dummy.pdf mypdf &gt;}}</code></p>
 <p></p><div id="mypdf"></div><script src="https://unpkg.com/pdfobject"></script><script>PDFObject.embed("../../dummy.pdf", "#mypdf", {forcePDFJS: true, PDFJS_URL: "/pdfjs/web/viewer.html"});</script><p></p>
+<p><code>{{&lt; pdfjs dummy.pdf mypdf &gt;}}</code></p>
+<p></p><div class="mypdf"><iframe src="/pdfjs/web/viewer.html?file=../../dummy.pdf"></iframe></div><p></p>
 </section>
 
 </main>

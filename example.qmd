@@ -104,7 +104,7 @@ title: "embedpdf Example"
 
 ```
 <style>
-#mypdf {
+.mypdf {
   max-width: 100%;
   width: 600px;
   height: 600px;
@@ -118,3 +118,6 @@ title: "embedpdf Example"
 
 {{< pdfobject dummy.pdf mypdf >}}
 
+`{{{< pdfjs dummy.pdf mypdf >}}}`
+
+{{< pdfjs dummy.pdf mypdf >}}

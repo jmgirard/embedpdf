@@ -36,10 +36,11 @@ end
 
 function pdfjs(args, kwargs)
   local data = pandoc.utils.stringify(args[1])
+  local class = pandoc.utils.stringify(args[2])
   
   -- detect html
   if quarto.doc.isFormat("html:js") then
-    return pandoc.RawInline('html', '<div><iframe id="pdf-js-viewer" src="/pdfjs/web/viewer.html?file=' .. data .. '" title="webviewer"></iframe></div>')
+    return pandoc.RawInline('html', '<div class="' .. class .. '"><iframe src="/pdfjs/web/viewer.html?file=../../' .. data .. '"></iframe></div>')
   else
     return pandoc.Null()
   end
