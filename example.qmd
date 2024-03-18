@@ -84,13 +84,27 @@ title: "embedpdf Example"
 {{< pdf dummy.pdf class=myclass >}}
 
 
+## Add a backup image for a mobile-friendly approach
+
+The browser will render the PDF if able but, if not (e.g., on mobile), it will fallback to rendering the image with a link to download the PDF file:
+
+`{{{< pdf dummy.pdf image=dummy.png width=400 height=600 border=1 >}}}`
+
+{{< pdf dummy.pdf image=dummy.png width=400 height=600 border=1 >}}
+
+To see what this will look like on a browser that does support PDF (e.g., during development), you can use force_image=TRUE:
+
+`{{{< pdf dummy.pdf image=dummy.png force_image=TRUE width=400 height=600 border=1 >}}}`
+
+{{< pdf dummy.pdf image=dummy.png force_image=TRUE width=400 height=600 border=1 >}}
+
 ## You can also use embedpdf as an alias
 
 `{{{< embedpdf dummy.pdf >}}}`
 
 {{< embedpdf dummy.pdf >}}
 
-## Use PDF.js for a mobile-friendly approach
+## Use PDF.js for a mobile-friendly approach (experimental)
 
 <style>
   .mypdf {
@@ -117,3 +131,4 @@ title: "embedpdf Example"
 `{{{< pdfjs dummy.pdf class=mypdf >}}}`
 
 {{< pdfjs dummy.pdf class=mypdf >}}
+
