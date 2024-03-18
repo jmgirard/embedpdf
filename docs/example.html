@@ -62,47 +62,42 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<style>
-.pdf {
-  max-width: 100%;
-    width: 600px;
-    height: 600px;
-    border: 10px solid rgba(0,0,0,.2);
-    margin: 0;
-}
-</style>
-<section id="embed-from-url-only" class="level2">
-<h2 class="anchored" data-anchor-id="embed-from-url-only">Embed from URL only</h2>
+<section id="basic-usage" class="level2">
+<h2 class="anchored" data-anchor-id="basic-usage">Basic Usage</h2>
+<p>All you really need to give the <code>pdf</code> shortcode is the path to the PDF file you want to embed in your Quarto HTML document.</p>
 <p><code>{{&lt; pdf dummy.pdf &gt;}}</code></p>
 <p><object data="dummy.pdf" type="application/pdf"><a href="dummy.pdf" download="">Download PDF file.</a></object></p>
 </section>
-<section id="embed-with-width-in-pixels" class="level2">
-<h2 class="anchored" data-anchor-id="embed-with-width-in-pixels">Embed with width in pixels</h2>
+<section id="customization" class="level2">
+<h2 class="anchored" data-anchor-id="customization">Customization</h2>
+<p>However, in most cases, you will want to customize the appearance of your embedded PDF object. I have built a few common HTML-based customizations into the <code>pdf</code> shortcode for your convenience. However, the most powerful and flexible approach to customization will be to use cascading style sheets or CSS (e.g., by passing the <code>pdf</code> shortcode a CSS class). If you are new to CSS, there are some good introductory resources available here and here.</p>
+<section id="embed-with-width-in-pixels" class="level3">
+<h3 class="anchored" data-anchor-id="embed-with-width-in-pixels">Embed with width in pixels</h3>
 <p><code>{{&lt; pdf dummy.pdf width=600 &gt;}}</code></p>
 <p><object data="dummy.pdf" type="application/pdf" width="600"><a href="dummy.pdf" download="">Download PDF file.</a></object></p>
 </section>
-<section id="embed-with-width-in-percent" class="level2">
-<h2 class="anchored" data-anchor-id="embed-with-width-in-percent">Embed with width in percent</h2>
+<section id="embed-with-width-in-percent" class="level3">
+<h3 class="anchored" data-anchor-id="embed-with-width-in-percent">Embed with width in percent</h3>
 <p><code>{{&lt; pdf dummy.pdf width=100% &gt;}}</code></p>
 <p><object data="dummy.pdf" type="application/pdf" width="100%"><a href="dummy.pdf" download="">Download PDF file.</a></object></p>
 </section>
-<section id="embed-with-height-in-pixels" class="level2">
-<h2 class="anchored" data-anchor-id="embed-with-height-in-pixels">Embed with height in pixels</h2>
+<section id="embed-with-height-in-pixels" class="level3">
+<h3 class="anchored" data-anchor-id="embed-with-height-in-pixels">Embed with height in pixels</h3>
 <p><code>{{&lt; pdf dummy.pdf height=600 &gt;}}</code></p>
 <p><object data="dummy.pdf" type="application/pdf" height="600"><a href="dummy.pdf" download="">Download PDF file.</a></object></p>
 </section>
-<section id="embed-with-both-width-and-height" class="level2">
-<h2 class="anchored" data-anchor-id="embed-with-both-width-and-height">Embed with both width and height</h2>
+<section id="embed-with-both-width-and-height" class="level3">
+<h3 class="anchored" data-anchor-id="embed-with-both-width-and-height">Embed with both width and height</h3>
 <p><code>{{&lt; pdf dummy.pdf width=600 height=400 &gt;}}</code></p>
 <p><object data="dummy.pdf" type="application/pdf" width="600" height="400"><a href="dummy.pdf" download="">Download PDF file.</a></object></p>
 </section>
-<section id="embed-with-1-px-border" class="level2">
-<h2 class="anchored" data-anchor-id="embed-with-1-px-border">Embed with 1 px border</h2>
+<section id="embed-with-1-px-border" class="level3">
+<h3 class="anchored" data-anchor-id="embed-with-1-px-border">Embed with 1 px border</h3>
 <p><code>{{&lt; pdf dummy.pdf border=1 &gt;}}</code></p>
 <p><object data="dummy.pdf" type="application/pdf" border="1"><a href="dummy.pdf" download="">Download PDF file.</a></object></p>
 </section>
-<section id="embed-with-css-class" class="level2">
-<h2 class="anchored" data-anchor-id="embed-with-css-class">Embed with CSS class</h2>
+<section id="embed-with-css-class" class="level3">
+<h3 class="anchored" data-anchor-id="embed-with-css-class">Embed with CSS class</h3>
 <style>
   .myclass {
     max-width: 100%;
@@ -124,22 +119,22 @@ ul.task-list li input[type="checkbox"] {
 <p><code>{{&lt; pdf dummy.pdf class=myclass &gt;}}</code></p>
 <p><object data="dummy.pdf" type="application/pdf" class="myclass"><a href="dummy.pdf" download="">Download PDF file.</a></object></p>
 </section>
-<section id="add-a-backup-image-for-a-mobile-friendly-approach" class="level2">
-<h2 class="anchored" data-anchor-id="add-a-backup-image-for-a-mobile-friendly-approach">Add a backup image for a mobile-friendly approach</h2>
-<p>The browser will render the PDF if able but, if not (e.g., on mobile), it will fallback to rendering the image with a link to download the PDF file:</p>
-<p><code>{{&lt; pdf dummy.pdf image=dummy.png width=400 height=600 border=1 &gt;}}</code></p>
+</section>
+<section id="supporting-mobile-browsers" class="level2">
+<h2 class="anchored" data-anchor-id="supporting-mobile-browsers">Supporting Mobile Browsers</h2>
+<p>Unfortunately, very few mobile browsers support the rendering of PDF objects and those that do (e.g., Safari on iOS) can often render the object in strange ways (e.g,. stretching and distorting its appearance). I have built an image-based backup option that I recommend for now, and am experimenting with a javascript-based approach that I hope may one day provide full PDF support on mobile.</p>
+<section id="add-a-backup-image" class="level3">
+<h3 class="anchored" data-anchor-id="add-a-backup-image">Add a backup image</h3>
+<p>The browser will render the PDF if able but, if not able (e.g., on mobile), it will fallback to rendering the provided image with a hyperlink to download the PDF file. I usually take a screenshot of the PDF file to create this image, but you could use any image you like (e.g., a download button image). For this reason, I provide separate customization arguments for the image.</p>
+<p><code>{{&lt; pdf dummy.pdf image=dummy.png width=400 height=600 border=1 image_width=400 image_height=600 image_border=1 &gt;}}</code></p>
 <p><object data="dummy.pdf" type="application/pdf" width="400" height="600" border="1"><a href="dummy.pdf" download=""><img src="dummy.png" width="400" height="600" border="1"></a></object></p>
-<p>To see what this will look like on a browser that does support PDF (e.g., during development), you can use force_image=TRUE:</p>
-<p><code>{{&lt; pdf dummy.pdf image=dummy.png force_image=TRUE width=400 height=600 border=1 &gt;}}</code></p>
+<p>To see what this will look like on a browser that does support PDF (e.g., during development), you can use <code>image_force=TRUE</code>:</p>
+<p><code>{{&lt; pdf dummy.pdf image=dummy.png image_force=TRUE image_width=400 image_height=600 image_border=1 &gt;}}</code></p>
 <p><a href="dummy.pdf" download=""><img src="dummy.png" width="400" height="600" border="1"></a></p>
 </section>
-<section id="you-can-also-use-embedpdf-as-an-alias" class="level2">
-<h2 class="anchored" data-anchor-id="you-can-also-use-embedpdf-as-an-alias">You can also use embedpdf as an alias</h2>
-<p><code>{{&lt; embedpdf dummy.pdf &gt;}}</code></p>
-<p><object data="dummy.pdf" type="application/pdf"><a href="dummy.pdf" download="">Download PDF file.</a></object></p>
-</section>
-<section id="use-pdf.js-for-a-mobile-friendly-approach-experimental" class="level2">
-<h2 class="anchored" data-anchor-id="use-pdf.js-for-a-mobile-friendly-approach-experimental">Use PDF.js for a mobile-friendly approach (experimental)</h2>
+<section id="use-pdf.js-experimental" class="level3">
+<h3 class="anchored" data-anchor-id="use-pdf.js-experimental">Use PDF.js (experimental)</h3>
+<p>This is an example of the javascript-based approach. It currently works for me locally but not when deployed to the web (so it probably doesn’t work for you as your read this online right now). This approach is also somewhat “heavier” in that it requires some extra files to be downloaded with the extension. Probably better to use the image-based approach for now…</p>
 <style>
   .mypdf {
     max-width: 100%;
@@ -160,6 +155,7 @@ ul.task-list li input[type="checkbox"] {
 &lt;/style&gt;</code></pre>
 <p><code>{{&lt; pdfjs dummy.pdf class=mypdf &gt;}}</code></p>
 <p></p><div><iframe src="/pdfjs/web/viewer.html?file=../../dummy.pdf" class="mypdf"></iframe></div><p></p>
+</section>
 </section>
 
 </main>

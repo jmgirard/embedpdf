@@ -2,60 +2,55 @@
 title: "embedpdf Example"
 ---
 
-<style>
-.pdf {
-  max-width: 100%;
-	width: 600px;
-	height: 600px;
-	border: 10px solid rgba(0,0,0,.2);
-	margin: 0;
-}
-</style>
+## Basic Usage
 
-
-## Embed from URL only
+All you really need to give the `pdf` shortcode is the path to the PDF file you want to embed in your Quarto HTML document.
 
 `{{{< pdf dummy.pdf >}}}`
 
 {{< pdf dummy.pdf >}}
 
 
-## Embed with width in pixels
+## Customization
+
+However, in most cases, you will want to customize the appearance of your embedded PDF object. I have built a few common HTML-based customizations into the `pdf` shortcode for your convenience. However, the most powerful and flexible approach to customization will be to use cascading style sheets or CSS (e.g., by passing the `pdf` shortcode a CSS class). If you are new to CSS, there are some good introductory resources available here and here.
+
+### Embed with width in pixels
 
 `{{{< pdf dummy.pdf width=600 >}}}`
 
 {{< pdf dummy.pdf width=600 >}}
 
 
-## Embed with width in percent
+### Embed with width in percent
 
 `{{{< pdf dummy.pdf width=100% >}}}`
 
 {{< pdf dummy.pdf width=100% >}}
 
 
-## Embed with height in pixels
+### Embed with height in pixels
 
 `{{{< pdf dummy.pdf height=600 >}}}`
 
 {{< pdf dummy.pdf height=600 >}}
 
 
-## Embed with both width and height
+### Embed with both width and height
 
 `{{{< pdf dummy.pdf width=600 height=400 >}}}`
 
 {{< pdf dummy.pdf width=600 height=400 >}}
 
 
-## Embed with 1 px border
+### Embed with 1 px border
 
 `{{{< pdf dummy.pdf border=1 >}}}`
 
 {{< pdf dummy.pdf border=1 >}}
 
 
-## Embed with CSS class
+### Embed with CSS class
 
 <style>
   .myclass {
@@ -83,28 +78,28 @@ title: "embedpdf Example"
 
 {{< pdf dummy.pdf class=myclass >}}
 
+## Supporting Mobile Browsers
 
-## Add a backup image for a mobile-friendly approach
+Unfortunately, very few mobile browsers support the rendering of PDF objects and those that do (e.g., Safari on iOS) can often render the object in strange ways (e.g,. stretching and distorting its appearance). I have built an image-based backup option that I recommend for now, and am experimenting with a javascript-based approach that I hope may one day provide full PDF support on mobile.
 
-The browser will render the PDF if able but, if not (e.g., on mobile), it will fallback to rendering the image with a link to download the PDF file:
+### Add a backup image 
 
-`{{{< pdf dummy.pdf image=dummy.png width=400 height=600 border=1 >}}}`
+The browser will render the PDF if able but, if not able (e.g., on mobile), it will fallback to rendering the provided image with a hyperlink to download the PDF file. I usually take a screenshot of the PDF file to create this image, but you could use any image you like (e.g., a download button image). For this reason, I provide separate customization arguments for the image.
 
-{{< pdf dummy.pdf image=dummy.png width=400 height=600 border=1 >}}
+`{{{< pdf dummy.pdf image=dummy.png width=400 height=600 border=1 image_width=400 image_height=600 image_border=1 >}}}`
 
-To see what this will look like on a browser that does support PDF (e.g., during development), you can use force_image=TRUE:
+{{< pdf dummy.pdf image=dummy.png width=400 height=600 border=1 image_width=400 image_height=600 image_border=1 >}}
 
-`{{{< pdf dummy.pdf image=dummy.png force_image=TRUE width=400 height=600 border=1 >}}}`
+To see what this will look like on a browser that does support PDF (e.g., during development), you can use `image_force=TRUE`:
 
-{{< pdf dummy.pdf image=dummy.png force_image=TRUE width=400 height=600 border=1 >}}
+`{{{< pdf dummy.pdf image=dummy.png image_force=TRUE image_width=400 image_height=600 image_border=1 >}}}`
 
-## You can also use embedpdf as an alias
+{{< pdf dummy.pdf image=dummy.png image_force=TRUE image_width=400 image_height=600 image_border=1 >}}
 
-`{{{< embedpdf dummy.pdf >}}}`
 
-{{< embedpdf dummy.pdf >}}
+### Use PDF.js (experimental)
 
-## Use PDF.js for a mobile-friendly approach (experimental)
+This is an example of the javascript-based approach. It currently works for me locally but not when deployed to the web (so it probably doesn't work for you as your read this online right now). This approach is also somewhat "heavier" in that it requires some extra files to be downloaded with the extension. Probably better to use the image-based approach for now...
 
 <style>
   .mypdf {
@@ -131,4 +126,3 @@ To see what this will look like on a browser that does support PDF (e.g., during
 `{{{< pdfjs dummy.pdf class=mypdf >}}}`
 
 {{< pdfjs dummy.pdf class=mypdf >}}
-
