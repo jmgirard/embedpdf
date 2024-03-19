@@ -59,24 +59,7 @@ function pdf(args, kwargs)
 
 end
 
+-- Add alias shortcode
 function embedpdf(...)
   return pdf(...)
-end
-
--- experimental
-
-function pdfjs(args, kwargs, ...)
-  local data = pandoc.utils.stringify(args[1])
-  local class = pandoc.utils.stringify(kwargs['class'])
-  
-  if class ~= '' then
-    class = 'class="' .. class .. '" '
-  end
-  
-  if quarto.doc.isFormat("html:js") then
-    return pandoc.RawInline('html', '<div><iframe src="/pdfjs/web/viewer.html?file=../../' .. data .. '" ' .. class .. '></iframe></div>')
-  else
-    return pandoc.Null()
-  end
-  
 end

@@ -86,43 +86,12 @@ Unfortunately, very few mobile browsers support the rendering of PDF objects and
 
 The browser will render the PDF if able but, if not able (e.g., on mobile), it will fallback to rendering the provided image with a hyperlink to download the PDF file. I usually take a screenshot of the PDF file to create this image, but you could use any image you like (e.g., a download button image). For this reason, I provide separate customization arguments for the image.
 
-`{{{< pdf dummy.pdf image=dummy.png width=400 height=600 border=1 image_width=400 image_height=600 image_border=1 >}}}`
+`{{{< pdf dummy.pdf width=400 height=600 border=1 image=dummy.png image_width=400 image_border=1 >}}}`
 
-{{< pdf dummy.pdf image=dummy.png width=400 height=600 border=1 image_width=400 image_height=600 image_border=1 >}}
+{{< pdf dummy.pdf width=400 height=600 border=1 image=dummy.png image_width=400 image_border=1 >}}
 
 To see what this will look like on a browser that does support PDF (e.g., during development), you can use `image_force=TRUE`:
 
-`{{{< pdf dummy.pdf image=dummy.png image_force=TRUE image_width=400 image_height=600 image_border=1 >}}}`
+`{{{< pdf dummy.pdf width=400 height=600 image=dummy.png image_force=TRUE border=1 image_width=400 image_border=1 >}}}`
 
-{{< pdf dummy.pdf image=dummy.png image_force=TRUE image_width=400 image_height=600 image_border=1 >}}
-
-
-### Use PDF.js (experimental)
-
-This is an example of the javascript-based approach. It currently works for me locally but not when deployed to the web (so it probably doesn't work for you as your read this online right now). This approach is also somewhat "heavier" in that it requires some extra files to be downloaded with the extension. Probably better to use the image-based approach for now...
-
-<style>
-  .mypdf {
-    max-width: 100%;
-    width: 600px;
-    height: 600px;
-    border: 10px solid rgba(0,0,200,.2);
-    margin: 0;
-  }
-</style>
-
-```
-<style>
-.mypdf {
-  max-width: 100%;
-  width: 600px;
-  height: 600px;
-  border: 10px solid rgba(0,0,200,.2);
-  margin: 0;
-}
-</style>
-```
-
-`{{{< pdfjs dummy.pdf class=mypdf >}}}`
-
-{{< pdfjs dummy.pdf class=mypdf >}}
+{{< pdf dummy.pdf width=400 height=600 image=dummy.png image_force=TRUE border=1 image_width=400 image_border=1 >}}

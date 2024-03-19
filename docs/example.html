@@ -126,35 +126,11 @@ ul.task-list li input[type="checkbox"] {
 <section id="add-a-backup-image" class="level3">
 <h3 class="anchored" data-anchor-id="add-a-backup-image">Add a backup image</h3>
 <p>The browser will render the PDF if able but, if not able (e.g., on mobile), it will fallback to rendering the provided image with a hyperlink to download the PDF file. I usually take a screenshot of the PDF file to create this image, but you could use any image you like (e.g., a download button image). For this reason, I provide separate customization arguments for the image.</p>
-<p><code>{{&lt; pdf dummy.pdf image=dummy.png width=400 height=600 border=1 image_width=400 image_height=600 image_border=1 &gt;}}</code></p>
-<p><object data="dummy.pdf" type="application/pdf" width="400" height="600" border="1"><a href="dummy.pdf" download=""><img src="dummy.png" width="400" height="600" border="1"></a></object></p>
+<p><code>{{&lt; pdf dummy.pdf width=400 height=600 border=1 image=dummy.png image_width=400 image_border=1 &gt;}}</code></p>
+<p><object data="dummy.pdf" type="application/pdf" width="400" height="600" border="1"><a href="dummy.pdf" download=""><img src="dummy.png" width="400" border="1"></a></object></p>
 <p>To see what this will look like on a browser that does support PDF (e.g., during development), you can use <code>image_force=TRUE</code>:</p>
-<p><code>{{&lt; pdf dummy.pdf image=dummy.png image_force=TRUE image_width=400 image_height=600 image_border=1 &gt;}}</code></p>
-<p><a href="dummy.pdf" download=""><img src="dummy.png" width="400" height="600" border="1"></a></p>
-</section>
-<section id="use-pdf.js-experimental" class="level3">
-<h3 class="anchored" data-anchor-id="use-pdf.js-experimental">Use PDF.js (experimental)</h3>
-<p>This is an example of the javascript-based approach. It currently works for me locally but not when deployed to the web (so it probably doesn’t work for you as your read this online right now). This approach is also somewhat “heavier” in that it requires some extra files to be downloaded with the extension. Probably better to use the image-based approach for now…</p>
-<style>
-  .mypdf {
-    max-width: 100%;
-    width: 600px;
-    height: 600px;
-    border: 10px solid rgba(0,0,200,.2);
-    margin: 0;
-  }
-</style>
-<pre><code>&lt;style&gt;
-.mypdf {
-  max-width: 100%;
-  width: 600px;
-  height: 600px;
-  border: 10px solid rgba(0,0,200,.2);
-  margin: 0;
-}
-&lt;/style&gt;</code></pre>
-<p><code>{{&lt; pdfjs dummy.pdf class=mypdf &gt;}}</code></p>
-<p></p><div><iframe src="/pdfjs/web/viewer.html?file=../../dummy.pdf" class="mypdf"></iframe></div><p></p>
+<p><code>{{&lt; pdf dummy.pdf width=400 height=600 image=dummy.png image_force=TRUE border=1 image_width=400 image_border=1 &gt;}}</code></p>
+<p><a href="dummy.pdf" download=""><img src="dummy.png" width="400" border="1"></a></p>
 </section>
 </section>
 
