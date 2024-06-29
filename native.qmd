@@ -21,6 +21,7 @@ You can customize the size of the embedded object using brace notation:
 
 ![](dummy.pdf){width=60% height=400}
 
+
 ## CSS usage
 
 Or, for more control, you can assign a CSS id and/or classes:
@@ -59,6 +60,7 @@ Or, for more control, you can assign a CSS id and/or classes:
 
 ![](dummy.pdf){#myid .myclass}
 
+
 ## Embedding Resources
 
 It is important to note that, by default, the PDF file is kept separate from the HTML document file and must be transferred alongside it, i.e., the PDF displays in the HTML file but the PDF file is still needed. Alternatively, you can create a (larger) standalone HTML document by adding `embed-resources: true` to your YAML header and then the PDF file will be embedded into the HTML document automatically.
@@ -72,7 +74,11 @@ embed-resources: true
 ![](dummy.pdf)
 ````
 
+
 ## Supporting Mobile Browsers
 
-Unfortunately, very few mobile browsers support the rendering of PDF objects and those that do (e.g., Safari on iOS) can often render the object in strange ways (e.g,. stretching and distorting its appearance).
+Unfortunately, not all mobile browsers support the rendering of PDF objects and those that do (e.g., Safari on iOS) sometimes render the object in strange ways (e.g,. stretching and distorting its appearance).
 
+| Chrome on Android | Firefox on Android |
+| :---------------: | :----------------: |
+| ![](android_chrome.png){width=200} | ![](android_firefox.png){width=200} |
