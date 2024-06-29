@@ -23,6 +23,8 @@ To embed a PDF file in your document, use the `{{< pdf URL >}}` shortcode. For e
 {{< pdf dummy.pdf image=dummy.png >}}
 ```
 
-## Guide
+## Guides
 
-Here is a more in-depth guide with rendered examples: [example.html](https://jmgirard.github.io/embedpdf/example.html).
+Here is a simple guide to using Quarto's native PDF support: [native.html](https://jmgirard.github.io/embedpdf/native.html).
+
+Here is a more in-depth guide to using the embedpdf extension: [example.html](https://jmgirard.github.io/embedpdf/example.html).

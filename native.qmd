@@ -1,0 +1,78 @@
+---
+title: "Native Quarto Support"
+resources: 
+  - dummy.pdf
+---
+
+## Simple Usage
+
+Although poorly documented, Quarto already supports the embedding of PDF resource files in HTML documents. You just need to use the following code:
+
+`![](dummy.pdf)`
+
+![](dummy.pdf)
+
+
+## Size customization
+
+You can customize the size of the embedded object using brace notation:
+
+`![](dummy.pdf){width=60% height=400}`
+
+![](dummy.pdf){width=60% height=400}
+
+## CSS usage
+
+Or, for more control, you can assign a CSS id and/or classes:
+
+````
+```{=html}
+<style>
+  #myid {
+    border: 10px solid rgba(200,0,0,.2);
+    margin: 0;
+  }
+  .myclass {
+    max-width: 100%;
+    width: 600px;
+    height: 600px;
+  }
+</style>
+```
+````
+
+```{=html}
+<style>
+  #myid {
+    border: 10px solid rgba(200,0,0,.2);
+    margin: 0;
+  }
+  .myclass {
+    max-width: 100%;
+    width: 600px;
+    height: 600px;
+  }
+</style>
+```
+
+`![](dummy.pdf){#myid .myclass}`
+
+![](dummy.pdf){#myid .myclass}
+
+## Embedding Resources
+
+It is important to note that, by default, the PDF file is kept separate from the HTML document file and must be transferred alongside it, i.e., the PDF displays in the HTML file but the PDF file is still needed. Alternatively, you can create a (larger) standalone HTML document by adding `embed-resources: true` to your YAML header and then the PDF file will be embedded into the HTML document automatically.
+
+````
+---
+title: "Embed Example"
+embed-resources: true
+---
+
+![](dummy.pdf)
+````
+
+## Supporting Mobile Browsers
+
+Unfortunately, very few mobile browsers support the rendering of PDF objects and those that do (e.g., Safari on iOS) can often render the object in strange ways (e.g,. stretching and distorting its appearance).
+
