@@ -62,57 +62,8 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<section id="native-quarto-support" class="level2">
-<h2 class="anchored" data-anchor-id="native-quarto-support">Native Quarto Support</h2>
-<section id="simple-usage" class="level3">
-<h3 class="anchored" data-anchor-id="simple-usage">Simple Usage</h3>
-<p>Although poorly documented, Quarto already supports the embedding of PDF resource files in HTML documents. You just need to use the following code:</p>
-<p><code>![](dummy.pdf)</code></p>
-<p><embed src="dummy.pdf" class="img-fluid"></p>
-</section>
-<section id="size-customization" class="level3">
-<h3 class="anchored" data-anchor-id="size-customization">Size customization</h3>
-<p>You can customize the size of the embedded object using brace notation:</p>
-<p><code>![](dummy.pdf){width=60% height=400}</code></p>
-<p><embed src="dummy.pdf" style="width:60.0%" height="400"></p>
-</section>
-<section id="css-usage" class="level3">
-<h3 class="anchored" data-anchor-id="css-usage">CSS usage</h3>
-<p>Or, for more control, you can assign a CSS id and/or classes:</p>
-<pre><code>```{=html}
-&lt;style&gt;
-  #myid {
-    border: 10px solid rgba(200,0,0,.2);
-    margin: 0;
-  }
-  .myclass {
-    max-width: 100%;
-    width: 600px;
-    height: 600px;
-  }
-&lt;/style&gt;
-```</code></pre>
-<style>
-  #myid {
-    border: 10px solid rgba(200,0,0,.2);
-    margin: 0;
-  }
-  .myclass {
-    max-width: 100%;
-    width: 600px;
-    height: 600px;
-  }
-</style>
-<p><code>![](dummy.pdf){#myid .myclass}</code></p>
-<p><embed src="dummy.pdf" id="myid" class="myclass img-fluid"></p>
-</section>
-<section id="embedding-resources" class="level3">
-<h3 class="anchored" data-anchor-id="embedding-resources">Embedding Resources</h3>
-<p>It is important to note that, by default, the PDF file is kept separate from the HTML document file and must be transferred alongside it, i.e., the PDF displays in the HTML file but the PDF file is still needed. Alternatively, you can create a (larger) standalone HTML document by adding <code>embed-resources: true</code> to your YAML header and then the PDF file will be embedded into the HTML document automatically.</p>
-</section>
-</section>
-<section id="embedpdf-extension" class="level2">
-<h2 class="anchored" data-anchor-id="embedpdf-extension">embedpdf Extension</h2>
+<section id="simple-usage" class="level2">
+<h2 class="anchored" data-anchor-id="simple-usage">Simple Usage</h2>
 <p>All you really need to give the <code>pdf</code> shortcode is the path to the PDF file you want to embed in your Quarto HTML document.</p>
 <p><code>{{&lt; pdf dummy.pdf &gt;}}</code></p>
 <p><object data="dummy.pdf" type="application/pdf"><a href="dummy.pdf" download="">Download PDF file.</a></object></p>
