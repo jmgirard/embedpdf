@@ -1,6 +1,6 @@
 > [!NOTE]
 >
-> Quarto's native PDF support may be prefered: [native.html](https://jmgirard.github.io/embedpdf/native.html)
+> Quarto has native PDF support that may be preferred in many cases: [native.html](https://jmgirard.github.io/embedpdf/native.html)
 
 # embedpdf Extension For Quarto
 
