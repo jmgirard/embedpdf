@@ -1,3 +1,7 @@
+> [!NOTE]
+>
+> Quarto's native PDF support may be prefered: [native.html](https://jmgirard.github.io/embedpdf/native.html)
+
 # embedpdf Extension For Quarto
 
 This extension provides support for embedding PDF files into Quarto HTML files (including RevealJS presentations). Each file will be added to your HTML file using the `<object type="application/pdf">` tag with a fallback to either text or (if supplied) an image with a download link for mobile browsers.
@@ -24,7 +28,5 @@ To embed a PDF file in your document, use the `{{< pdf URL >}}` shortcode. For e
 ```
 
 ## Guides
-
-Here is a simple guide to using Quarto's native PDF support: [native.html](https://jmgirard.github.io/embedpdf/native.html).
 
 Here is a more in-depth guide to using the embedpdf extension: [example.html](https://jmgirard.github.io/embedpdf/example.html).
