@@ -1,6 +1,6 @@
 > [!NOTE]
 >
-> Quarto has native PDF support that may be preferred in many cases: [native.html](https://jmgirard.github.io/embedpdf/native.html)
+> Quarto has native PDF support that may be preferred in some cases: [native.html](https://jmgirard.github.io/embedpdf/native.html)
 
 # embedpdf Extension For Quarto
 
@@ -25,6 +25,7 @@ To embed a PDF file in your document, use the `{{< pdf URL >}}` shortcode. For e
 {{< pdf dummy.pdf >}}
 {{< pdf dummy.pdf width=100% height=800 >}}
 {{< pdf dummy.pdf image=dummy.png >}}
+{{< pdf dummy.pdf button="Download PDF" >}}
 ```
 
 ## Guides
