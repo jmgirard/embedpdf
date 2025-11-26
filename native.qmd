@@ -12,6 +12,10 @@ Although poorly documented, Quarto already supports the embedding of PDF resourc
 
 ![](dummy.pdf)
 
+`![](dummy2.pdf)`
+
+![](dummy2.pdf)
+
 
 ## Size customization
 

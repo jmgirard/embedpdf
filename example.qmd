@@ -59,6 +59,11 @@ However, in most cases, you will want to customize the appearance of your embedd
 
 {{< pdf dummy.pdf class=myclass >}}
 
+### Add download button
+
+`{{{< pdf dummy.pdf button="Download PDF" >}}}`
+
+{{< pdf dummy.pdf button="Download PDF" >}}
 
 ## Supporting Mobile Browsers
 

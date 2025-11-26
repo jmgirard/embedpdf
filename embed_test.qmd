@@ -1,0 +1,18 @@
+---
+title: "Untitled"
+format: 
+  html:
+    embed-resources: true
+---
+
+Try with same directory:
+
+![](dummy.pdf){width=100% height=500}
+
+Try with relative directory:
+
+![](docs/dummy.pdf){width=100% height=500}
+
+Try with absolute directory:
+
+![](C:/github/embedpdf/docs/dummy.pdf){width=100% height=500}
