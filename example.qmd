@@ -82,3 +82,9 @@ To see what this will look like on a browser that does support PDF (e.g., during
 `{{{< pdf dummy.pdf width=400 height=600 image=dummy.png image_force=TRUE border=1 image_width=400 image_border=1 >}}}`
 
 {{< pdf dummy.pdf width=400 height=600 image=dummy.png image_force=TRUE border=1 image_width=400 image_border=1 >}}
+
+The button will work on mobile browsers, so that's another option that you can use in addition to or in place of the backup image.
+
+`{{{< pdf dummy.pdf button="Download" width=400 height=600 image=dummy.png image_force=TRUE border=1 image_width=400 image_border=1 >}}}`
+
+{{< pdf dummy.pdf button="Download" width=400 height=600 image=dummy.png image_force=TRUE border=1 image_width=400 image_border=1 >}}

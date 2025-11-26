@@ -120,6 +120,9 @@ ul.task-list li input[type="checkbox"] {
 <p>To see what this will look like on a browser that does support PDF (e.g., during development), you can use <code>image_force=TRUE</code>:</p>
 <p><code>{{&lt; pdf dummy.pdf width=400 height=600 image=dummy.png image_force=TRUE border=1 image_width=400 image_border=1 &gt;}}</code></p>
 <p><a href="dummy.pdf" download=""><img src="dummy.png" width="400" border="1"></a></p>
+<p>The button will work on mobile browsers, so that’s another option that you can use in addition to or in place of the backup image.</p>
+<p><code>{{&lt; pdf dummy.pdf button="Download" width=400 height=600 image=dummy.png image_force=TRUE border=1 image_width=400 image_border=1 &gt;}}</code></p>
+<p></p><div><a href="dummy.pdf" download=""><img src="dummy.png" width="400" border="1"></a><br><a href="dummy.pdf" download="" style="display:inline-block; padding:10px 18px; background-color:#007acc; color:white; font-size:15px; border:none; border-radius:6px; cursor:pointer; text-decoration:none; transition:background-color 0.2s ease;" onmouseover="this.style.backgroundColor='#005fa3';" onmouseout="this.style.backgroundColor='#007acc';">Download</a></div><p></p>
 </section>
 </section>
 
