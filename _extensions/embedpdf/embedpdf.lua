@@ -26,7 +26,7 @@ local function inject_dependency()
   dependency_injected = true
   quarto.doc.add_html_dependency({
     name = "embedpdf",
-    version = "1.0.0",
+    version = "1.0.1",
     scripts = {
       { path = "embedpdf-viewer.js", attribs = { type = "module" }, afterBody = true }
     },

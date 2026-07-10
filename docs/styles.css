@@ -1,0 +1,6 @@
+/* Demo class used in the "Embed with a CSS class" example */
+.myclass {
+  border: 3px solid #007acc;
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+}

@@ -1,8 +1,22 @@
 # embedpdf Extension For Quarto
 
-This extension embeds PDF files into Quarto HTML documents (including RevealJS presentations) — **and, unlike other approaches, the PDFs also render on mobile browsers.**
+[![Release](https://img.shields.io/github/v/release/jmgirard/embedpdf?label=version&color=blue)](https://github.com/jmgirard/embedpdf/releases)
+[![License: MIT](https://img.shields.io/github/license/jmgirard/embedpdf?color=green)](LICENSE)
+[![Quarto](https://img.shields.io/badge/Quarto-%3E%3D1.4-75AADB?logo=quarto)](https://quarto.org)
 
-On desktop browsers, PDFs are shown with the browser's built-in PDF viewer. On mobile browsers (which cannot display embedded PDFs natively), the extension automatically falls back to rendering the PDF with [PDF.js](https://mozilla.github.io/pdf.js/), Mozilla's JavaScript PDF renderer, complete with a small toolbar for zooming, page tracking, and downloading. The PDF.js library (~1.7 MB) is bundled with the extension and only downloaded by visitors whose browsers actually need it.
+Embed PDF files in Quarto HTML documents (including RevealJS presentations) — **and, unlike other approaches, they also render on mobile browsers.**
+
+<p align="center">
+  <img src="man/figures/mobile-viewer.png" alt="A PDF rendered by embedpdf's built-in PDF.js viewer at phone width, showing a toolbar and the document text" width="330">
+</p>
+
+On desktop, PDFs are shown with the browser's built-in viewer. On mobile browsers — which cannot display embedded PDFs natively — the extension automatically renders the PDF with [PDF.js](https://mozilla.github.io/pdf.js/), Mozilla's JavaScript PDF renderer (pictured above), complete with a small toolbar for zooming, page tracking, and downloading.
+
+- 📱 **Works on mobile**, where `<object>`/`<iframe>` embeds and Quarto's native `![](file.pdf)` show a blank box or a download prompt.
+- 🪶 **Light by default** — the ~1.7 MB PDF.js library is bundled but only downloaded by browsers that actually need it; desktop visitors never fetch it.
+- 🎛️ **One shortcode, sensible options** — size, borders, initial page, a download button, and per-document/project defaults.
+- 🖥️ **Slides too** — renders inside RevealJS presentations.
+- 📄 **Degrades gracefully** — falls back to a download link with JavaScript off, and to `\includepdf` (LaTeX) or a link in other output formats.
 
 > [!NOTE]
 >

@@ -77,13 +77,11 @@ async function hydratePdfjs(el, opts) {
 
   const renderPage = async (pageEl) => {
     const num = Number(pageEl.dataset.pageNumber);
-    if (pageEl.clientWidth === 0) return; // hidden (e.g., inactive slide/tab); retried on resize
-    if (pageEl.dataset.renderedZoom === String(state.zoom) &&
-        pageEl.dataset.renderedWidth === String(pagesEl.clientWidth)) {
-      return;
-    }
-    pageEl.dataset.renderedZoom = String(state.zoom);
-    pageEl.dataset.renderedWidth = String(pagesEl.clientWidth);
+    const width = pageEl.clientWidth;
+    if (width === 0) return; // not laid out yet (or hidden slide/tab); retried later
+    const key = state.zoom + ":" + width;
+    if (pageEl.dataset.renderKey === key) return; // already rendered at this size/zoom
+    pageEl.dataset.renderKey = key;
     const page = await state.doc.getPage(num);
     const base = page.getViewport({ scale: 1 });
     const ratio = base.height / base.width;
@@ -99,6 +97,22 @@ async function hydratePdfjs(el, opts) {
     pageEl.replaceChildren(canvas);
   };
 
+  // render any page whose box is within (or near) the scroll viewport; used for
+  // the initial paint and after resize/zoom, since the IntersectionObserver's
+  // first callback can fire before layout has given the pages a width
+  const renderVisible = () => {
+    const host = pagesEl.getBoundingClientRect();
+    if (host.width === 0) return;
+    const margin = host.height * 2;
+    for (const p of state.pageEls) {
+      const rect = p.getBoundingClientRect();
+      if (rect.bottom > host.top - margin && rect.top < host.bottom + margin) {
+        renderPage(p);
+      }
+    }
+  };
+
+  // the observer handles lazy loading of pages scrolled into view
   const observer = new IntersectionObserver(
     (entries) => {
       for (const entry of entries) {
@@ -113,11 +127,7 @@ async function hydratePdfjs(el, opts) {
     state.zoom = Math.min(4, Math.max(0.25, state.zoom * factor));
     const pct = state.zoom * 100;
     state.pageEls.forEach((p) => (p.style.width = pct + "%"));
-    // force fresh intersection records so visible pages re-render at the new size
-    state.pageEls.forEach((p) => {
-      observer.unobserve(p);
-      observer.observe(p);
-    });
+    renderVisible();
   };
 
   if (opts.toolbar) {
@@ -168,10 +178,22 @@ async function hydratePdfjs(el, opts) {
 
   el.appendChild(pagesEl);
 
+  // initial paint: layout may not give the pages a width for the first
+  // frame(s), and a short single-page document never scrolls (so the
+  // IntersectionObserver never fires on its own). Keep rendering on each
+  // animation frame until at least one page has started rendering, then stop.
+  let frames = 0;
+  const kickInitial = () => {
+    renderVisible();
+    const started = state.pageEls.some((p) => p.dataset.renderKey);
+    if (!started && frames++ < 120) requestAnimationFrame(kickInitial);
+  };
+  requestAnimationFrame(kickInitial);
+
   let resizeTimer = null;
   new ResizeObserver(() => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => applyZoom(1), 150);
+    resizeTimer = setTimeout(renderVisible, 150);
   }).observe(pagesEl);
 
   if (opts.page > 1 && state.pageEls[opts.page - 1]) {
