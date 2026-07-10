@@ -44,8 +44,8 @@ npm install puppeteer-core                        # once, if missing (gitignored
 node tests/render_check.mjs http://localhost:8000/example.html   # exits 0 if canvases have ink
 ```
 
-**After doc/example changes** — `quarto render` and confirm no errors (the
-`C:/...` warning from `embed_test.qmd` is a deliberate bad-path test; ignore it).
+**After doc/example changes** — `quarto render` and confirm it completes with no
+errors.
 
 ## Gotchas (learned the hard way)
 
