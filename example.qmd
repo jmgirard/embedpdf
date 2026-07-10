@@ -1,7 +1,8 @@
 ---
 title: "embedpdf Example"
-resources: 
+resources:
   - dummy.pdf
+  - dummy2.pdf
 ---
 
 ## Simple Usage
@@ -67,11 +68,47 @@ However, in most cases, you will want to customize the appearance of your embedd
 
 ## Supporting Mobile Browsers
 
-Unfortunately, very few mobile browsers support the rendering of PDF objects and those that do (e.g., Safari on iOS) can often render the object in strange ways (e.g,. stretching and distorting its appearance). I have built an image-based backup option that I recommend for now, and am experimenting with a javascript-based approach that I hope may one day provide full PDF support on mobile.
+Mobile browsers (e.g., Chrome and Firefox on Android) do not support the inline rendering of PDF objects: they show a blank box or a download prompt instead. To solve this, the extension now includes a JavaScript-based PDF renderer ([PDF.js](https://mozilla.github.io/pdf.js/)).
 
-### Add a backup image 
+By default (`renderer=auto`), each embedded PDF checks whether the browser can display PDFs inline (via `navigator.pdfViewerEnabled`). If it can, the browser's native PDF viewer is used, exactly as before. If it cannot (e.g., on mobile), the PDF is instead drawn page-by-page onto the screen by PDF.js, with a small toolbar for zooming, page tracking, and downloading. Desktop visitors never download the PDF.js library; it is only fetched when needed.
 
-The browser will render the PDF if able but, if not able (e.g., on mobile), it will fallback to rendering the provided image with a hyperlink to download the PDF file. I usually take a screenshot of the PDF file to create this image, but you could use any image you like (e.g., a download button image). For this reason, I provide separate customization arguments for the image.
+### Force the PDF.js renderer
+
+You can force the PDF.js renderer with `renderer=pdfjs`, which is also handy for previewing on a desktop what mobile visitors will see:
+
+`{{{< pdf dummy2.pdf renderer=pdfjs height=500 >}}}`
+
+{{< pdf dummy2.pdf renderer=pdfjs height=500 >}}
+
+### Force the native renderer
+
+Similarly, `renderer=native` always uses the browser's built-in viewer (e.g., for self-contained documents using `embed-resources: true`, where PDF.js cannot fetch the PDF file):
+
+`{{{< pdf dummy.pdf renderer=native height=400 >}}}`
+
+{{< pdf dummy.pdf renderer=native height=400 >}}
+
+### Hide the PDF.js toolbar
+
+`{{{< pdf dummy2.pdf renderer=pdfjs toolbar=false height=400 >}}}`
+
+{{< pdf dummy2.pdf renderer=pdfjs toolbar=false height=400 >}}
+
+### Setting defaults for the whole document or project
+
+You can set default values for any shortcode option under the `embedpdf` key in your document YAML header or `_quarto.yml`:
+
+```yaml
+embedpdf:
+  renderer: pdfjs
+  height: 600
+```
+
+## Fallback Options
+
+### Add a backup image
+
+If JavaScript is disabled, the visitor instead sees the provided image with a hyperlink to download the PDF file. I usually take a screenshot of the PDF file to create this image, but you could use any image you like (e.g., a download button image). For this reason, I provide separate customization arguments for the image.
 
 `{{{< pdf dummy.pdf width=400 height=600 border=1 image=dummy.png image_width=400 image_border=1 >}}}`
 

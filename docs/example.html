@@ -2,13 +2,16 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.26">
+<meta name="generator" content="quarto-1.9.38">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
 <title>embedpdf Example</title>
 <style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
 div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -20,21 +23,56 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
 <script src="example_files/libs/clipboard/clipboard.min.js"></script>
 <script src="example_files/libs/quarto-html/quarto.js" type="module"></script>
 <script src="example_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="example_files/libs/quarto-html/axe/axe-check.js" type="module"></script>
 <script src="example_files/libs/quarto-html/popper.min.js"></script>
 <script src="example_files/libs/quarto-html/tippy.umd.min.js"></script>
 <script src="example_files/libs/quarto-html/anchor.min.js"></script>
 <link href="example_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="example_files/libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="example_files/libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="example_files/libs/bootstrap/bootstrap.min.js"></script>
 <link href="example_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="example_files/libs/bootstrap/bootstrap-9e3ffae467580fdb927a41352e75a2e0.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="example_files/libs/bootstrap/bootstrap-138a6193a3bd40baf1e627da441a4734.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="example_files/libs/quarto-contrib/embedpdf-1.0.0/embedpdf.css" rel="stylesheet">
 
 
 </head>
@@ -68,7 +106,7 @@ ul.task-list li input[type="checkbox"] {
 <h2 class="anchored" data-anchor-id="simple-usage">Simple Usage</h2>
 <p>All you really need to give the <code>pdf</code> shortcode is the path to the PDF file you want to embed in your Quarto HTML document.</p>
 <p><code>{{&lt; pdf dummy.pdf &gt;}}</code></p>
-<p><object data="dummy.pdf" type="application/pdf"><a href="dummy.pdf" download="">Download PDF file.</a></object></p>
+<div class="embedpdf" data-src="dummy.pdf" data-renderer="auto"><a href="dummy.pdf" download="">Download PDF file.</a></div>
 </section>
 <section id="customization" class="level2">
 <h2 class="anchored" data-anchor-id="customization">Customization</h2>
@@ -76,53 +114,81 @@ ul.task-list li input[type="checkbox"] {
 <section id="embed-with-width-in-pixels" class="level3">
 <h3 class="anchored" data-anchor-id="embed-with-width-in-pixels">Embed with width in pixels</h3>
 <p><code>{{&lt; pdf dummy.pdf width=600 &gt;}}</code></p>
-<p><object data="dummy.pdf" type="application/pdf" width="600"><a href="dummy.pdf" download="">Download PDF file.</a></object></p>
+<div class="embedpdf" data-src="dummy.pdf" data-renderer="auto" data-width="600"><a href="dummy.pdf" download="">Download PDF file.</a></div>
 </section>
 <section id="embed-with-width-in-percent" class="level3">
 <h3 class="anchored" data-anchor-id="embed-with-width-in-percent">Embed with width in percent</h3>
 <p><code>{{&lt; pdf dummy.pdf width=100% &gt;}}</code></p>
-<p><object data="dummy.pdf" type="application/pdf" width="100%"><a href="dummy.pdf" download="">Download PDF file.</a></object></p>
+<div class="embedpdf" data-src="dummy.pdf" data-renderer="auto" data-width="100%"><a href="dummy.pdf" download="">Download PDF file.</a></div>
 </section>
 <section id="embed-with-height-in-pixels" class="level3">
 <h3 class="anchored" data-anchor-id="embed-with-height-in-pixels">Embed with height in pixels</h3>
 <p><code>{{&lt; pdf dummy.pdf height=600 &gt;}}</code></p>
-<p><object data="dummy.pdf" type="application/pdf" height="600"><a href="dummy.pdf" download="">Download PDF file.</a></object></p>
+<div class="embedpdf" data-src="dummy.pdf" data-renderer="auto" data-height="600"><a href="dummy.pdf" download="">Download PDF file.</a></div>
 </section>
 <section id="embed-with-both-width-and-height" class="level3">
 <h3 class="anchored" data-anchor-id="embed-with-both-width-and-height">Embed with both width and height</h3>
 <p><code>{{&lt; pdf dummy.pdf width=600 height=400 &gt;}}</code></p>
-<p><object data="dummy.pdf" type="application/pdf" width="600" height="400"><a href="dummy.pdf" download="">Download PDF file.</a></object></p>
+<div class="embedpdf" data-src="dummy.pdf" data-renderer="auto" data-width="600" data-height="400"><a href="dummy.pdf" download="">Download PDF file.</a></div>
 </section>
 <section id="embed-with-1-px-border" class="level3">
 <h3 class="anchored" data-anchor-id="embed-with-1-px-border">Embed with 1 px border</h3>
 <p><code>{{&lt; pdf dummy.pdf border=1 &gt;}}</code></p>
-<p><object data="dummy.pdf" type="application/pdf" border="1"><a href="dummy.pdf" download="">Download PDF file.</a></object></p>
+<div class="embedpdf" data-src="dummy.pdf" data-renderer="auto" style="border: 1px solid #888;"><a href="dummy.pdf" download="">Download PDF file.</a></div>
 </section>
 <section id="embed-with-css-class" class="level3">
 <h3 class="anchored" data-anchor-id="embed-with-css-class">Embed with CSS class</h3>
 <p><code>{{&lt; pdf dummy.pdf class=myclass &gt;}}</code></p>
-<p><object data="dummy.pdf" type="application/pdf" class="myclass"><a href="dummy.pdf" download="">Download PDF file.</a></object></p>
+<div class="embedpdf myclass" data-src="dummy.pdf" data-renderer="auto"><a href="dummy.pdf" download="">Download PDF file.</a></div>
 </section>
 <section id="add-download-button" class="level3">
 <h3 class="anchored" data-anchor-id="add-download-button">Add download button</h3>
 <p><code>{{&lt; pdf dummy.pdf button="Download PDF" &gt;}}</code></p>
-<p></p><div><object data="dummy.pdf" type="application/pdf"><a href="dummy.pdf" download="">Download PDF file.</a></object><br><a href="dummy.pdf" download="" style="display:inline-block; padding:10px 18px; background-color:#007acc; color:white; font-size:15px; border:none; border-radius:6px; cursor:pointer; text-decoration:none; transition:background-color 0.2s ease;" onmouseover="this.style.backgroundColor='#005fa3';" onmouseout="this.style.backgroundColor='#007acc';">Download PDF</a></div><p></p>
+<div class="embedpdf" data-src="dummy.pdf" data-renderer="auto"><a href="dummy.pdf" download="">Download PDF file.</a></div><p><a class="embedpdf-btn" href="dummy.pdf" download="">Download PDF</a></p>
 </section>
 </section>
 <section id="supporting-mobile-browsers" class="level2">
 <h2 class="anchored" data-anchor-id="supporting-mobile-browsers">Supporting Mobile Browsers</h2>
-<p>Unfortunately, very few mobile browsers support the rendering of PDF objects and those that do (e.g., Safari on iOS) can often render the object in strange ways (e.g,. stretching and distorting its appearance). I have built an image-based backup option that I recommend for now, and am experimenting with a javascript-based approach that I hope may one day provide full PDF support on mobile.</p>
+<p>Mobile browsers (e.g., Chrome and Firefox on Android) do not support the inline rendering of PDF objects: they show a blank box or a download prompt instead. To solve this, the extension now includes a JavaScript-based PDF renderer (<a href="https://mozilla.github.io/pdf.js/">PDF.js</a>).</p>
+<p>By default (<code>renderer=auto</code>), each embedded PDF checks whether the browser can display PDFs inline (via <code>navigator.pdfViewerEnabled</code>). If it can, the browser’s native PDF viewer is used, exactly as before. If it cannot (e.g., on mobile), the PDF is instead drawn page-by-page onto the screen by PDF.js, with a small toolbar for zooming, page tracking, and downloading. Desktop visitors never download the PDF.js library; it is only fetched when needed.</p>
+<section id="force-the-pdf.js-renderer" class="level3">
+<h3 class="anchored" data-anchor-id="force-the-pdf.js-renderer">Force the PDF.js renderer</h3>
+<p>You can force the PDF.js renderer with <code>renderer=pdfjs</code>, which is also handy for previewing on a desktop what mobile visitors will see:</p>
+<p><code>{{&lt; pdf dummy2.pdf renderer=pdfjs height=500 &gt;}}</code></p>
+<div class="embedpdf" data-src="dummy2.pdf" data-renderer="pdfjs" data-height="500"><a href="dummy2.pdf" download="">Download PDF file.</a></div>
+</section>
+<section id="force-the-native-renderer" class="level3">
+<h3 class="anchored" data-anchor-id="force-the-native-renderer">Force the native renderer</h3>
+<p>Similarly, <code>renderer=native</code> always uses the browser’s built-in viewer (e.g., for self-contained documents using <code>embed-resources: true</code>, where PDF.js cannot fetch the PDF file):</p>
+<p><code>{{&lt; pdf dummy.pdf renderer=native height=400 &gt;}}</code></p>
+<div class="embedpdf" data-src="dummy.pdf" data-renderer="native" data-height="400"><a href="dummy.pdf" download="">Download PDF file.</a></div>
+</section>
+<section id="hide-the-pdf.js-toolbar" class="level3">
+<h3 class="anchored" data-anchor-id="hide-the-pdf.js-toolbar">Hide the PDF.js toolbar</h3>
+<p><code>{{&lt; pdf dummy2.pdf renderer=pdfjs toolbar=false height=400 &gt;}}</code></p>
+<div class="embedpdf" data-src="dummy2.pdf" data-renderer="pdfjs" data-height="400" data-toolbar="false"><a href="dummy2.pdf" download="">Download PDF file.</a></div>
+</section>
+<section id="setting-defaults-for-the-whole-document-or-project" class="level3">
+<h3 class="anchored" data-anchor-id="setting-defaults-for-the-whole-document-or-project">Setting defaults for the whole document or project</h3>
+<p>You can set default values for any shortcode option under the <code>embedpdf</code> key in your document YAML header or <code>_quarto.yml</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">embedpdf</span><span class="kw">:</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">renderer</span><span class="kw">:</span><span class="at"> pdfjs</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">height</span><span class="kw">:</span><span class="at"> </span><span class="dv">600</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</section>
+<section id="fallback-options" class="level2">
+<h2 class="anchored" data-anchor-id="fallback-options">Fallback Options</h2>
 <section id="add-a-backup-image" class="level3">
 <h3 class="anchored" data-anchor-id="add-a-backup-image">Add a backup image</h3>
-<p>The browser will render the PDF if able but, if not able (e.g., on mobile), it will fallback to rendering the provided image with a hyperlink to download the PDF file. I usually take a screenshot of the PDF file to create this image, but you could use any image you like (e.g., a download button image). For this reason, I provide separate customization arguments for the image.</p>
+<p>If JavaScript is disabled, the visitor instead sees the provided image with a hyperlink to download the PDF file. I usually take a screenshot of the PDF file to create this image, but you could use any image you like (e.g., a download button image). For this reason, I provide separate customization arguments for the image.</p>
 <p><code>{{&lt; pdf dummy.pdf width=400 height=600 border=1 image=dummy.png image_width=400 image_border=1 &gt;}}</code></p>
-<p><object data="dummy.pdf" type="application/pdf" width="400" height="600" border="1"><a href="dummy.pdf" download=""><img src="dummy.png" width="400" border="1"></a></object></p>
+<div class="embedpdf" data-src="dummy.pdf" data-renderer="auto" data-width="400" data-height="600" style="border: 1px solid #888;"><a href="dummy.pdf" download=""><img src="dummy.png" alt="PDF preview" width="400" border="1"></a></div>
 <p>To see what this will look like on a browser that does support PDF (e.g., during development), you can use <code>image_force=TRUE</code>:</p>
 <p><code>{{&lt; pdf dummy.pdf width=400 height=600 image=dummy.png image_force=TRUE border=1 image_width=400 image_border=1 &gt;}}</code></p>
-<p><a href="dummy.pdf" download=""><img src="dummy.png" width="400" border="1"></a></p>
+<a href="dummy.pdf" download=""><img src="dummy.png" alt="PDF preview" width="400" border="1"></a>
 <p>The button will work on mobile browsers, so that’s another option that you can use in addition to or in place of the backup image.</p>
 <p><code>{{&lt; pdf dummy.pdf button="Download" width=400 height=600 image=dummy.png image_force=TRUE border=1 image_width=400 image_border=1 &gt;}}</code></p>
-<p></p><div><a href="dummy.pdf" download=""><img src="dummy.png" width="400" border="1"></a><br><a href="dummy.pdf" download="" style="display:inline-block; padding:10px 18px; background-color:#007acc; color:white; font-size:15px; border:none; border-radius:6px; cursor:pointer; text-decoration:none; transition:background-color 0.2s ease;" onmouseover="this.style.backgroundColor='#005fa3';" onmouseout="this.style.backgroundColor='#007acc';">Download</a></div><p></p>
+<a href="dummy.pdf" download=""><img src="dummy.png" alt="PDF preview" width="400" border="1"></a><p><a class="embedpdf-btn" href="dummy.pdf" download="">Download</a></p>
 </section>
 </section>
 
@@ -533,4 +599,5 @@ ul.task-list li input[type="checkbox"] {
 
 
 
+<script src="example_files/libs/quarto-contrib/embedpdf-1.0.0/embedpdf-viewer.js" type="module"></script>
 </body></html>

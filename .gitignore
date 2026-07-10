@@ -5,3 +5,6 @@
 /.luarc.json
 
 **/*.quarto_ipynb
+.DS_Store
+.Rhistory
+.claude/

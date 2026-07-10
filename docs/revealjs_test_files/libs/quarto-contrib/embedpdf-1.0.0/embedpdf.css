@@ -1,0 +1,93 @@
+/* embedpdf extension styles */
+
+.embedpdf {
+  margin: 1rem 0;
+}
+
+.embedpdf.embedpdf-pdfjs {
+  border: 1px solid rgba(128, 128, 128, 0.35);
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgba(128, 128, 128, 0.08);
+}
+
+.embedpdf-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.35);
+  background: rgba(128, 128, 128, 0.12);
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.embedpdf-toolbar button {
+  appearance: none;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  width: 1.7rem;
+  height: 1.7rem;
+  cursor: pointer;
+}
+
+.embedpdf-toolbar button:hover {
+  background: rgba(128, 128, 128, 0.2);
+}
+
+.embedpdf-pageinfo {
+  margin-left: 0.25rem;
+  opacity: 0.8;
+  user-select: none;
+}
+
+.embedpdf-download {
+  margin-left: auto;
+  text-decoration: none;
+  font-size: 1.1rem;
+  color: inherit;
+}
+
+.embedpdf-pages {
+  overflow: auto;
+  height: 60vh;
+  padding: 0.5rem;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+}
+
+.embedpdf-page {
+  width: 100%;
+  margin: 0 auto 0.5rem auto;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.embedpdf-page canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* download button (button= kwarg) */
+.embedpdf-btn {
+  display: inline-block;
+  padding: 10px 18px;
+  background-color: #007acc;
+  color: white !important;
+  font-size: 15px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+.embedpdf-btn:hover {
+  background-color: #005fa3;
+  color: white;
+}

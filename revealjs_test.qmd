@@ -1,0 +1,19 @@
+---
+title: "embedpdf in RevealJS"
+format: revealjs
+resources:
+  - dummy.pdf
+  - dummy2.pdf
+---
+
+## Native renderer
+
+{{< pdf dummy.pdf renderer=native width=100% height=500 >}}
+
+## PDF.js renderer
+
+{{< pdf dummy2.pdf renderer=pdfjs height=500 >}}
+
+## Auto renderer
+
+{{< pdf dummy.pdf height=500 >}}
