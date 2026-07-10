@@ -74,7 +74,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="example_files/libs/bootstrap/bootstrap.min.js"></script>
 <link href="example_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="example_files/libs/bootstrap/bootstrap-8ffd5f67044e5306d9846f29df41dda5.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
-<link href="example_files/libs/quarto-contrib/embedpdf-1.0.1/embedpdf.css" rel="stylesheet">
+<link href="example_files/libs/quarto-contrib/embedpdf-1.0.2/embedpdf.css" rel="stylesheet">
 
 
 <link rel="stylesheet" href="styles.css">
@@ -150,8 +150,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="simple-usage" class="level2">
 <h2 class="anchored" data-anchor-id="simple-usage">Simple Usage</h2>
 <p>All you really need to give the <code>pdf</code> shortcode is the path to the PDF file you want to embed.</p>
-<p><code>{{&lt; pdf dummy.pdf &gt;}}</code></p>
-<div class="embedpdf" data-src="dummy.pdf" data-renderer="auto"><a href="dummy.pdf" download="">Download PDF file.</a></div>
+<p><code>{{&lt; pdf sample.pdf &gt;}}</code></p>
+<div class="embedpdf" data-src="sample.pdf" data-renderer="auto"><a href="sample.pdf" download="">Download PDF file.</a></div>
 <div class="callout callout-style-default callout-important callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -171,38 +171,38 @@ Important
 <p>In most cases you will want to customize the appearance of the embedded PDF. A few common options are built into the shortcode for convenience; for anything more, pass a CSS <code>class</code> and style it yourself.</p>
 <section id="embed-with-width-in-pixels" class="level3">
 <h3 class="anchored" data-anchor-id="embed-with-width-in-pixels">Embed with width in pixels</h3>
-<p><code>{{&lt; pdf dummy.pdf width=600 &gt;}}</code></p>
-<div class="embedpdf" data-src="dummy.pdf" data-renderer="auto" data-width="600"><a href="dummy.pdf" download="">Download PDF file.</a></div>
+<p><code>{{&lt; pdf sample.pdf width=600 &gt;}}</code></p>
+<div class="embedpdf" data-src="sample.pdf" data-renderer="auto" data-width="600"><a href="sample.pdf" download="">Download PDF file.</a></div>
 </section>
 <section id="embed-with-width-in-percent" class="level3">
 <h3 class="anchored" data-anchor-id="embed-with-width-in-percent">Embed with width in percent</h3>
-<p><code>{{&lt; pdf dummy.pdf width=100% &gt;}}</code></p>
-<div class="embedpdf" data-src="dummy.pdf" data-renderer="auto" data-width="100%"><a href="dummy.pdf" download="">Download PDF file.</a></div>
+<p><code>{{&lt; pdf sample.pdf width=100% &gt;}}</code></p>
+<div class="embedpdf" data-src="sample.pdf" data-renderer="auto" data-width="100%"><a href="sample.pdf" download="">Download PDF file.</a></div>
 </section>
 <section id="embed-with-height-in-pixels" class="level3">
 <h3 class="anchored" data-anchor-id="embed-with-height-in-pixels">Embed with height in pixels</h3>
-<p><code>{{&lt; pdf dummy.pdf height=600 &gt;}}</code></p>
-<div class="embedpdf" data-src="dummy.pdf" data-renderer="auto" data-height="600"><a href="dummy.pdf" download="">Download PDF file.</a></div>
+<p><code>{{&lt; pdf sample.pdf height=600 &gt;}}</code></p>
+<div class="embedpdf" data-src="sample.pdf" data-renderer="auto" data-height="600"><a href="sample.pdf" download="">Download PDF file.</a></div>
 </section>
 <section id="embed-with-both-width-and-height" class="level3">
 <h3 class="anchored" data-anchor-id="embed-with-both-width-and-height">Embed with both width and height</h3>
-<p><code>{{&lt; pdf dummy.pdf width=600 height=400 &gt;}}</code></p>
-<div class="embedpdf" data-src="dummy.pdf" data-renderer="auto" data-width="600" data-height="400"><a href="dummy.pdf" download="">Download PDF file.</a></div>
+<p><code>{{&lt; pdf sample.pdf width=600 height=400 &gt;}}</code></p>
+<div class="embedpdf" data-src="sample.pdf" data-renderer="auto" data-width="600" data-height="400"><a href="sample.pdf" download="">Download PDF file.</a></div>
 </section>
 <section id="embed-with-a-1px-border" class="level3">
 <h3 class="anchored" data-anchor-id="embed-with-a-1px-border">Embed with a 1px border</h3>
-<p><code>{{&lt; pdf dummy.pdf border=1 &gt;}}</code></p>
-<div class="embedpdf" data-src="dummy.pdf" data-renderer="auto" style="border: 1px solid #888;"><a href="dummy.pdf" download="">Download PDF file.</a></div>
+<p><code>{{&lt; pdf sample.pdf border=1 &gt;}}</code></p>
+<div class="embedpdf" data-src="sample.pdf" data-renderer="auto" style="border: 1px solid #888;"><a href="sample.pdf" download="">Download PDF file.</a></div>
 </section>
 <section id="embed-with-a-css-class" class="level3">
 <h3 class="anchored" data-anchor-id="embed-with-a-css-class">Embed with a CSS class</h3>
-<p><code>{{&lt; pdf dummy.pdf class=myclass &gt;}}</code></p>
-<div class="embedpdf myclass" data-src="dummy.pdf" data-renderer="auto"><a href="dummy.pdf" download="">Download PDF file.</a></div>
+<p><code>{{&lt; pdf sample.pdf class=myclass &gt;}}</code></p>
+<div class="embedpdf myclass" data-src="sample.pdf" data-renderer="auto"><a href="sample.pdf" download="">Download PDF file.</a></div>
 </section>
 <section id="add-a-download-button" class="level3">
 <h3 class="anchored" data-anchor-id="add-a-download-button">Add a download button</h3>
-<p><code>{{&lt; pdf dummy.pdf button="Download PDF" &gt;}}</code></p>
-<div class="embedpdf" data-src="dummy.pdf" data-renderer="auto"><a href="dummy.pdf" download="">Download PDF file.</a></div><p><a class="embedpdf-btn" href="dummy.pdf" download="">Download PDF</a></p>
+<p><code>{{&lt; pdf sample.pdf button="Download PDF" &gt;}}</code></p>
+<div class="embedpdf" data-src="sample.pdf" data-renderer="auto"><a href="sample.pdf" download="">Download PDF file.</a></div><p><a class="embedpdf-btn" href="sample.pdf" download="">Download PDF</a></p>
 </section>
 </section>
 <section id="supporting-mobile-browsers" class="level2">
@@ -212,8 +212,8 @@ Important
 <section id="force-the-pdf.js-renderer" class="level3">
 <h3 class="anchored" data-anchor-id="force-the-pdf.js-renderer">Force the PDF.js renderer</h3>
 <p>Set <code>renderer=pdfjs</code> to always use PDF.js.</p>
-<p><code>{{&lt; pdf dummy2.pdf renderer=pdfjs height=500 &gt;}}</code></p>
-<div class="embedpdf" data-src="dummy2.pdf" data-renderer="pdfjs" data-height="500"><a href="dummy2.pdf" download="">Download PDF file.</a></div>
+<p><code>{{&lt; pdf sample.pdf renderer=pdfjs height=500 &gt;}}</code></p>
+<div class="embedpdf" data-src="sample.pdf" data-renderer="pdfjs" data-height="500"><a href="sample.pdf" download="">Download PDF file.</a></div>
 <div class="callout callout-style-default callout-tip callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -231,8 +231,8 @@ Tip
 <section id="force-the-native-renderer" class="level3">
 <h3 class="anchored" data-anchor-id="force-the-native-renderer">Force the native renderer</h3>
 <p>Set <code>renderer=native</code> to always use the browser’s built-in viewer.</p>
-<p><code>{{&lt; pdf dummy.pdf renderer=native height=400 &gt;}}</code></p>
-<div class="embedpdf" data-src="dummy.pdf" data-renderer="native" data-height="400"><a href="dummy.pdf" download="">Download PDF file.</a></div>
+<p><code>{{&lt; pdf sample.pdf renderer=native height=400 &gt;}}</code></p>
+<div class="embedpdf" data-src="sample.pdf" data-renderer="native" data-height="400"><a href="sample.pdf" download="">Download PDF file.</a></div>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -249,8 +249,8 @@ Note
 </section>
 <section id="hide-the-pdf.js-toolbar" class="level3">
 <h3 class="anchored" data-anchor-id="hide-the-pdf.js-toolbar">Hide the PDF.js toolbar</h3>
-<p><code>{{&lt; pdf dummy2.pdf renderer=pdfjs toolbar=false height=400 &gt;}}</code></p>
-<div class="embedpdf" data-src="dummy2.pdf" data-renderer="pdfjs" data-height="400" data-toolbar="false"><a href="dummy2.pdf" download="">Download PDF file.</a></div>
+<p><code>{{&lt; pdf sample.pdf renderer=pdfjs toolbar=false height=400 &gt;}}</code></p>
+<div class="embedpdf" data-src="sample.pdf" data-renderer="pdfjs" data-height="400" data-toolbar="false"><a href="sample.pdf" download="">Download PDF file.</a></div>
 </section>
 <section id="setting-defaults-for-the-whole-document-or-project" class="level3">
 <h3 class="anchored" data-anchor-id="setting-defaults-for-the-whole-document-or-project">Setting defaults for the whole document or project</h3>
@@ -672,5 +672,5 @@ Note
 
 
 
-<script src="example_files/libs/quarto-contrib/embedpdf-1.0.1/embedpdf-viewer.js" type="module"></script>
+<script src="example_files/libs/quarto-contrib/embedpdf-1.0.2/embedpdf-viewer.js" type="module"></script>
 </body></html>

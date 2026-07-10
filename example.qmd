@@ -11,8 +11,7 @@ format:
     toc-title: "On this page"
     css: styles.css
 resources:
-  - dummy.pdf
-  - dummy2.pdf
+  - sample.pdf
 ---
 
 The [embedpdf](https://github.com/jmgirard/embedpdf) extension adds a `{{< pdf >}}` shortcode for embedding PDF files in your Quarto HTML documents and RevealJS presentations. On desktop it uses the browser's built-in PDF viewer; on mobile — where embedded PDFs normally fail to render — it automatically falls back to [PDF.js](https://mozilla.github.io/pdf.js/) so your readers see the document either way. This guide walks through the available options.
@@ -21,9 +20,9 @@ The [embedpdf](https://github.com/jmgirard/embedpdf) extension adds a `{{< pdf >
 
 All you really need to give the `pdf` shortcode is the path to the PDF file you want to embed.
 
-`{{{< pdf dummy.pdf >}}}`
+`{{{< pdf sample.pdf >}}}`
 
-{{< pdf dummy.pdf >}}
+{{< pdf sample.pdf >}}
 
 ::: {.callout-important}
 Remember to list the PDF file under `resources` in your document's YAML header (or under `project: resources:` in `_quarto.yml`) so that Quarto copies it into your output site alongside the HTML.
@@ -35,45 +34,45 @@ In most cases you will want to customize the appearance of the embedded PDF. A f
 
 ### Embed with width in pixels
 
-`{{{< pdf dummy.pdf width=600 >}}}`
+`{{{< pdf sample.pdf width=600 >}}}`
 
-{{< pdf dummy.pdf width=600 >}}
+{{< pdf sample.pdf width=600 >}}
 
 ### Embed with width in percent
 
-`{{{< pdf dummy.pdf width=100% >}}}`
+`{{{< pdf sample.pdf width=100% >}}}`
 
-{{< pdf dummy.pdf width=100% >}}
+{{< pdf sample.pdf width=100% >}}
 
 ### Embed with height in pixels
 
-`{{{< pdf dummy.pdf height=600 >}}}`
+`{{{< pdf sample.pdf height=600 >}}}`
 
-{{< pdf dummy.pdf height=600 >}}
+{{< pdf sample.pdf height=600 >}}
 
 ### Embed with both width and height
 
-`{{{< pdf dummy.pdf width=600 height=400 >}}}`
+`{{{< pdf sample.pdf width=600 height=400 >}}}`
 
-{{< pdf dummy.pdf width=600 height=400 >}}
+{{< pdf sample.pdf width=600 height=400 >}}
 
 ### Embed with a 1px border
 
-`{{{< pdf dummy.pdf border=1 >}}}`
+`{{{< pdf sample.pdf border=1 >}}}`
 
-{{< pdf dummy.pdf border=1 >}}
+{{< pdf sample.pdf border=1 >}}
 
 ### Embed with a CSS class
 
-`{{{< pdf dummy.pdf class=myclass >}}}`
+`{{{< pdf sample.pdf class=myclass >}}}`
 
-{{< pdf dummy.pdf class=myclass >}}
+{{< pdf sample.pdf class=myclass >}}
 
 ### Add a download button
 
-`{{{< pdf dummy.pdf button="Download PDF" >}}}`
+`{{{< pdf sample.pdf button="Download PDF" >}}}`
 
-{{< pdf dummy.pdf button="Download PDF" >}}
+{{< pdf sample.pdf button="Download PDF" >}}
 
 ## Supporting Mobile Browsers
 
@@ -85,9 +84,9 @@ By default (`renderer=auto`), each embedded PDF checks whether the browser can d
 
 Set `renderer=pdfjs` to always use PDF.js.
 
-`{{{< pdf dummy2.pdf renderer=pdfjs height=500 >}}}`
+`{{{< pdf sample.pdf renderer=pdfjs height=500 >}}}`
 
-{{< pdf dummy2.pdf renderer=pdfjs height=500 >}}
+{{< pdf sample.pdf renderer=pdfjs height=500 >}}
 
 ::: {.callout-tip}
 Forcing `renderer=pdfjs` on your desktop is the easiest way to preview exactly what your mobile visitors will see, without needing a phone.
@@ -97,9 +96,9 @@ Forcing `renderer=pdfjs` on your desktop is the easiest way to preview exactly w
 
 Set `renderer=native` to always use the browser's built-in viewer.
 
-`{{{< pdf dummy.pdf renderer=native height=400 >}}}`
+`{{{< pdf sample.pdf renderer=native height=400 >}}}`
 
-{{< pdf dummy.pdf renderer=native height=400 >}}
+{{< pdf sample.pdf renderer=native height=400 >}}
 
 ::: {.callout-note}
 Use `renderer=native` for self-contained documents (`embed-resources: true`), where PDF.js cannot fetch the PDF by URL. Note that such documents still cannot render inline on mobile; readers there will get the download link.
@@ -107,9 +106,9 @@ Use `renderer=native` for self-contained documents (`embed-resources: true`), wh
 
 ### Hide the PDF.js toolbar
 
-`{{{< pdf dummy2.pdf renderer=pdfjs toolbar=false height=400 >}}}`
+`{{{< pdf sample.pdf renderer=pdfjs toolbar=false height=400 >}}}`
 
-{{< pdf dummy2.pdf renderer=pdfjs toolbar=false height=400 >}}
+{{< pdf sample.pdf renderer=pdfjs toolbar=false height=400 >}}
 
 ### Setting defaults for the whole document or project
 

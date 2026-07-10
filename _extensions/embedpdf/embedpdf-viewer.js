@@ -23,6 +23,18 @@ function loadPdfjs() {
   return pdfjsPromise;
 }
 
+// Serialize page rendering across every viewer on the page. All viewers share
+// a single PDF.js worker, and firing many render() calls at once can overwhelm
+// it — on some browsers the render promises then never resolve. Running one
+// render at a time keeps things reliable (and is easier on constrained
+// devices) at no real cost, since only on-screen pages are ever queued.
+let renderQueue = Promise.resolve();
+function enqueueRender(task) {
+  const run = renderQueue.then(task, task);
+  renderQueue = run.catch(() => {});
+  return run;
+}
+
 function nativeSupported() {
   if (typeof navigator.pdfViewerEnabled === "boolean") {
     return navigator.pdfViewerEnabled;
@@ -75,26 +87,43 @@ async function hydratePdfjs(el, opts) {
     state.ratios.push(defaultRatio);
   }
 
-  const renderPage = async (pageEl) => {
+  // Upper bound on rendered canvas area. Rendering a page at full device-pixel
+  // resolution can produce very large canvases that exhaust memory (and stall
+  // rendering) on constrained devices; the official PDF.js viewer caps this
+  // the same way.
+  const MAX_CANVAS_PIXELS = 8_000_000;
+
+  const renderPage = (pageEl) => {
     const num = Number(pageEl.dataset.pageNumber);
     const width = pageEl.clientWidth;
     if (width === 0) return; // not laid out yet (or hidden slide/tab); retried later
     const key = state.zoom + ":" + width;
     if (pageEl.dataset.renderKey === key) return; // already rendered at this size/zoom
     pageEl.dataset.renderKey = key;
-    const page = await state.doc.getPage(num);
-    const base = page.getViewport({ scale: 1 });
-    const ratio = base.height / base.width;
-    state.ratios[num - 1] = ratio;
-    pageEl.style.aspectRatio = `1 / ${ratio}`;
-    const cssWidth = pageEl.clientWidth;
-    const scale = (cssWidth / base.width) * (window.devicePixelRatio || 1);
-    const viewport = page.getViewport({ scale });
-    const canvas = document.createElement("canvas");
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    await page.render({ canvas: canvas, canvasContext: canvas.getContext("2d"), viewport }).promise;
-    pageEl.replaceChildren(canvas);
+    enqueueRender(async () => {
+      // width may have changed while queued; skip if this render is now stale
+      if (pageEl.dataset.renderKey !== key) return;
+      try {
+        const page = await state.doc.getPage(num);
+        const base = page.getViewport({ scale: 1 });
+        const ratio = base.height / base.width;
+        state.ratios[num - 1] = ratio;
+        pageEl.style.aspectRatio = `1 / ${ratio}`;
+        const cssWidth = pageEl.clientWidth;
+        let scale = (cssWidth / base.width) * Math.min(window.devicePixelRatio || 1, 2);
+        const pixels = base.width * base.height * scale * scale;
+        if (pixels > MAX_CANVAS_PIXELS) scale *= Math.sqrt(MAX_CANVAS_PIXELS / pixels);
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.floor(viewport.width);
+        canvas.height = Math.floor(viewport.height);
+        await page.render({ canvas: canvas, canvasContext: canvas.getContext("2d"), viewport }).promise;
+        pageEl.replaceChildren(canvas);
+      } catch (err) {
+        pageEl.dataset.renderKey = ""; // allow a later retry
+        console.error("embedpdf: failed to render page " + num + " of " + opts.src, err);
+      }
+    });
   };
 
   // render any page whose box is within (or near) the scroll viewport; used for
@@ -178,17 +207,19 @@ async function hydratePdfjs(el, opts) {
 
   el.appendChild(pagesEl);
 
-  // initial paint: layout may not give the pages a width for the first
-  // frame(s), and a short single-page document never scrolls (so the
-  // IntersectionObserver never fires on its own). Keep rendering on each
-  // animation frame until at least one page has started rendering, then stop.
-  let frames = 0;
+  // initial paint: layout may not give the pages a width immediately, and a
+  // short single-page document never scrolls (so the IntersectionObserver may
+  // never fire on its own). Poll on a wall-clock timer until at least one page
+  // has started rendering. A timer is used rather than requestAnimationFrame
+  // because rAF can fire before the browser has finished laying out the pages,
+  // and the exact timing is unreliable across load conditions.
+  let tries = 0;
   const kickInitial = () => {
     renderVisible();
     const started = state.pageEls.some((p) => p.dataset.renderKey);
-    if (!started && frames++ < 120) requestAnimationFrame(kickInitial);
+    if (!started && tries++ < 40) setTimeout(kickInitial, 100);
   };
-  requestAnimationFrame(kickInitial);
+  kickInitial();
 
   let resizeTimer = null;
   new ResizeObserver(() => {
