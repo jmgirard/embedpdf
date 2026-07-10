@@ -104,24 +104,6 @@ embedpdf:
   height: 600
 ```
 
-## Fallback Options
+## When JavaScript is Disabled
 
-### Add a backup image
-
-If JavaScript is disabled, the visitor instead sees the provided image with a hyperlink to download the PDF file. I usually take a screenshot of the PDF file to create this image, but you could use any image you like (e.g., a download button image). For this reason, I provide separate customization arguments for the image.
-
-`{{{< pdf dummy.pdf width=400 height=600 border=1 image=dummy.png image_width=400 image_border=1 >}}}`
-
-{{< pdf dummy.pdf width=400 height=600 border=1 image=dummy.png image_width=400 image_border=1 >}}
-
-To see what this will look like on a browser that does support PDF (e.g., during development), you can use `image_force=TRUE`:
-
-`{{{< pdf dummy.pdf width=400 height=600 image=dummy.png image_force=TRUE border=1 image_width=400 image_border=1 >}}}`
-
-{{< pdf dummy.pdf width=400 height=600 image=dummy.png image_force=TRUE border=1 image_width=400 image_border=1 >}}
-
-The button will work on mobile browsers, so that's another option that you can use in addition to or in place of the backup image.
-
-`{{{< pdf dummy.pdf button="Download" width=400 height=600 image=dummy.png image_force=TRUE border=1 image_width=400 image_border=1 >}}}`
-
-{{< pdf dummy.pdf button="Download" width=400 height=600 image=dummy.png image_force=TRUE border=1 image_width=400 image_border=1 >}}
+The viewer requires JavaScript to run. If a visitor has JavaScript disabled, the embedded PDF is replaced by a simple hyperlink to download the file. Adding a download button (`button="..."`) gives those visitors a clearer call to action.

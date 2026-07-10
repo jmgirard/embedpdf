@@ -65,20 +65,14 @@ function pdf(args, kwargs, meta, raw_args, context)
     return fallback or ''
   end
 
-  local width        = opt('width')
-  local height       = opt('height')
-  local border       = opt('border')
-  local class        = opt('class')
-  local button       = opt('button')
-  local renderer     = opt('renderer', 'auto')
-  local toolbar      = opt('toolbar', 'true')
-  local page         = opt('page')
-  local image        = opt('image')
-  local image_force  = opt('image_force')
-  local image_width  = opt('image_width')
-  local image_height = opt('image_height')
-  local image_border = opt('image_border')
-  local image_class  = opt('image_class')
+  local width    = opt('width')
+  local height   = opt('height')
+  local border   = opt('border')
+  local class    = opt('class')
+  local button   = opt('button')
+  local renderer = opt('renderer', 'auto')
+  local toolbar  = opt('toolbar', 'true')
+  local page     = opt('page')
 
   if renderer ~= 'auto' and renderer ~= 'native' and renderer ~= 'pdfjs' then
     quarto.log.warning("embedpdf: unknown renderer '" .. renderer .. "', using 'auto'")
@@ -107,48 +101,27 @@ function pdf(args, kwargs, meta, raw_args, context)
 
   local esc_src = html_escape(src)
 
-  -- fallback image markup (shown when JS is off, or exclusively with image_force)
-  local img_html = ''
-  if image ~= '' then
-    img_html = '<img src="' .. html_escape(image) .. '" alt="PDF preview"'
-    if image_width  ~= '' then img_html = img_html .. ' width="'  .. html_escape(image_width)  .. '"' end
-    if image_height ~= '' then img_html = img_html .. ' height="' .. html_escape(image_height) .. '"' end
-    if image_class  ~= '' then img_html = img_html .. ' class="'  .. html_escape(image_class)  .. '"' end
-    if image_border ~= '' then img_html = img_html .. ' border="' .. html_escape(image_border) .. '"' end
-    img_html = img_html .. ' />'
-  end
-
   local button_html = ''
   if button ~= '' then
     button_html = '<p><a class="embedpdf-btn" href="' .. esc_src .. '" download>' ..
                   html_escape(button) .. '</a></p>'
   end
 
-  local html
-  if image_force == 'TRUE' or image_force == 'true' then
-    -- image only, linked to the pdf (no viewer)
-    html = '<a href="' .. esc_src .. '" download>' .. img_html .. '</a>' .. button_html
-  else
-    local fallback
-    if img_html ~= '' then
-      fallback = '<a href="' .. esc_src .. '" download>' .. img_html .. '</a>'
-    else
-      fallback = '<a href="' .. esc_src .. '" download>Download PDF file.</a>'
-    end
+  -- shown when JavaScript is disabled (the viewer never hydrates)
+  local fallback = '<a href="' .. esc_src .. '" download>Download PDF file.</a>'
 
-    local div = '<div class="embedpdf'
-    if class ~= '' then div = div .. ' ' .. html_escape(class) end
-    div = div .. '" data-src="' .. esc_src .. '"'
-    div = div .. ' data-renderer="' .. html_escape(renderer) .. '"'
-    if width   ~= ''      then div = div .. ' data-width="'  .. html_escape(width)  .. '"' end
-    if height  ~= ''      then div = div .. ' data-height="' .. html_escape(height) .. '"' end
-    if page    ~= ''      then div = div .. ' data-page="'   .. html_escape(page)   .. '"' end
-    if toolbar == 'false' then div = div .. ' data-toolbar="false"' end
-    if border  ~= ''      then
-      div = div .. ' style="border: ' .. html_escape(border) .. 'px solid #888;"'
-    end
-    html = div .. '>' .. fallback .. '</div>' .. button_html
+  local div = '<div class="embedpdf'
+  if class ~= '' then div = div .. ' ' .. html_escape(class) end
+  div = div .. '" data-src="' .. esc_src .. '"'
+  div = div .. ' data-renderer="' .. html_escape(renderer) .. '"'
+  if width   ~= ''      then div = div .. ' data-width="'  .. html_escape(width)  .. '"' end
+  if height  ~= ''      then div = div .. ' data-height="' .. html_escape(height) .. '"' end
+  if page    ~= ''      then div = div .. ' data-page="'   .. html_escape(page)   .. '"' end
+  if toolbar == 'false' then div = div .. ' data-toolbar="false"' end
+  if border  ~= ''      then
+    div = div .. ' style="border: ' .. html_escape(border) .. 'px solid #888;"'
   end
+  local html = div .. '>' .. fallback .. '</div>' .. button_html
 
   if context == "block" then
     return pandoc.RawBlock('html', html)

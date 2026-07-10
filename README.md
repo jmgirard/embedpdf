@@ -28,7 +28,6 @@ To embed a PDF file in your document, use the `{{< pdf file.pdf >}}` shortcode. 
 {{< pdf dummy.pdf width=100% height=800 >}}
 {{< pdf dummy.pdf renderer=pdfjs >}}
 {{< pdf dummy.pdf button="Download PDF" >}}
-{{< pdf dummy.pdf image=dummy.png >}}
 ```
 
 Remember to list the PDF file under `resources` in your YAML header so it gets copied to your output site:
@@ -53,8 +52,6 @@ resources:
 | `border` | | Border width in pixels around the viewer |
 | `class` | | Extra CSS class(es) for the viewer container |
 | `button` | | Adds a download button with the given label below the viewer |
-| `image` | | Fallback image shown when JavaScript is disabled (with `image_width`, `image_height`, `image_border`, `image_class`) |
-| `image_force` | | `TRUE` shows only the linked image, no viewer |
 
 Defaults for any option can be set document- or project-wide under the `embedpdf` metadata key:
 
@@ -70,7 +67,8 @@ In LaTeX/PDF output, embedded PDFs are included page-by-page via the `pdfpages` 
 
 ### Known limitations
 
-- Self-contained documents (`embed-resources: true`) inline the viewer code, but PDF.js must fetch the PDF file by URL at view time; use `renderer=native` there, or ship the PDF alongside the HTML file.
+- Self-contained documents (`embed-resources: true`) inline the viewer code, but PDF.js must fetch the PDF file by URL at view time. Use `renderer=native` and ship the PDF alongside the HTML file. Note that a self-contained document viewed on mobile cannot render the PDF inline at all (neither the native viewer nor PDF.js works without the separate file), so readers there fall back to the download link.
+- The viewer requires JavaScript; with it disabled, embeds become a download link.
 - The PDF.js canvas viewer does not yet support text selection or search; use the native renderer on desktop (the default) if you need those.
 
 ## Guides

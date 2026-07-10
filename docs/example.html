@@ -176,20 +176,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">height</span><span class="kw">:</span><span class="at"> </span><span class="dv">600</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 </section>
-<section id="fallback-options" class="level2">
-<h2 class="anchored" data-anchor-id="fallback-options">Fallback Options</h2>
-<section id="add-a-backup-image" class="level3">
-<h3 class="anchored" data-anchor-id="add-a-backup-image">Add a backup image</h3>
-<p>If JavaScript is disabled, the visitor instead sees the provided image with a hyperlink to download the PDF file. I usually take a screenshot of the PDF file to create this image, but you could use any image you like (e.g., a download button image). For this reason, I provide separate customization arguments for the image.</p>
-<p><code>{{&lt; pdf dummy.pdf width=400 height=600 border=1 image=dummy.png image_width=400 image_border=1 &gt;}}</code></p>
-<div class="embedpdf" data-src="dummy.pdf" data-renderer="auto" data-width="400" data-height="600" style="border: 1px solid #888;"><a href="dummy.pdf" download=""><img src="dummy.png" alt="PDF preview" width="400" border="1"></a></div>
-<p>To see what this will look like on a browser that does support PDF (e.g., during development), you can use <code>image_force=TRUE</code>:</p>
-<p><code>{{&lt; pdf dummy.pdf width=400 height=600 image=dummy.png image_force=TRUE border=1 image_width=400 image_border=1 &gt;}}</code></p>
-<a href="dummy.pdf" download=""><img src="dummy.png" alt="PDF preview" width="400" border="1"></a>
-<p>The button will work on mobile browsers, so that’s another option that you can use in addition to or in place of the backup image.</p>
-<p><code>{{&lt; pdf dummy.pdf button="Download" width=400 height=600 image=dummy.png image_force=TRUE border=1 image_width=400 image_border=1 &gt;}}</code></p>
-<a href="dummy.pdf" download=""><img src="dummy.png" alt="PDF preview" width="400" border="1"></a><p><a class="embedpdf-btn" href="dummy.pdf" download="">Download</a></p>
-</section>
+<section id="when-javascript-is-disabled" class="level2">
+<h2 class="anchored" data-anchor-id="when-javascript-is-disabled">When JavaScript is Disabled</h2>
+<p>The viewer requires JavaScript to run. If a visitor has JavaScript disabled, the embedded PDF is replaced by a simple hyperlink to download the file. Adding a download button (<code>button="..."</code>) gives those visitors a clearer call to action.</p>
 </section>
 
 </main>
