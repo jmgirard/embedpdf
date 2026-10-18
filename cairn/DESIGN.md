@@ -1,7 +1,7 @@
 # Design
 
-_Seeded by `/cairn-init` on 2026-10-18. Facts elicited by `/design-interview`
-on 2026-10-18._
+_Seeded by `/cairn-init` on 2026-10-18. Facts and principles elicited by
+`/design-interview` on 2026-10-18._
 
 ## Purpose & Scope
 
@@ -14,8 +14,9 @@ with `quarto add jmgirard/embedpdf`. Quarto >= 1.4 is required.
 
 **Contract boundary.** The job is to show every page of a PDF readably on
 every promised browser, with zoom, a page indicator, and a download button.
-The canvas viewer is not a PDF reader: text selection, search, and annotations
-are out of scope.
+The canvas viewer is not a PDF reader: visible text selection, search, and
+annotations are out of scope. A hidden text layer for screen readers is in
+scope (GP1).
 
 **Platforms.** Promised: desktop browsers (native viewer), Android Chrome, and
 iOS Safari. A release that changes the viewer works on all three before it
@@ -68,29 +69,44 @@ renderers.
 
 ## Design Principles
 
-_Phase 2 of `/design-interview` formalizes these. Until then the ledger below
-holds candidates only, not commitments._
+_Elicited by `/design-interview` on 2026-10-18. IP = inviolable, changed only
+by a recorded decision. GP = guiding, tradeable with a written reason.
+Numbers are never reused._
 
 ### Inviolable (IP)
 
+- **IP1 Readable on every promised platform.** Every page of an embedded PDF
+  is readable on desktop, Android Chrome, and iOS Safari. No release may break
+  this. The rule is about the result, not the tool: PDF.js is today's way to
+  meet it and could be replaced. A check in the iOS Simulator counts as the
+  iOS check.
+- **IP2 An embed never breaks a render.** Every case falls back to something
+  usable: no JavaScript, non-HTML formats, and self-contained documents give a
+  download link or `\includepdf`. A missing file gives a warning, never an
+  error.
+- **IP3 Author values are escaped.** HTML that the Lua shortcode emits never
+  contains an unescaped author-given value. `tests/test_shortcode.lua`
+  checks it.
+
 ### Guiding (GP)
 
-### Banked candidates (Phase 1 ledger, 2026-10-18)
-
-- B1 Mobile rendering is the reason the extension exists. A change must keep
-  PDFs rendering on Android, iOS, and desktop.
-- B2 Readable, not a reader. The canvas viewer does not grow into a full PDF
-  reader.
-- B3 Every embed degrades to something usable: no JavaScript, non-HTML
-  formats, and self-contained documents fall back to a download link or
-  `\includepdf`, never to a failed render.
-- B4 Option names and defaults are a public API under semver, with a
-  deprecation step.
-- B5 PDF.js stays vendored, with no CDN and no build step, updated on need.
-- B6 A new option must be impossible with `class` plus CSS and must work on
-  both renderers.
-- B7 Rendering is checked in real browsers (Chrome, iOS Simulator), not in a
-  headless preview.
+- **GP1 A viewer, not a reader.** The canvas viewer shows pages, with zoom, a
+  page indicator, and download. Visible text selection, search, and
+  annotations stay out. A hidden text layer for screen readers is in scope as
+  an accessibility fix.
+- **GP2 Options are a public API.** Option names and defaults follow semver.
+  A removal, rename, or default change needs a major bump, and the old form
+  first warns for at least one minor release.
+- **GP3 A new option must earn its place.** It is added only when authors
+  cannot get the result with `class` plus their own CSS, and only when it
+  works with both renderers.
+- **GP4 Low-end phones first.** Viewer changes are judged on a constrained
+  phone. Page rendering stays serialized and canvas size stays capped. A
+  speedup that costs mobile memory needs a written reason.
+- **GP5 Light for desktop.** PDF.js loads only on the PDF.js path, so readers
+  on the native path never download it. IP1 wins any conflict.
+- **GP6 PDF.js is vendored.** No CDN and no build step. PDF.js is updated only
+  for a bug fix, a security fix, or a feature the extension needs (D-001).
 
 ## Architecture
 
@@ -112,6 +128,8 @@ with device pixel ratio clamped to 2, for constrained mobile devices.
   limitations").
 - The PDF.js viewer has no text selection or search (out of scope, see the
   contract boundary).
+- A PDF.js embed is a canvas with no text, so screen readers cannot read it.
+  The download link is the only accessible path today — observed 2026-10-18.
 - Not yet checked on a real Android device loading the GitHub Pages site, or
   on iOS at all (CLAUDE.md "Still unverified") — observed 2026-10-18.
 - GitHub releases stop at v0.5.0 while tags reach v1.0.2, so the README
