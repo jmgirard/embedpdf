@@ -36,11 +36,11 @@ CLAUDE.md, PROFILE.md and DESIGN.md text that the change makes stale.
       each, as reported by one run of `node tests/ios_check.mjs` that exits 0.
 - [x] AC2: The same holds on an iPad simulator with Safari's default desktop-website setting (model and iOS runtime
       recorded with the evidence), by one run of `node tests/ios_check.mjs` that exits 0.
-- [ ] AC3: Desktop stays native: `node tests/render_check.mjs` against `docs/example.html` reports 9 native and 2 PDF.js
+- [x] AC3: Desktop stays native: `node tests/render_check.mjs` against `docs/example.html` reports 9 native and 2 PDF.js
       embeds and exits 0 in plain desktop Chrome or Chromium, in Chrome or Chromium emulating a Mac Safari user agent with
       0 touch points, and in Chrome or Chromium emulating a Windows user agent with touch points (each emulation sets
       `navigator.pdfViewerEnabled` to true).
-- [ ] AC4: `node tests/render_check.mjs` against `docs/example.html` in Chrome or Chromium emulating an iPhone and,
+- [x] AC4: `node tests/render_check.mjs` against `docs/example.html` in Chrome or Chromium emulating an iPhone and,
       separately, an iPad (desktop-style user agent
       with touch points), each with `navigator.pdfViewerEnabled` set to the value the T2 baseline recorded on that
       simulator, reports 1 native and 10 PDF.js embeds and exits 0; the same two runs against the v1.0.2
@@ -152,3 +152,10 @@ Pass 1, 2026-10-18, branch head 9aa3bf8; main unmoved (011933b), no sync needed.
 - AC4 evidence (not ticked, see amendment): `--device iphone` and `--device ipad` (pdfViewerEnabled true, as T2 recorded) on v1.0.3: 1 native, 10 PDF.js, 20/20 canvases inked, exit 0. Same two runs against main's v1.0.2 `docs/` (served from a `git archive main docs` copy): 9 native, 2 PDF.js, exit 0, matching the 9 native T2 recorded on both simulators. Browser Chromium 155.
 - AC5 evidence: `version: 1.0.3` in `_extension.yml:3`, `version = "1.0.3"` in `embedpdf.lua:29`; `pandoc lua tests/test_shortcode.lua` prints `30 passed, 0 failed`.
 - AC6 evidence: README.md:61 and :85 and example.qmd:81 state that `renderer=auto` uses PDF.js on iPhone and iPad; README.md:85 and example.qmd:103 state what `renderer=native` shows in iOS Safari (own viewer, scroll to every page in the iOS 27.1 iPhone run), matching T2 and AC1/AC2. The only `pdfViewerEnabled` line in either file is example.qmd:81, whose paragraph states the iPhone/iPad exception; README.md has none.
+
+Pass 2, 2026-10-18, branch head fe8f95d (after the AC3/AC4 amendment return); main unmoved (011933b); no change to `_extensions/`, `docs/`, README.md or example.qmd since pass 1, so AC1, AC2, AC5 and AC6 evidence stands.
+
+- AC3 evidence (amended wording): Chromium 155.0.8059.39, `render_check.mjs example.html --expect-native 9 --expect-pdfjs 2` plain, `--device mac-safari`, `--device windows-touch`: each 9 native, 2 PDF.js, 4/4 canvases inked, exit 0.
+- AC4 evidence (amended wording): Chromium 155, against `docs/example.html`, `--device iphone` and `--device ipad` with `--expect-native 1 --expect-pdfjs 10`: each 1 native, 10 PDF.js, 20/20 inked, exit 0. The v1.0.2 runs from pass 1 (9 native on both, matching T2) stand, since main is unmoved.
+- Consistency gate: `cairn_validate.py` all checks passed (exit 0); no IP/GP principle text changed, so `cairn_impact` skipped; generic profile names no toolchain checks.
+- Note: in pass 2 the AC3/AC4 ticks landed one edit before this evidence block, because an anchor mismatch failed the evidence write; both runs had completed beforehand.
