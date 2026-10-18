@@ -33,9 +33,16 @@ import { execFileSync } from "node:child_process";
 import { serveDocs } from "./serve_docs.mjs";
 
 const args = process.argv.slice(2);
+const FLAGS = ["device", "page", "expect-embeds", "expect-pages", "port", "timeout", "screenshot", "shot-embed", "plant"];
+for (let i = 0; i < args.length; i += 2) {
+  if (!FLAGS.includes(args[i].replace(/^--/, "")) || !args[i].startsWith("--") || i + 1 >= args.length) {
+    console.error(`ios_check: unexpected argument "${args[i]}" (flags: --${FLAGS.join(", --")}, each with a value)`);
+    process.exit(2);
+  }
+}
 const opt = (name, fallback) => {
   const i = args.indexOf("--" + name);
-  return i >= 0 && i + 1 < args.length ? args[i + 1] : fallback;
+  return i >= 0 ? args[i + 1] : fallback;
 };
 const device = opt("device", "");
 const pagePath = opt("page", "example.html");
@@ -58,20 +65,26 @@ if (plant && plant !== "blank" && plant !== "missing") {
 const simctl = (...a) => execFileSync("xcrun", ["simctl", ...a], { encoding: "utf8" });
 
 // resolve the simulator and record its model and runtime with the evidence
-function findDevice(key) {
-  const list = JSON.parse(simctl("list", "devices", "-j")).devices;
+function findDevices(key) {
+  const list = JSON.parse(simctl("list", "devices", "available", "-j")).devices;
+  const found = [];
   for (const [runtime, devs] of Object.entries(list)) {
     for (const d of devs) {
-      if (d.udid === key || d.name === key) return { ...d, runtime };
+      if (d.udid === key || d.name === key) found.push({ ...d, runtime });
     }
   }
-  return null;
+  return found;
 }
-const dev = findDevice(device);
-if (!dev) {
-  console.error(`ios_check: no simulator named or with udid "${device}"`);
+const matches = findDevices(device);
+if (matches.length !== 1) {
+  console.error(
+    matches.length
+      ? `ios_check: ${matches.length} simulators are named "${device}"; pass a udid (${matches.map((d) => d.udid).join(", ")})`
+      : `ios_check: no available simulator named or with udid "${device}"`
+  );
   process.exit(2);
 }
+const dev = matches[0];
 const runtimeName = dev.runtime.replace("com.apple.CoreSimulator.SimRuntime.", "");
 const deviceType = (dev.deviceTypeIdentifier || "").replace("com.apple.CoreSimulator.SimDeviceType.", "");
 
@@ -137,6 +150,7 @@ const PROBE = `<script>
     return false;
   };
   const report = {
+    run: params.get("run") || "",
     userAgent: navigator.userAgent,
     pdfViewerEnabled: navigator.pdfViewerEnabled,
     maxTouchPoints: navigator.maxTouchPoints,
@@ -164,6 +178,9 @@ const PROBE = `<script>
 
 let onReport;
 const reported = new Promise((r) => (onReport = r));
+// Each run has its own token; a report from a tab left over from an earlier
+// run (restored or reloaded by Safari) carries another token and is ignored.
+const runId = String(Date.now());
 
 const server = await serveDocs({
   port,
@@ -174,7 +191,9 @@ const server = await serveDocs({
       req.on("data", (c) => (body += c));
       req.on("end", () => {
         res.end("ok");
-        onReport(JSON.parse(body));
+        let report = null;
+        try { report = JSON.parse(body); } catch { return; }
+        if (report.run === runId) onReport(report);
       });
     },
   },
@@ -183,7 +202,7 @@ const server = await serveDocs({
 let exitCode = 1;
 try {
   simctl("bootstatus", dev.udid, "-b");
-  const target = `http://127.0.0.1:${port}/${pagePath}?run=${Date.now()}${plant ? "&plant=" + plant : ""}${shotEmbed ? "&shot=" + shotEmbed : ""}`;
+  const target = `http://127.0.0.1:${port}/${pagePath}?run=${runId}${plant ? "&plant=" + plant : ""}${shotEmbed ? "&shot=" + shotEmbed : ""}`;
   simctl("openurl", dev.udid, target);
 
   const timer = new Promise((_, rej) =>

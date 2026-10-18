@@ -78,7 +78,7 @@ In most cases you will want to customize the appearance of the embedded PDF. A f
 
 Mobile browsers (e.g., Chrome and Firefox on Android) do not support the inline rendering of PDF objects: they show a blank box or a download prompt instead. To solve this, the extension includes a JavaScript-based PDF renderer, [PDF.js](https://mozilla.github.io/pdf.js/).
 
-By default (`renderer=auto`), each embedded PDF checks whether the browser can display PDFs inline (via `navigator.pdfViewerEnabled`). If it can, the browser's native PDF viewer is used. If it cannot, as on Android, PDF.js draws the PDF page by page. The PDF.js viewer has a small toolbar for zooming, page tracking, and downloading. iPhone and iPad are the exception to the `pdfViewerEnabled` check. Safari there reports that it can display PDFs, but users report that older iOS versions show only the first page. For this reason, `renderer=auto` always uses PDF.js on iPhone and iPad. A browser fetches the PDF.js library only for a PDF.js embed, so desktop visitors whose browser has a built-in PDF viewer download it only for `renderer=pdfjs` embeds.
+By default (`renderer=auto`), each embedded PDF checks whether the browser can display PDFs inline (via `navigator.pdfViewerEnabled`). If it can, the browser's native PDF viewer is used. If it cannot, as on Android, PDF.js draws the PDF page by page. The PDF.js viewer has a small toolbar for zooming, page tracking, and downloading. iPhone and iPad are the exception to the `pdfViewerEnabled` check. Safari there reports that it can display PDFs, but users report that older iOS versions show only the first page. For this reason, `renderer=auto` always uses PDF.js on iPhone and iPad. A browser fetches the PDF.js library only for a PDF.js embed. Desktop visitors with a built-in PDF viewer fetch it only for `renderer=pdfjs` embeds.
 
 ### Force the PDF.js renderer
 
@@ -100,7 +100,7 @@ Set `renderer=native` to always use the browser's built-in viewer.
 
 {{< pdf sample.pdf renderer=native height=400 >}}
 
-In Safari on iPhone and iPad, `renderer=native` shows the PDF in Safari's own viewer (checked in iOS 27.0 and 27.1 simulators on 2026-10-18). In an iOS 27.1 iPhone simulator, readers scrolled inside the embed to reach every page.
+In Safari on iPhone and iPad, `renderer=native` shows the PDF in Safari's own viewer. This was checked on 2026-10-18 in iOS 27.0 iPhone and iPad simulators and an iOS 27.1 iPhone simulator. In the iOS 27.1 iPhone simulator, a swipe inside the embed reached every page.
 
 ::: {.callout-note}
 Use `renderer=native` for self-contained documents (`embed-resources: true`), where PDF.js cannot fetch the PDF by URL. Note that such documents still cannot render inline on mobile; readers there will get the download link.

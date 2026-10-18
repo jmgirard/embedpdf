@@ -18,8 +18,9 @@
 //   --expect-pdfjs <n>  fail unless exactly n embeds use PDF.js
 // Set CHROME_PATH to use another Chrome or Chromium binary.
 //
-// Exits non-zero if any PDF.js block failed to render actual content, or if an
-// expected count does not match.
+// Exits non-zero if the page does not load, if no embed is hydrated, if any
+// PDF.js block failed to render actual content, or if an expected count does
+// not match.
 
 import puppeteer from "puppeteer-core";
 import { serveDocs } from "./serve_docs.mjs";
@@ -63,16 +64,32 @@ const DEVICES = {
   },
 };
 
+// one optional page or URL, plus flags that each take a value; anything else
+// (a misspelled flag, --flag=value) is an error rather than silently ignored
+const FLAGS = ["device", "expect-native", "expect-pdfjs"];
 const args = process.argv.slice(2);
-const opt = (name) => {
-  const i = args.indexOf("--" + name);
-  return i >= 0 && i + 1 < args.length ? args[i + 1] : null;
-};
-const deviceName = opt("device");
-const expectNative = opt("expect-native");
-const expectPdfjs = opt("expect-pdfjs");
-const target = args.find((a, i) => !a.startsWith("--") && (i === 0 || !args[i - 1].startsWith("--"))) ||
-  "example.html";
+const flags = {};
+const positional = [];
+for (let i = 0; i < args.length; i++) {
+  if (!args[i].startsWith("--")) {
+    positional.push(args[i]);
+    continue;
+  }
+  const name = args[i].slice(2);
+  if (!FLAGS.includes(name) || i + 1 >= args.length) {
+    console.error(`render_check: unexpected argument "${args[i]}" (flags: --${FLAGS.join(", --")}, each with a value)`);
+    process.exit(2);
+  }
+  flags[name] = args[++i];
+}
+if (positional.length > 1) {
+  console.error(`render_check: expected one page or URL, got ${positional.join(" ")}`);
+  process.exit(2);
+}
+const deviceName = flags["device"] ?? null;
+const expectNative = flags["expect-native"] ?? null;
+const expectPdfjs = flags["expect-pdfjs"] ?? null;
+const target = positional[0] || "example.html";
 const device = deviceName ? DEVICES[deviceName] : null;
 if (deviceName && !device) {
   console.error(`render_check: unknown --device ${deviceName} (use ${Object.keys(DEVICES).join(", ")})`);
@@ -106,7 +123,10 @@ try {
   } else {
     await page.setViewport({ width: 1200, height: 900, deviceScaleFactor: 2 });
   }
-  await page.goto(url, { waitUntil: "networkidle0" });
+  const response = await page.goto(url, { waitUntil: "networkidle0" });
+  if (!response || !response.ok()) {
+    throw new Error(`could not load ${url} (HTTP ${response ? response.status() : "no response"})`);
+  }
   // scroll so lazily-rendered pages come into view
   await page.evaluate(async () => {
     for (let y = 0; y < document.body.scrollHeight; y += 600) {
@@ -138,6 +158,11 @@ try {
   // ok if there were no PDF.js blocks, or every rendered canvas has content
   let ok = res.pdfjs === 0 || (res.canvases > 0 && res.canvasesWithInk === res.canvases);
   if (!ok) console.error("render_check: PDF.js blocks did not all render content");
+  if (res.native + res.pdfjs === 0) {
+    // a wrong page, or viewer JS that never loaded, must not pass as "no PDF.js blocks"
+    console.error("render_check: no embed was hydrated");
+    ok = false;
+  }
   if (expectNative !== null && res.native !== Number(expectNative)) {
     console.error(`render_check: expected ${expectNative} native embeds, found ${res.native}`);
     ok = false;

@@ -45,9 +45,9 @@ function isAppleMobile() {
 }
 
 function nativeSupported() {
-  // Safari on iPhone and iPad reports pdfViewerEnabled = true (seen on iOS
-  // 27.0 and 27.1), but older iOS versions show only the first page of an
-  // embedded PDF (issue #3). Always use PDF.js there.
+  // Safari on iPhone and iPad reports pdfViewerEnabled = true (seen on an iOS
+  // 27.0 iPhone and iPad and an iOS 27.1 iPhone), but older iOS versions show
+  // only the first page of an embedded PDF (issue #3). Always use PDF.js there.
   if (isAppleMobile()) return false;
   if (typeof navigator.pdfViewerEnabled === "boolean") {
     return navigator.pdfViewerEnabled;

@@ -33,8 +33,14 @@ export function serveDocs({ port = 0, transformHtml = null, routes = {} } = {}) 
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, "http://127.0.0.1");
     if (routes[url.pathname]) return routes[url.pathname](req, res);
-    const file = path.join(DOCS, decodeURIComponent(url.pathname));
-    if (!file.startsWith(DOCS) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
+    let file;
+    try {
+      file = path.join(DOCS, decodeURIComponent(url.pathname));
+    } catch {
+      res.writeHead(400).end(); // malformed percent-escape
+      return;
+    }
+    if (!file.startsWith(DOCS + path.sep) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
       res.writeHead(404).end();
       return;
     }

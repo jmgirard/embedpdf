@@ -95,6 +95,8 @@ errors.
 ## Still unverified
 - A real Android device loading the GitHub Pages site (the actual target
   environment; can only be checked by a human on a phone).
+- A real iPhone or iPad loading the GitHub Pages site, and any iOS version
+  before 27. `tests/ios_check.mjs` covers only iOS 27.0 and 27.1 simulators.
 
 ## Project tracking (cairn)
 
