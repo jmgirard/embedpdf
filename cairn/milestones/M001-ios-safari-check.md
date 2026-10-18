@@ -109,6 +109,9 @@ CLAUDE.md, PROFILE.md and DESIGN.md text that the change makes stale.
 - 2026-10-18: decided: tests/serve_docs.mjs (Node http, no-store) serves docs/ for both scripts; render_check serves it itself when given a page path. Reason: 1 of 120 parallel curl requests to python's http.server failed (backlog 5), and 2 of 8 render_check runs saw 0 embeds; 5 of 5 runs passed on the Node server.
 - 2026-10-18: T2 baseline, v1.0.2, iPhone Duo / iOS 27.1 (UA "iPhone OS 18_7 ... Version/27.0 Mobile"): pdfViewerEnabled true, maxTouchPoints 5; `auto` picks native for embeds 1-8, the 2 `renderer=pdfjs` embeds render 2 inked pages each; ios_check exits 1 naming the 8 native embeds.
 - 2026-10-18: T2 baseline, iPhone Duo / iOS 27.1: a native embed (`renderer=native height=400` and the default-size `auto` embed 1) scrolls inside its box with a scrollbar, and a swipe shows page 2 in full, not page 1 only as #3 (2024-03-20) reports. This is the plan gate's falsifier for UA-based detection.
+- 2026-10-18: T2 baseline, v1.0.2, iPhone 17 / iOS 27.0 (UA "iPhone OS 18_7 ... Version/27.0 Mobile"): pdfViewerEnabled true, maxTouchPoints 5; same result as iPhone Duo (embeds 1-8 native, PDF.js embeds 9 and 11 render 2 inked pages, no errors); exit 1.
+- 2026-10-18: T2 baseline, v1.0.2, iPad Air 11-inch (M4) / iOS 27.0 (desktop UA "Macintosh; Intel Mac OS X 10_15_7 ... Version/27.0 Safari"): pdfViewerEnabled true, maxTouchPoints 5; same embed result as iPhone; native embed 1 draws page 1 inline (screenshot); exit 1.
+- 2026-10-18: stop: the falsifier fired on iOS 27.0 and 27.1, and #3's iOS version (2024) is not available to test here; asked the user whether to keep the planned PDF.js switch.
 
 ## Decisions
 
