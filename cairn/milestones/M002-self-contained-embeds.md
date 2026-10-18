@@ -86,6 +86,7 @@ A page or slide deck rendered with `embed-resources: true` shows its embeds inli
 - 2026-10-18: review pass 1 started; branch level with origin/main (0 commits behind); Copilot round off (no header line).
 - 2026-10-18: review pass 1: 24 reviewer findings settled (17 fix now, 5 follow-up, 2 reject); no criterion failed, so no return. Fix-now work: viewer per-embed catch, `fetch` decode with only the Blob kept, `role="img"` removed, short error labels, percent-decoded file names; test scripts refuse pages outside docs/, clean temp dirs on exit, fail `--expect-pages` with no PDF.js embed, inject the iOS probe at the last `</body>`; one Lua check for single injection; CLAUDE.md check list widened (http mode, all devices, `revealjs_test.html`); example.qmd wording. Follow-ups: new row "Self-contained native checks", existing row "Self-contained no-JS link" (D-003).
 - 2026-10-18: count corrected: of the 24 findings, 18 are fix now (diff-bug #4 and #9 also send a part to follow-up), 4 follow-up, 2 reject; the Review lines carry `fixed 6dc852b`.
+- 2026-10-18: step-7 approval: m002-self-contained-embeds approved for merge
 
 ## Decisions
 
