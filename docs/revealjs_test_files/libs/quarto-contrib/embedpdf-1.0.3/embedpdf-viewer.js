@@ -1,7 +1,8 @@
 // embedpdf-viewer.js
 // Hydrates every div.embedpdf placeholder emitted by the embedpdf shortcode.
 // renderer=auto  -> native <object> when the browser can display PDFs inline
-//                   (navigator.pdfViewerEnabled), otherwise a PDF.js canvas viewer
+//                   (navigator.pdfViewerEnabled), otherwise a PDF.js canvas viewer;
+//                   always PDF.js on iPhone and iPad
 // renderer=native -> always <object type="application/pdf">
 // renderer=pdfjs  -> always the PDF.js canvas viewer
 //
@@ -35,7 +36,19 @@ function enqueueRender(task) {
   return run;
 }
 
+// iPhone, iPod, or iPad. iPadOS Safari sends a Mac user agent by default, so
+// an iPad is a "Macintosh" with a touch screen (Macs report 0 touch points).
+function isAppleMobile() {
+  const ua = navigator.userAgent;
+  if (/iPhone|iPod|iPad/.test(ua)) return true;
+  return /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
+}
+
 function nativeSupported() {
+  // Safari on iPhone and iPad reports pdfViewerEnabled = true (seen on iOS
+  // 27.0 and 27.1), but older iOS versions show only the first page of an
+  // embedded PDF (issue #3). Always use PDF.js there.
+  if (isAppleMobile()) return false;
   if (typeof navigator.pdfViewerEnabled === "boolean") {
     return navigator.pdfViewerEnabled;
   }

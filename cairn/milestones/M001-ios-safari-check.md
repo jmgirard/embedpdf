@@ -60,10 +60,10 @@ CLAUDE.md, PROFILE.md and DESIGN.md text that the change makes stale.
 
 ## Tasks
 
-- [ ] T1: Set up the simulator. After the user installs Xcode, run `xcodebuild -downloadPlatform iOS` with
+- [x] T1: Set up the simulator. After the user installs Xcode, run `xcodebuild -downloadPlatform iOS` with
       `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` and create an iPhone and an iPad device with `xcrun simctl`.
       Change no system setting (no `xcode-select -s`).
-- [ ] T2: Write `tests/ios_check.mjs`. Serve `docs/` with Node's `http` module (no new dependency). Inject a probe into
+- [x] T2: Write `tests/ios_check.mjs`. Serve `docs/` with Node's `http` module (no new dependency). Inject a probe into
       HTML responses that scrolls each PDF.js page container through, waits, and POSTs per embed: renderer, the
       `.embedpdf-page` count, per-page ink, and `navigator.pdfViewerEnabled` and `maxTouchPoints`. Boot the named
       simulator, open the URL in Safari with `simctl openurl`, wait for the report with a timeout, print JSON, and exit 0
@@ -71,10 +71,10 @@ CLAUDE.md, PROFILE.md and DESIGN.md text that the change makes stale.
       trusting its green. Run it on the v1.0.2 build on both simulators and record, in one work-log line each, the
       renderer `auto` picks, `pdfViewerEnabled`, and what a `renderer=native` embed shows (simulator screenshot).
 - [x] T3: Install `puppeteer-core` locally per CLAUDE.md (gitignored, already documented; not a new dependency).
-- [ ] T4: Add `--device iphone|ipad|mac-safari|windows-touch` to `tests/render_check.mjs`: user agent, touch points,
+- [x] T4: Add `--device iphone|ipad|mac-safari|windows-touch` to `tests/render_check.mjs`: user agent, touch points,
       viewport, and a `navigator.pdfViewerEnabled` override (iPhone and iPad take the T2 values; the others true).
       Run the iPhone and iPad emulations against the v1.0.2 viewer and record the native counts.
-- [ ] T5: Fix `nativeSupported()` in `embedpdf-viewer.js`: return false on iPhone, iPod and iPad, including iPadOS with a
+- [x] T5: Fix `nativeSupported()` in `embedpdf-viewer.js`: return false on iPhone, iPod and iPad, including iPadOS with a
       Mac user agent and `maxTouchPoints > 1`, before reading `pdfViewerEnabled`. Bump `1.0.2` to `1.0.3` in
       `_extension.yml` and `embedpdf.lua`. Run `quarto render`, the shortcode tests, `render_check.mjs` in all five modes,
       and `ios_check.mjs` on both simulators.
@@ -112,6 +112,13 @@ CLAUDE.md, PROFILE.md and DESIGN.md text that the change makes stale.
 - 2026-10-18: T2 baseline, v1.0.2, iPhone 17 / iOS 27.0 (UA "iPhone OS 18_7 ... Version/27.0 Mobile"): pdfViewerEnabled true, maxTouchPoints 5; same result as iPhone Duo (embeds 1-8 native, PDF.js embeds 9 and 11 render 2 inked pages, no errors); exit 1.
 - 2026-10-18: T2 baseline, v1.0.2, iPad Air 11-inch (M4) / iOS 27.0 (desktop UA "Macintosh; Intel Mac OS X 10_15_7 ... Version/27.0 Safari"): pdfViewerEnabled true, maxTouchPoints 5; same embed result as iPhone; native embed 1 draws page 1 inline (screenshot); exit 1.
 - 2026-10-18: stop: the falsifier fired on iOS 27.0 and 27.1, and #3's iOS version (2024) is not available to test here; asked the user whether to keep the planned PDF.js switch.
+- 2026-10-18: user chose "Keep the switch": `auto` uses PDF.js on every iPhone and iPad, so older iOS readers get every page; docs say the native viewer works on iOS 27. Plan unchanged.
+- 2026-10-18: T2 discrimination runs (`--plant blank|missing`) moved after T5, because on v1.0.2 the check is already red for the native embeds and a plant would not show anything new.
+- 2026-10-18: T1 done: simulators "embedpdf iPhone" (iPhone 17) and "embedpdf iPad" (iPad Air 11-inch M4) on iOS 27.0, plus "embedpdf iPhone Duo" on iOS 27.1; no system setting changed.
+- 2026-10-18: T4 done: `--device` and `--expect-native/--expect-pdfjs` in render_check; iphone/ipad use the UAs and pdfViewerEnabled true that T2 recorded. On v1.0.2 the iphone and ipad emulations report 9 native, 2 PDF.js (T2 recorded 9 native on both simulators), exit 0.
+- 2026-10-18: T5 done: `isAppleMobile()` (iPhone/iPod/iPad in UA, or Macintosh UA with maxTouchPoints > 1) makes `nativeSupported()` return false; version 1.0.3 in both files. Shortcode tests 30 passed, 0 failed. render_check v1.0.3: chrome, mac-safari, windows-touch 9 native / 2 PDF.js; iphone, ipad 1 native / 10 PDF.js, 20/20 canvases with ink; all exit 0.
+- 2026-10-18: T5 ios_check v1.0.3: iPhone 17 and iPad Air 11-inch (M4), iOS 27.0, each exit 0 with embeds 1-9 and 11 on PDF.js, 2 page containers each, 2/2 inked pages, no errors. Discrimination on iPhone: `--plant blank` exit 1 "embed 1: pages without ink: 2"; `--plant missing` exit 1 "embed 1: 1 page containers, expected 2".
+- 2026-10-18: discovered sub-task: `quarto render` rendered `cairn/*.md` into docs/cairn/; added `render: ["*.qmd"]` to `_quarto.yml` and deleted the output; rerender clean.
 
 ## Decisions
 

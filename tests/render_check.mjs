@@ -24,28 +24,29 @@
 import puppeteer from "puppeteer-core";
 import { serveDocs } from "./serve_docs.mjs";
 
-// Values for iphone and ipad are what Safari reported in an iOS simulator
-// (tests/ios_check.mjs); the others report pdfViewerEnabled = true.
+// Values for iphone and ipad are what Safari reported in iOS 27.0 simulators
+// (iPhone 17, iPad Air 11-inch M4) via tests/ios_check.mjs on 2026-10-18; the
+// others report pdfViewerEnabled = true.
+const MAC_SAFARI_UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15";
 const DEVICES = {
   iphone: {
     userAgent:
-      "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1",
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Mobile/15E148 Safari/604.1",
     platform: "iPhone",
     maxTouchPoints: 5,
     pdfViewerEnabled: true,
     viewport: { width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true },
   },
   ipad: {
-    userAgent:
-      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15",
+    userAgent: MAC_SAFARI_UA,
     platform: "MacIntel",
     maxTouchPoints: 5,
     pdfViewerEnabled: true,
     viewport: { width: 820, height: 1180, deviceScaleFactor: 2, isMobile: false, hasTouch: true },
   },
   "mac-safari": {
-    userAgent:
-      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15",
+    userAgent: MAC_SAFARI_UA,
     platform: "MacIntel",
     maxTouchPoints: 0,
     pdfViewerEnabled: true,
