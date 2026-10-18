@@ -131,8 +131,15 @@ const CHROME =
 // by a relative URL can be found
 let aloneDir = null;
 if (alone) {
+  const source = path.resolve(DOCS, target);
+  if (!source.startsWith(DOCS + path.sep) || !fs.existsSync(source)) {
+    console.error(`render_check: --alone needs a page under docs/, got ${target}`);
+    process.exit(2);
+  }
   aloneDir = fs.mkdtempSync(path.join(os.tmpdir(), "embedpdf-alone-"));
-  fs.copyFileSync(path.join(DOCS, target), path.join(aloneDir, path.basename(target)));
+  // removed on every exit, a failed server start or browser launch included
+  process.on("exit", () => fs.rmSync(aloneDir, { recursive: true, force: true }));
+  fs.copyFileSync(source, path.join(aloneDir, path.basename(target)));
 }
 const server =
   /^https?:/.test(target) || alone === "file" ? null : await serveDocs(aloneDir ? { root: aloneDir } : {});
@@ -256,6 +263,10 @@ try {
     ok = false;
   }
   if (expectPages !== null) {
+    if (res.pdfjsPages.length === 0) {
+      console.error("render_check: --expect-pages given, but no embed uses PDF.js");
+      ok = false;
+    }
     res.pdfjsPages.forEach((pages, i) => {
       if (pages.length !== Number(expectPages)) {
         console.error(`render_check: PDF.js embed ${i + 1} has ${pages.length} pages, expected ${expectPages}`);
@@ -288,5 +299,4 @@ try {
 } finally {
   await browser.close();
   server?.close();
-  if (aloneDir) fs.rmSync(aloneDir, { recursive: true, force: true });
 }

@@ -51,13 +51,18 @@ node tests/ios_check.mjs --device "embedpdf iPad"
 
 Self-contained pages (`embed-resources: true`): `--alone http|file` (render_check)
 and `--alone yes` (ios_check) load a copy of the page with no other file beside it.
-Run the HTTP mode too, or swap `file` for `http` below:
+Run each `--alone file` line again with `--alone http`. Run the
+`selfcontained_test.html` lines also with `--device mac-safari` and
+`--device windows-touch` (the desktop counts) and `--device ipad` (the iphone
+counts). `revealjs_test.html` is a normal slide deck:
 
 ```
 node tests/render_check.mjs selfcontained_test.html --alone file --expect-native 2 --expect-pdfjs 1 --expect-pages 2 --expect-links 4
 node tests/render_check.mjs selfcontained_test.html --alone file --device iphone --expect-native 1 --expect-pdfjs 2 --expect-pages 2 --expect-links 4
-node tests/render_check.mjs selfcontained_slides_test.html --alone file --expect-native 2 --expect-pdfjs 1 --expect-pages 2
-node tests/render_check.mjs selfcontained_slides_test.html --alone file --device iphone --expect-native 1 --expect-pdfjs 2 --expect-pages 2
+node tests/render_check.mjs selfcontained_slides_test.html --alone file --expect-native 2 --expect-pdfjs 1 --expect-pages 2 --expect-links 4
+node tests/render_check.mjs selfcontained_slides_test.html --alone file --device iphone --expect-native 1 --expect-pdfjs 2 --expect-pages 2 --expect-links 4
+node tests/render_check.mjs revealjs_test.html --expect-native 2 --expect-pdfjs 1
+node tests/render_check.mjs revealjs_test.html --device iphone --expect-native 1 --expect-pdfjs 2
 node tests/ios_check.mjs --device "embedpdf iPhone" --page selfcontained_test.html --alone yes --expect-embeds 2
 node tests/ios_check.mjs --device "embedpdf iPad" --page selfcontained_test.html --alone yes --expect-embeds 2
 ```

@@ -1,8 +1,8 @@
 // End-to-end check of embedpdf in Safari on an iOS simulator.
 //
 // Serves docs/ (tests/serve_docs.mjs), or with --alone yes a temporary
-// directory that holds only a copy of the page, injects a probe script into every HTML
-// response, opens the page in the simulator's Safari with `simctl openurl`, and
+// directory that holds only a copy of the page. It injects a probe script into
+// every HTML response, opens the page in the simulator's Safari with `simctl openurl`, and
 // waits for the probe to POST a per-embed report: which renderer each embed
 // used, how many .embedpdf-page containers it has, and whether each page's
 // canvas has ink. No dependencies beyond Node and Xcode's simctl.
@@ -197,15 +197,27 @@ const runId = String(Date.now());
 let aloneDir = null;
 let servedPath = pagePath;
 if (alone === "yes") {
+  const source = path.resolve(DOCS, pagePath);
+  if (!source.startsWith(DOCS + path.sep) || !fs.existsSync(source)) {
+    console.error(`ios_check: --alone needs a page under docs/, got ${pagePath}`);
+    process.exit(2);
+  }
   aloneDir = fs.mkdtempSync(path.join(os.tmpdir(), "embedpdf-alone-"));
+  // removed on every exit, a failed server start included
+  process.on("exit", () => fs.rmSync(aloneDir, { recursive: true, force: true }));
   servedPath = path.basename(pagePath);
-  fs.copyFileSync(path.join(DOCS, pagePath), path.join(aloneDir, servedPath));
+  fs.copyFileSync(source, path.join(aloneDir, servedPath));
 }
 
 const server = await serveDocs({
   port,
   ...(aloneDir ? { root: aloneDir } : {}),
-  transformHtml: (html) => html.replace("</body>", PROBE + "</body>"),
+  // before the last </body>: a self-contained page can hold the text "</body>"
+  // inside an inlined script
+  transformHtml: (html) => {
+    const i = html.lastIndexOf("</body>");
+    return i < 0 ? html + PROBE : html.slice(0, i) + PROBE + html.slice(i);
+  },
   routes: {
     "/__report": (req, res) => {
       let body = "";
@@ -256,6 +268,5 @@ try {
   console.error("ios_check: " + err.message);
 } finally {
   server.close();
-  if (aloneDir) fs.rmSync(aloneDir, { recursive: true, force: true });
   process.exit(exitCode);
 }

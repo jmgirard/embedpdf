@@ -84,6 +84,7 @@ A page or slide deck rendered with `embed-resources: true` shows its embeds inli
 - 2026-10-18: claim audit: 60 claims read, 4 corrected — _extensions/embedpdf/embedpdf-viewer.js (native-only download claim limited to pages that are not self-contained; unsupported URL-length claim replaced), example.qmd (pointer to README limits), tests/ios_check.mjs (header names `--alone`). The same reader re-read all 4: true. Re-render done; selfcontained_test.html alone file iphone and example.html default still exit 0.
 - 2026-10-18: implement complete; status review.
 - 2026-10-18: review pass 1 started; branch level with origin/main (0 commits behind); Copilot round off (no header line).
+- 2026-10-18: review pass 1: 24 reviewer findings settled (17 fix now, 5 follow-up, 2 reject); no criterion failed, so no return. Fix-now work: viewer per-embed catch, `fetch` decode with only the Blob kept, `role="img"` removed, short error labels, percent-decoded file names; test scripts refuse pages outside docs/, clean temp dirs on exit, fail `--expect-pages` with no PDF.js embed, inject the iOS probe at the last `</body>`; one Lua check for single injection; CLAUDE.md check list widened (http mode, all devices, `revealjs_test.html`); example.qmd wording. Follow-ups: new row "Self-contained native checks", existing row "Self-contained no-JS link" (D-003).
 
 ## Decisions
 
@@ -98,3 +99,34 @@ Pass 1 (2026-10-18). Fresh `quarto render` completed with no errors and no outpu
 - AC5: `pandoc lua tests/test_shortcode.lua` prints `39 passed, 0 failed`. Checks "deps: all-native document adds no PDF.js" (and the metadata-default case) and "deps: auto (default) / pdfjs embed adds both PDF.js files" with "…PDF.js scripts have a non-JavaScript type" pass; on the pre-T4 embedpdf.lua 5 of these fail. Pass.
 - AC6: `docs/selfcontained_slides_test.html` built from `selfcontained_slides_test.qmd` (`format: revealjs`, `embed-resources: true`, one renderer per slide). `render_check.mjs --alone http|file --expect-pages 2`, 4 runs (default: native 2, PDF.js 1; iphone: native 1, PDF.js 2), each stepping every slide with `Reveal.slide()`: all exit 0, every PDF.js embed 2 inked pages. Pass.
 - AC7: `grep -inE 'self-contained|embed-resources|renderer=native' README.md example.qmd` finds 7 lines (README 84, 85; example.qmd 97, 99, 101, 103, 106), each read. None advises `renderer=native` for self-contained pages or says they do not render inline (85, 97–103 are about native on iOS and desktop). README 84 states that self-contained HTML pages and RevealJS slides show embeds inline from the one file, that slides were checked only in Chromium, and that with JavaScript disabled the fallback and `button` links point at the separate PDF file. Pass.
+
+Consistency gate: `cairn_validate.py` all checks passed; `cairn_impact.py --changed` lists IP1 at DESIGN.md:79, :108 and this file's header, all current. The generic profile names no toolchain checks.
+
+spawned: diff-bug, blame-history, prior-review
+
+- diff-bug #1: one bad inlined `data-src` (a throw in `inlinedPdf` inside `hydrate`) stops every later embed; the non-base64 branch mis-decodes binary PDFs — fix now (per-embed catch; the browser decodes the `data:` URL with `fetch`).
+- diff-bug #2: memory on phones (bytes, Map key, Blob, and a PDF.js copy held per embed, decoded synchronously) — fix now (only the Blob is kept, which the object and links need; PDF.js reads it into an array only on the PDF.js path; the `data-src` text is removed after decode). This is GP4's written reason for the Blob.
+- diff-bug #3: Pandoc's embed-resources adds `role="img"` to each `div.embedpdf` with an inlined `data-src`, hiding the controls from screen readers — fix now (removed at hydration).
+- diff-bug #4: the native check only fetches the bytes; `blob:` display in desktop Safari and Firefox is unchecked, and example.qmd says "work with every renderer" — fix now for the example.qmd wording; the display gap is follow-up ("Self-contained native checks").
+- diff-bug #5: the slides `button` link rewrite runs with no `--expect-links` — fix now (CLAUDE.md slides lines add `--expect-links 4`; the post-fix slide runs pass it).
+- diff-bug #6: `#page=` on a `blob:` URL is untested — follow-up ("Self-contained native checks").
+- diff-bug #7: ios_check injects its probe at the first `</body>`, which on the self-contained slides is inside reveal.js text — fix now (last `</body>`).
+- diff-bug #8: error logs print the whole data URL — fix now (logs name "the inlined <file>" or "an inlined PDF").
+- diff-bug #9: download names: percent-encoding kept, and the native viewer's own save button names the file by the blob id — fix now for the percent-decoding; the save-button name is follow-up ("Self-contained native checks").
+- diff-bug #10: IP2 says no-JavaScript readers get a download link, but in a self-contained page it points at an unshipped file — follow-up: pre-existing (the link was dead before this branch), held by the row "Self-contained no-JS link"; D-003 corrects D-002's statement.
+- diff-bug #11: the routine CLAUDE.md list is narrower than AC2, and the normal deck `revealjs_test.html` is not re-checked — fix now (CLAUDE.md names the http mode and the other devices, and adds two `revealjs_test.html` lines; both pass: native 2/PDF.js 1 with 2 of 2 canvases inked, iphone 1/2 with 3 of 3).
+- diff-bug #12: a missing PDF in a self-contained render is unchecked — reject (false): a run with `nothere.pdf` gives `[WARNING] Could not fetch resource nothere.pdf` and the render completes.
+- diff-bug #13: the Lua tests cannot catch a repeated dependency — fix now (check "deps: each dependency is added once per document").
+- diff-bug #14: `--expect-pages` and the object check pass with zero embeds of that kind — fix now for `--expect-pages` (fails when no embed uses PDF.js); the object check runs beside `--expect-native` in every documented line.
+- blame-history #1: the no-JS link contradicts D-002 — follow-up, as diff-bug #10.
+- blame-history #2: memory on phones — fix now, as diff-bug #2.
+- blame-history #3: a malformed `data-src` stops the page — fix now, as diff-bug #1.
+- blame-history #4: `#page=` on `blob:` — follow-up, as diff-bug #6.
+- blame-history #5: the `--alone` temp directory leaks on an early failure — fix now (removed in a `process.on("exit")` handler in both scripts; no `embedpdf-alone-*` left after the runs).
+- blame-history #6: `pdfjsUrl` throws when the PDF.js script is missing and the rejected promise is cached — reject (false as a defect): the shortcode adds the scripts for every embed not set to `renderer=native`, and a retry could not find a script that is not in the page.
+- prior-review #1: `--expect-pages` with zero PDF.js embeds — fix now, as diff-bug #14.
+- prior-review #2: ios_check `--alone` copies a page from outside docs/ — fix now (both scripts refuse a page outside docs/; `../README.md` exits 2).
+- prior-review #3: temp directory leak — fix now, as blame-history #5.
+- prior-review #4: the ios_check header sentence lacks a verb — fix now.
+
+Post-fix re-run (same day, after `quarto render`): AC2 10 runs exit 0 (same counts, objects `blob:` with `%PDF`, 4 `blob:` links); AC6 4 runs exit 0 with `--expect-links 4`; AC4 7 commands exit 0; AC3 iPhone and iPad exit 0 with no page errors; `test_shortcode.lua` 40 passed, 0 failed. A probe of the page alone over `file://` shows no `role` and no `data-src` left on the 3 embeds and no console errors; with the first `data-src` corrupted, that embed stays unhydrated and the other 2 hydrate.

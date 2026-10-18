@@ -151,14 +151,18 @@ check("embedpdf alias behaves like pdf", has(pdf({ "a.pdf" }, {}, {}, {}, "block
 -- HTML dependencies: PDF.js is added only for an embed that can use it
 -- ---------------------------------------------------------------------------
 -- Each document is a fresh load of the shortcode, so the once-per-document
--- flags start unset. Returns the dependencies added, by name.
+-- flags start unset. Returns the dependencies added, by name, and how many
+-- times each name was added.
 local function render_document(calls)
-  local deps = {}
-  quarto.doc.add_html_dependency = function(d) deps[d.name] = d end
+  local deps, counts = {}, {}
+  quarto.doc.add_html_dependency = function(d)
+    deps[d.name] = d
+    counts[d.name] = (counts[d.name] or 0) + 1
+  end
   dofile("_extensions/embedpdf/embedpdf.lua")
   for _, c in ipairs(calls) do pdf(c.args, c.kwargs or {}, c.meta or {}, {}, "block") end
   quarto.doc.add_html_dependency = function(_) end
-  return deps
+  return deps, counts
 end
 local JS_TYPES = { [""] = true, module = true, ["text/javascript"] = true, ["application/javascript"] = true }
 local function pdfjs_scripts(dep)
@@ -201,8 +205,17 @@ for _, case in ipairs({
   check("deps: " .. case.name .. " PDF.js scripts have a non-JavaScript type", d["embedpdf-pdfjs"] ~= nil and non_js)
 end
 
+reset("html:js")
+local _, c_many = render_document({
+  { args = { "a.pdf" } },
+  { args = { "b.pdf" }, kwargs = { renderer = "pdfjs" } },
+  { args = { "c.pdf" } },
+})
+check("deps: each dependency is added once per document",
+  c_many["embedpdf"] == 1 and c_many["embedpdf-pdfjs"] == 1)
+
 reset("latex")
-check("deps: LaTeX output adds no dependency", next(render_document({ { args = { "a.pdf" } } })) == nil)
+check("deps: LaTeX output adds no dependency", next((render_document({ { args = { "a.pdf" } } }))) == nil)
 
 -- ---------------------------------------------------------------------------
 io.write(string.format("\n%d passed, %d failed\n", passed, failed))
