@@ -37,7 +37,7 @@ function enqueueRender(task) {
 }
 
 // iPhone, iPod, or iPad. iPadOS Safari sends a Mac user agent by default, so
-// an iPad is a "Macintosh" with a touch screen (Macs report 0 touch points).
+// an iPad is detected as a "Macintosh" that reports more than one touch point.
 function isAppleMobile() {
   const ua = navigator.userAgent;
   if (/iPhone|iPod|iPad/.test(ua)) return true;

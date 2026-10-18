@@ -1,6 +1,6 @@
 # M001: iOS Safari check
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
@@ -122,6 +122,8 @@ CLAUDE.md, PROFILE.md and DESIGN.md text that the change makes stale.
 - 2026-10-18: finding: a self-contained page (`embed-resources: true`, temporary `_sc_test.qmd`, deleted) hydrates no embed in iOS 27.0 Safari or Chromium 155: the inlined viewer throws `"./pdf.min.mjs" cannot be parsed as a URL`, so even `renderer=native` shows only the download link. Pre-existing (same line in v1.0.2). Recorded as a [high] ROADMAP candidate and corrected in DESIGN Known issues.
 - 2026-10-18: minor amendment: T6 leaves the README and example.qmd self-contained `renderer=native` advice unchanged, because the finding above makes it a separate bug; the candidate row owns the fix. AC6 does not cover that advice.
 - 2026-10-18: T6 done: README (intro, `renderer` option row, a Known limitations line on `renderer=native` in iOS Safari), example.qmd (the `pdfViewerEnabled` paragraph states the iPhone/iPad exception; a line under the native example), CLAUDE.md (verify commands, simulator setup, `auto` gotcha, self-contained and render-list gotchas), PROFILE.md `verify`, DESIGN Architecture and Known issues. `quarto render` clean. Added README lines lint 0 hits with simple-english `ste_lint.py`; the file total went from 20 on main to 14.
+- 2026-10-18: claim audit: 46 claims read, 4 corrected — embedpdf-viewer.js, README.md, example.qmd, tests/render_check.mjs (Mac touch-point claim dropped; native-scroll claim narrowed to the iOS 27.1 iPhone run; "desktop never downloads PDF.js" narrowed; DEVICES comment limited to measured values). Re-read: all 4 hold. 3 Android claims (README intro and bullet, example.qmd) restate pre-branch text and stay.
+- 2026-10-18: implement complete: all tasks checked; quarto render clean after the audit fixes; status → review.
 
 ## Decisions
 

@@ -82,7 +82,7 @@ In LaTeX/PDF output, embedded PDFs are included page-by-page via the `pdfpages` 
 ### Known limitations
 
 - Self-contained documents (`embed-resources: true`) inline the viewer code, but PDF.js must fetch the PDF file by URL at view time. Use `renderer=native` and ship the PDF alongside the HTML file. Note that a self-contained document viewed on mobile cannot render the PDF inline at all (neither the native viewer nor PDF.js works without the separate file), so readers there fall back to the download link.
-- With `renderer=native`, Safari on iPhone and iPad shows the PDF in its own viewer. Readers scroll inside the embed to reach every page (checked in iOS 27.0 and 27.1 simulators on 2026-10-18). Users report that older iOS versions show only the first page ([#3](https://github.com/jmgirard/embedpdf/issues/3)). For this reason, `renderer=auto` uses PDF.js on iPhone and iPad.
+- With `renderer=native`, Safari on iPhone and iPad shows the PDF in its own viewer (checked in iOS 27.0 and 27.1 simulators on 2026-10-18). In an iOS 27.1 iPhone simulator, readers scrolled inside the embed to reach every page. Users report that older iOS versions show only the first page ([#3](https://github.com/jmgirard/embedpdf/issues/3)). For this reason, `renderer=auto` uses PDF.js on iPhone and iPad.
 - The viewer requires JavaScript; with it disabled, embeds become a download link.
 - The PDF.js canvas viewer does not yet support text selection or search; use the native renderer on desktop (the default) if you need those.
 

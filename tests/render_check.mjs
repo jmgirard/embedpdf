@@ -24,9 +24,10 @@
 import puppeteer from "puppeteer-core";
 import { serveDocs } from "./serve_docs.mjs";
 
-// Values for iphone and ipad are what Safari reported in iOS 27.0 simulators
-// (iPhone 17, iPad Air 11-inch M4) via tests/ios_check.mjs on 2026-10-18; the
-// others report pdfViewerEnabled = true.
+// For iphone and ipad, userAgent, maxTouchPoints, and pdfViewerEnabled are what
+// Safari reported in iOS 27.0 simulators (iPhone 17, iPad Air 11-inch M4) via
+// tests/ios_check.mjs on 2026-10-18; platform and viewport are not measured.
+// The other devices report pdfViewerEnabled = true.
 const MAC_SAFARI_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15";
 const DEVICES = {
