@@ -1,0 +1,18 @@
+---
+title: "embedpdf in self-contained RevealJS slides"
+format:
+  revealjs:
+    embed-resources: true
+---
+
+## Auto renderer
+
+{{< pdf sample.pdf height=500 >}}
+
+## Native renderer
+
+{{< pdf sample.pdf renderer=native width=100% height=500 >}}
+
+## PDF.js renderer
+
+{{< pdf sample.pdf renderer=pdfjs height=500 button="Download the PDF" >}}

@@ -148,5 +148,75 @@ check("embedpdf alias behaves like pdf", has(pdf({ "a.pdf" }, {}, {}, {}, "block
   and embedpdf({ "a.pdf" }, {}, {}, {}, "block").t == "RawBlock")
 
 -- ---------------------------------------------------------------------------
+-- HTML dependencies: PDF.js is added only for an embed that can use it
+-- ---------------------------------------------------------------------------
+-- Each document is a fresh load of the shortcode, so the once-per-document
+-- flags start unset. Returns the dependencies added, by name, and how many
+-- times each name was added.
+local function render_document(calls)
+  local deps, counts = {}, {}
+  quarto.doc.add_html_dependency = function(d)
+    deps[d.name] = d
+    counts[d.name] = (counts[d.name] or 0) + 1
+  end
+  dofile("_extensions/embedpdf/embedpdf.lua")
+  for _, c in ipairs(calls) do pdf(c.args, c.kwargs or {}, c.meta or {}, {}, "block") end
+  quarto.doc.add_html_dependency = function(_) end
+  return deps, counts
+end
+local JS_TYPES = { [""] = true, module = true, ["text/javascript"] = true, ["application/javascript"] = true }
+local function pdfjs_scripts(dep)
+  local paths, non_js = {}, true
+  for _, s in ipairs(dep and dep.scripts or {}) do
+    paths[s.path] = true
+    if JS_TYPES[(s.attribs and s.attribs.type) or ""] then non_js = false end
+  end
+  return paths, non_js
+end
+
+reset("html:js")
+local d_native = render_document({
+  { args = { "a.pdf" }, kwargs = { renderer = "native" } },
+  { args = { "b.pdf" }, kwargs = { renderer = "native" } },
+})
+check("deps: all-native document adds the viewer", d_native["embedpdf"] ~= nil)
+check("deps: all-native document adds no PDF.js", d_native["embedpdf-pdfjs"] == nil)
+local viewer_paths = pdfjs_scripts(d_native["embedpdf"])
+check("deps: the viewer dependency lists no PDF.js file",
+  not viewer_paths["pdfjs/pdf.min.mjs"] and not viewer_paths["pdfjs/pdf.worker.min.mjs"]
+  and d_native["embedpdf"].resources == nil)
+
+reset("html:js")
+local d_meta = render_document({ { args = { "a.pdf" }, meta = { embedpdf = { renderer = "native" } } } })
+check("deps: native from metadata adds no PDF.js", d_meta["embedpdf-pdfjs"] == nil)
+
+for _, case in ipairs({
+  { name = "auto (default)", kwargs = {} },
+  { name = "pdfjs", kwargs = { renderer = "pdfjs" } },
+}) do
+  reset("html:js")
+  local d = render_document({
+    { args = { "a.pdf" }, kwargs = { renderer = "native" } },
+    { args = { "b.pdf" }, kwargs = case.kwargs },
+  })
+  local paths, non_js = pdfjs_scripts(d["embedpdf-pdfjs"])
+  check("deps: " .. case.name .. " embed adds both PDF.js files",
+    paths["pdfjs/pdf.min.mjs"] and paths["pdfjs/pdf.worker.min.mjs"])
+  check("deps: " .. case.name .. " PDF.js scripts have a non-JavaScript type", d["embedpdf-pdfjs"] ~= nil and non_js)
+end
+
+reset("html:js")
+local _, c_many = render_document({
+  { args = { "a.pdf" } },
+  { args = { "b.pdf" }, kwargs = { renderer = "pdfjs" } },
+  { args = { "c.pdf" } },
+})
+check("deps: each dependency is added once per document",
+  c_many["embedpdf"] == 1 and c_many["embedpdf-pdfjs"] == 1)
+
+reset("latex")
+check("deps: LaTeX output adds no dependency", next((render_document({ { args = { "a.pdf" } } }))) == nil)
+
+-- ---------------------------------------------------------------------------
 io.write(string.format("\n%d passed, %d failed\n", passed, failed))
 os.exit(failed == 0 and 0 or 1)

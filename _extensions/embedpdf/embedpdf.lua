@@ -19,23 +19,37 @@ local function str(v)
   return pandoc.utils.stringify(v)
 end
 
+local VERSION = "1.1.0"
 local dependency_injected = false
+local pdfjs_injected = false
 
 local function inject_dependency()
   if dependency_injected then return end
   dependency_injected = true
   quarto.doc.add_html_dependency({
     name = "embedpdf",
-    version = "1.0.3",
+    version = VERSION,
     scripts = {
       { path = "embedpdf-viewer.js", attribs = { type = "module" }, afterBody = true }
     },
-    stylesheets = { "embedpdf.css" },
-    resources = {
-      -- PDF.js core, vendored from pdfjs-dist 6.1.200 (see pdfjs/ directory);
-      -- flattened next to embedpdf-viewer.js so import.meta.url resolution works
-      { name = "pdf.min.mjs", path = "pdfjs/pdf.min.mjs" },
-      { name = "pdf.worker.min.mjs", path = "pdfjs/pdf.worker.min.mjs" }
+    stylesheets = { "embedpdf.css" }
+  })
+end
+
+-- PDF.js core, vendored from pdfjs-dist 6.1.200 (see pdfjs/ directory), added
+-- only for a document with an embed that can use it. The script types are not
+-- JavaScript types, so the browser neither fetches nor runs them; the viewer
+-- loads PDF.js from their src. With embed-resources: true, Quarto inlines the
+-- files as the scripts' text instead, and the viewer loads PDF.js from that.
+local function inject_pdfjs()
+  if pdfjs_injected then return end
+  pdfjs_injected = true
+  quarto.doc.add_html_dependency({
+    name = "embedpdf-pdfjs",
+    version = VERSION,
+    scripts = {
+      { path = "pdfjs/pdf.min.mjs", attribs = { type = "text/x-embedpdf-pdfjs" }, afterBody = true },
+      { path = "pdfjs/pdf.worker.min.mjs", attribs = { type = "text/x-embedpdf-worker" }, afterBody = true }
     }
   })
 end
@@ -98,6 +112,7 @@ function pdf(args, kwargs, meta, raw_args, context)
   -- HTML -------------------------------------------------------------------
 
   inject_dependency()
+  if renderer ~= 'native' then inject_pdfjs() end
 
   local esc_src = html_escape(src)
 

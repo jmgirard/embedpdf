@@ -14,3 +14,9 @@ choices with rationale — never deferrals ("not now" is a ROADMAP fact).
 **Context:** With `embed-resources: true`, no embed renders, and phones need PDF.js. GP5 says native-path readers never download PDF.js. IP2 lists self-contained documents among the cases that give a download link.
 **Decision:** The user chose full support. A self-contained page with an `auto` or `pdfjs` embed carries the vendored PDF.js and its worker inline, so desktop readers of that one file download it too. GP5 holds for pages that are not self-contained. IP2 drops self-contained documents from its fallback list, because they now render. With JavaScript disabled, they still give a download link.
 **Consequences:** Such a self-contained page grows by the size of the two PDF.js files. A page that is not self-contained, or whose embeds all use `renderer=native`, does not grow. D-001 still holds, because the inlined copies are the vendored files. M002 carries out the change.
+
+### D-003 (2026-10-18): Annotates D-002 on the no-JavaScript link in self-contained pages
+
+**Context:** D-002 says that self-contained documents with JavaScript disabled still give a download link. M002's review found that this link, and the `button` link, point at the separate PDF file, which a self-contained page does not ship.
+**Decision:** D-002's choice stands. For a self-contained page with JavaScript disabled, IP2's usable fallback is not met. This was so before M002 too, and the candidate row "Self-contained no-JS link" holds the fix.
+**Consequences:** README "Known limitations" and DESIGN.md Known issues state the dead link. IP2 holds for this case only once that row ships.

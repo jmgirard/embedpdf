@@ -1,7 +1,8 @@
 // End-to-end check of embedpdf in Safari on an iOS simulator.
 //
-// Serves docs/ (tests/serve_docs.mjs), injects a probe script into every HTML
-// response, opens the page in the simulator's Safari with `simctl openurl`, and
+// Serves docs/ (tests/serve_docs.mjs), or with --alone yes a temporary
+// directory that holds only a copy of the page. It injects a probe script into
+// every HTML response, opens the page in the simulator's Safari with `simctl openurl`, and
 // waits for the probe to POST a per-embed report: which renderer each embed
 // used, how many .embedpdf-page containers it has, and whether each page's
 // canvas has ink. No dependencies beyond Node and Xcode's simctl.
@@ -23,17 +24,21 @@
 //   --plant blank|missing  plant a defect before measuring (blank the last
 //                          page canvas of the first PDF.js embed, or remove
 //                          that page's container); the check must then fail
+//   --alone yes|no         yes: serve a copy of the page from an empty
+//                          temporary directory instead of docs/ (default no)
 //
 // Exits 0 only when every embed not set to renderer=native used PDF.js, has
 // exactly --expect-pages page containers, and every page canvas has ink, and
 // the number of such embeds equals --expect-embeds.
 
+import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { serveDocs } from "./serve_docs.mjs";
+import { serveDocs, DOCS } from "./serve_docs.mjs";
 
 const args = process.argv.slice(2);
-const FLAGS = ["device", "page", "expect-embeds", "expect-pages", "port", "timeout", "screenshot", "shot-embed", "plant"];
+const FLAGS = ["device", "page", "expect-embeds", "expect-pages", "port", "timeout", "screenshot", "shot-embed", "plant", "alone"];
 for (let i = 0; i < args.length; i += 2) {
   if (!FLAGS.includes(args[i].replace(/^--/, "")) || !args[i].startsWith("--") || i + 1 >= args.length) {
     console.error(`ios_check: unexpected argument "${args[i]}" (flags: --${FLAGS.join(", --")}, each with a value)`);
@@ -53,6 +58,11 @@ const timeoutS = Number(opt("timeout", "180"));
 const screenshot = opt("screenshot", "");
 const plant = opt("plant", "");
 const shotEmbed = opt("shot-embed", "");
+const alone = opt("alone", "no");
+if (alone !== "yes" && alone !== "no") {
+  console.error("ios_check: --alone must be yes or no");
+  process.exit(2);
+}
 if (!device) {
   console.error("ios_check: --device <simulator name or udid> is required");
   process.exit(2);
@@ -182,9 +192,32 @@ const reported = new Promise((r) => (onReport = r));
 // run (restored or reloaded by Safari) carries another token and is ignored.
 const runId = String(Date.now());
 
+// --alone yes: serve a directory that holds only the page, so nothing it
+// fetches by a relative URL can be found
+let aloneDir = null;
+let servedPath = pagePath;
+if (alone === "yes") {
+  const source = path.resolve(DOCS, pagePath);
+  if (!source.startsWith(DOCS + path.sep) || !fs.existsSync(source)) {
+    console.error(`ios_check: --alone needs a page under docs/, got ${pagePath}`);
+    process.exit(2);
+  }
+  aloneDir = fs.mkdtempSync(path.join(os.tmpdir(), "embedpdf-alone-"));
+  // removed on every exit, a failed server start included
+  process.on("exit", () => fs.rmSync(aloneDir, { recursive: true, force: true }));
+  servedPath = path.basename(pagePath);
+  fs.copyFileSync(source, path.join(aloneDir, servedPath));
+}
+
 const server = await serveDocs({
   port,
-  transformHtml: (html) => html.replace("</body>", PROBE + "</body>"),
+  ...(aloneDir ? { root: aloneDir } : {}),
+  // before the last </body>: a self-contained page can hold the text "</body>"
+  // inside an inlined script
+  transformHtml: (html) => {
+    const i = html.lastIndexOf("</body>");
+    return i < 0 ? html + PROBE : html.slice(0, i) + PROBE + html.slice(i);
+  },
   routes: {
     "/__report": (req, res) => {
       let body = "";
@@ -202,7 +235,7 @@ const server = await serveDocs({
 let exitCode = 1;
 try {
   simctl("bootstatus", dev.udid, "-b");
-  const target = `http://127.0.0.1:${port}/${pagePath}?run=${runId}${plant ? "&plant=" + plant : ""}${shotEmbed ? "&shot=" + shotEmbed : ""}`;
+  const target = `http://127.0.0.1:${port}/${servedPath}?run=${runId}${plant ? "&plant=" + plant : ""}${shotEmbed ? "&shot=" + shotEmbed : ""}`;
   simctl("openurl", dev.udid, target);
 
   const timer = new Promise((_, rej) =>

@@ -49,6 +49,24 @@ node tests/ios_check.mjs --device "embedpdf iPhone"
 node tests/ios_check.mjs --device "embedpdf iPad"
 ```
 
+Self-contained pages (`embed-resources: true`): `--alone http|file` (render_check)
+and `--alone yes` (ios_check) load a copy of the page with no other file beside it.
+Run each `--alone file` line again with `--alone http`. Run the
+`selfcontained_test.html` lines also with `--device mac-safari` and
+`--device windows-touch` (the desktop counts) and `--device ipad` (the iphone
+counts). `revealjs_test.html` is a normal slide deck:
+
+```
+node tests/render_check.mjs selfcontained_test.html --alone file --expect-native 2 --expect-pdfjs 1 --expect-pages 2 --expect-links 4
+node tests/render_check.mjs selfcontained_test.html --alone file --device iphone --expect-native 1 --expect-pdfjs 2 --expect-pages 2 --expect-links 4
+node tests/render_check.mjs selfcontained_slides_test.html --alone file --expect-native 2 --expect-pdfjs 1 --expect-pages 2 --expect-links 4
+node tests/render_check.mjs selfcontained_slides_test.html --alone file --device iphone --expect-native 1 --expect-pdfjs 2 --expect-pages 2 --expect-links 4
+node tests/render_check.mjs revealjs_test.html --expect-native 2 --expect-pdfjs 1
+node tests/render_check.mjs revealjs_test.html --device iphone --expect-native 1 --expect-pdfjs 2
+node tests/ios_check.mjs --device "embedpdf iPhone" --page selfcontained_test.html --alone yes --expect-embeds 2
+node tests/ios_check.mjs --device "embedpdf iPad" --page selfcontained_test.html --alone yes --expect-embeds 2
+```
+
 `render_check.mjs` serves `docs/` itself with `tests/serve_docs.mjs`. If every
 PDF.js canvas has ink and the counts match, it exits 0. If Google Chrome is not
 installed, set `CHROME_PATH` to another Chrome or Chromium binary. Do not serve
@@ -85,8 +103,12 @@ errors.
   otherwise PDF.js.
   Safari on iOS 27 reports `pdfViewerEnabled` true. Force a renderer with
   `renderer=native|pdfjs`. Use `pdfjs` to preview the mobile path on a desktop.
-- A self-contained page (`embed-resources: true`) hydrates no embeds: the
-  inlined viewer throws at `new URL("./pdf.min.mjs", import.meta.url)`.
+- A self-contained page (`embed-resources: true`) inlines the viewer as a
+  `data:` module, so the viewer must not use `import.meta.url` (it threw there
+  before v1.1.0). PDF.js comes from the `text/x-embedpdf-pdfjs` and
+  `text/x-embedpdf-worker` scripts: their `src` on a normal page, their text
+  when inlined. Quarto inlines each PDF into `data-src` but leaves `<a href>`
+  links at the file, so the viewer points the download links at the inlined PDF.
 - `quarto render` renders only `*.qmd` (`_quarto.yml`), so `cairn/` stays out
   of `docs/`.
 - The viewer serializes rendering (one page at a time, shared PDF.js worker) and
@@ -97,6 +119,8 @@ errors.
   environment; can only be checked by a human on a phone).
 - A real iPhone or iPad loading the GitHub Pages site, and any iOS version
   before 27. `tests/ios_check.mjs` covers only iOS 27.0 and 27.1 simulators.
+- Self-contained RevealJS slides in Safari on iPhone and iPad (checked only in
+  Chromium).
 
 ## Project tracking (cairn)
 
