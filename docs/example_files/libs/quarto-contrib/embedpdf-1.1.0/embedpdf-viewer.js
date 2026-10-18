@@ -9,7 +9,8 @@
 // PDF.js core (pdf.min.mjs + pdf.worker.min.mjs, vendored from pdfjs-dist) is
 // added by the shortcode as two scripts whose types are not JavaScript types,
 // so the browser neither fetches nor runs them. PDF.js is loaded from them on
-// demand, so documents that only ever use the native path never download it.
+// demand, so a document that is not self-contained, and whose embeds all use
+// the native path, never downloads it.
 // A self-contained page (embed-resources: true) has the files inlined as the
 // scripts' text, and its PDFs inlined as data: URLs.
 
@@ -33,7 +34,8 @@ function loadPdfjs() {
 }
 
 // The bytes and a blob: URL of an inlined (data:) PDF, decoded once per source.
-// A blob: URL keeps a large PDF out of attribute values and URL length limits.
+// The native <object> and the download links get the blob: URL, so a large PDF
+// is not copied into more attribute values.
 const inlinedPdfs = new Map();
 function inlinedPdf(src) {
   if (!inlinedPdfs.has(src)) {

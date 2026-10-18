@@ -1,6 +1,6 @@
 # M002: Self-contained embeds
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
@@ -81,3 +81,5 @@ A page or slide deck rendered with `embed-resources: true` shows its embeds inli
 - 2026-10-18: re-audit: AC1 (full) — nothing blocking; two minor notes: "decodes" names no decoder (every `data:` src here is base64), and the clause depends on Quarto inlining modules as a `data:` src.
 - 2026-10-18: substantive amendment: AC1's module-script clause now reads "Exactly one `<script` tag with `type="module"` has a `src` that starts with `data:` and decodes to text that contains `div.embedpdf`." Quarto's two tabsets scripts are also inlined modules, so the old count of 1 was 3 on a working page. Wording only; the deliverable is unchanged. Both new pages give 1 under the new clause.
 - 2026-10-18: T7: README "Known limitations" and example.qmd describe self-contained support; CLAUDE.md has the self-contained check commands, the new gotcha, and a "Still unverified" line for slides on iOS; DESIGN.md IP2, GP5, Architecture, and Known issues follow D-002; PROFILE verify slot names the new commands. README.md and CLAUDE.md still have simple-english lint hits in text this milestone did not touch; the added lines lint clean. Both new candidate rows stay open (not covered by this work). `quarto render example.qmd` completed.
+- 2026-10-18: claim audit: 60 claims read, 4 corrected — _extensions/embedpdf/embedpdf-viewer.js (native-only download claim limited to pages that are not self-contained; unsupported URL-length claim replaced), example.qmd (pointer to README limits), tests/ios_check.mjs (header names `--alone`). The same reader re-read all 4: true. Re-render done; selfcontained_test.html alone file iphone and example.html default still exit 0.
+- 2026-10-18: implement complete; status review.

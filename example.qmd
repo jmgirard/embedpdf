@@ -103,7 +103,7 @@ Set `renderer=native` to always use the browser's built-in viewer.
 In Safari on iPhone and iPad, `renderer=native` shows the PDF in Safari's own viewer. This was checked on 2026-10-18 in iOS 27.0 iPhone and iPad simulators and an iOS 27.1 iPhone simulator. In the iOS 27.1 iPhone simulator, a swipe inside the embed reached every page.
 
 ::: {.callout-note}
-Self-contained documents (`embed-resources: true`) work with every renderer. The PDF and, for `auto` and `pdfjs` embeds, PDF.js are inside the one HTML file, so readers need no other file. See [selfcontained_test.html](selfcontained_test.html) for a self-contained page.
+Self-contained documents (`embed-resources: true`) work with every renderer. The PDF and, for `auto` and `pdfjs` embeds, PDF.js are inside the one HTML file, so readers need no other file. See [selfcontained_test.html](selfcontained_test.html) for a self-contained page. The README "Known limitations" section lists where this was checked and what happens with JavaScript disabled.
 :::
 
 ### Hide the PDF.js toolbar

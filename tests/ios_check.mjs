@@ -1,6 +1,7 @@
 // End-to-end check of embedpdf in Safari on an iOS simulator.
 //
-// Serves docs/ (tests/serve_docs.mjs), injects a probe script into every HTML
+// Serves docs/ (tests/serve_docs.mjs), or with --alone yes a temporary
+// directory that holds only a copy of the page, injects a probe script into every HTML
 // response, opens the page in the simulator's Safari with `simctl openurl`, and
 // waits for the probe to POST a per-embed report: which renderer each embed
 // used, how many .embedpdf-page containers it has, and whether each page's
