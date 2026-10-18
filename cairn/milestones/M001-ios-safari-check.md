@@ -1,0 +1,107 @@
+# M001: iOS Safari check
+
+- **Status:** planned
+- **Priority:** high
+- **Depends on:** —
+- **Driving RR:** —
+- **Principles touched:** IP1, GP4, GP5
+- **Resolves:** #3 closes
+- **Surface tier:** user-facing — changes which renderer `renderer=auto` picks for readers on iPhone and iPad
+- **Branch/PR:** —
+
+## Goal
+
+Every page of an embed with `renderer=auto` is readable in Safari on iPhone and iPad, shown by a repeatable iOS Simulator check.
+
+## Scope
+
+**In:** `tests/ios_check.mjs`, a script that boots an iOS simulator, opens a page served from `docs/` in Safari, and reports
+each embed's renderer and per-page ink. A baseline run on the v1.0.2 viewer that records what `auto` picks on iOS. Device
+emulation in `tests/render_check.mjs` (iPhone, iPad, Mac Safari, Windows touch). A fix to `nativeSupported()` in
+`embedpdf-viewer.js` so `auto` uses PDF.js on iPhone and iPad, with the version bumped to 1.0.3. README, `example.qmd`,
+CLAUDE.md, PROFILE.md and DESIGN.md text that the change makes stale.
+
+**Out:**
+- A check on a real iPhone or iPad, or on a real Android phone: stays in CLAUDE.md "Still unverified" (needs a human).
+- Tagging v1.0.3 and its GitHub release: the user declares release windows; the "GitHub releases for v1.0.x" candidate row
+  covers the release backlog.
+- Other iOS browsers (Chrome and Firefox on iOS use WebKit too): best-effort per DESIGN "Platforms", no candidate row.
+- A screen-reader text layer: the "Screen-reader text layer" candidate row.
+
+## Acceptance criteria
+
+- [ ] AC1: In Safari on an iPhone simulator with default settings (model and iOS runtime recorded with the evidence),
+      `docs/example.html` served over http from `docs/` renders each of the 10 embeds not set to `renderer=native` with
+      PDF.js, with exactly 2 `.embedpdf-page` containers per embed (`sample.pdf` has 2 pages) and a canvas with ink in
+      each, as reported by one run of `node tests/ios_check.mjs` that exits 0.
+- [ ] AC2: The same holds on an iPad simulator with Safari's default desktop-website setting (model and iOS runtime
+      recorded with the evidence), by one run of `node tests/ios_check.mjs` that exits 0.
+- [ ] AC3: Desktop stays native: `node tests/render_check.mjs` against `docs/example.html` reports 9 native and 2 PDF.js
+      embeds and exits 0 in plain desktop Chrome, in Chrome emulating a Mac Safari user agent with 0 touch points, and in
+      Chrome emulating a Windows user agent with touch points (each emulation sets `navigator.pdfViewerEnabled` to true).
+- [ ] AC4: `node tests/render_check.mjs` in Chrome emulating an iPhone and, separately, an iPad (desktop-style user agent
+      with touch points), each with `navigator.pdfViewerEnabled` set to the value the T2 baseline recorded on that
+      simulator, reports 1 native and 10 PDF.js embeds and exits 0; the same two runs against the v1.0.2
+      `embedpdf-viewer.js` report the native count T2 recorded for that simulator.
+- [ ] AC5: `version:` in `_extensions/embedpdf/_extension.yml` and the `add_html_dependency` version in `embedpdf.lua` both
+      read `1.0.3`, and `pandoc lua tests/test_shortcode.lua` prints `0 failed`.
+- [ ] AC6: `README.md` and `example.qmd` state that `renderer=auto` uses PDF.js on iPhone and iPad, and state what
+      `renderer=native` shows in iOS Safari, matching the AC1 and AC2 runs and the T2 baseline; each line that a search
+      for `pdfViewerEnabled` finds in those two files states the iPhone and iPad exception or sits in a sentence that does.
+
+## Coverage
+
+- AC1 → T1, T5
+- AC2 → T1, T5
+- AC3 → T4, T5
+- AC4 → T2, T4, T5
+- AC5 → T5
+- AC6 → T2, T6
+
+## Tasks
+
+- [ ] T1: Set up the simulator. After the user installs Xcode, run `xcodebuild -downloadPlatform iOS` with
+      `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` and create an iPhone and an iPad device with `xcrun simctl`.
+      Change no system setting (no `xcode-select -s`).
+- [ ] T2: Write `tests/ios_check.mjs`. Serve `docs/` with Node's `http` module (no new dependency). Inject a probe into
+      HTML responses that scrolls each PDF.js page container through, waits, and POSTs per embed: renderer, the
+      `.embedpdf-page` count, per-page ink, and `navigator.pdfViewerEnabled` and `maxTouchPoints`. Boot the named
+      simulator, open the URL in Safari with `simctl openurl`, wait for the report with a timeout, print JSON, and exit 0
+      only on a full pass. Show it red on a planted defect (one embed with a blank page or a missing container) before
+      trusting its green. Run it on the v1.0.2 build on both simulators and record, in one work-log line each, the
+      renderer `auto` picks, `pdfViewerEnabled`, and what a `renderer=native` embed shows (simulator screenshot).
+- [ ] T3: Install `puppeteer-core` locally per CLAUDE.md (gitignored, already documented; not a new dependency).
+- [ ] T4: Add `--device iphone|ipad|mac-safari|windows-touch` to `tests/render_check.mjs`: user agent, touch points,
+      viewport, and a `navigator.pdfViewerEnabled` override (iPhone and iPad take the T2 values; the others true).
+      Run the iPhone and iPad emulations against the v1.0.2 viewer and record the native counts.
+- [ ] T5: Fix `nativeSupported()` in `embedpdf-viewer.js`: return false on iPhone, iPod and iPad, including iPadOS with a
+      Mac user agent and `maxTouchPoints > 1`, before reading `pdfViewerEnabled`. Bump `1.0.2` to `1.0.3` in
+      `_extension.yml` and `embedpdf.lua`. Run `quarto render`, the shortcode tests, `render_check.mjs` in all five modes,
+      and `ios_check.mjs` on both simulators.
+- [ ] T6: Docs. Update the renderer text in `README.md` and `example.qmd` (the `pdfViewerEnabled` lines and the
+      self-contained-document advice for `renderer=native`) from the T2 and T5 observations, then `quarto render`. Add
+      `node tests/ios_check.mjs` to CLAUDE.md "Verify before finishing" and the PROFILE.md `verify` slot for viewer
+      changes, and update the CLAUDE.md `renderer=auto` gotcha. Update the DESIGN.md Architecture `auto` sentence and the
+      Known issues iOS entry.
+
+## Work log
+
+- 2026-10-18: created by /milestone-plan.
+- 2026-10-18: tier check: milestone — new test tooling plus a change to which renderer `auto` picks; more than one sitting.
+- 2026-10-18: absorbed candidate row "iOS Safari check" in full.
+- 2026-10-18: collision sweep: no milestones, empty archive, D-001 (vendored PDF.js) not affected; LESSONS empty.
+- 2026-10-18: inbox sweep: #3 "Issues on iOS" overlaps (iOS shows page 1 only) → Resolves #3 closes; #2, #7, #8 no overlap.
+- 2026-10-18: investigation: Xcode not installed (xcode-select points at CommandLineTools, no simctl); `puppeteer-core` not installed.
+- 2026-10-18: criteria audit (full mode, fresh Opus): 10 findings; 9 fixed (emulation sets pdfViewerEnabled; Mac Safari and Windows touch added; exact 2 containers per embed; check discrimination moved to T2; device and runtime recorded; `renderer=native` on iOS documented; stale `pdfViewerEnabled` lines covered; CLAUDE.md criterion moved to T6); 1 no issue (AC5).
+- 2026-10-18: question set: Xcode install — user installs Xcode from the App Store; agent may run `xcodebuild -downloadPlatform iOS` (about 8 GB from Apple).
+- 2026-10-18: question set: fix scope — check and fix `auto` for iPhone and iPad in this milestone (version 1.0.3, no tag).
+- 2026-10-18: question set: iPad — in scope alongside iPhone.
+- 2026-10-18: question set: assign #3 to the operator's GitHub account — yes.
+- 2026-10-18: plan gate chose user-agent and touch-point detection in `nativeSupported()` over the CSS media-query idea in #3 because CSS cannot tell iOS from other touch devices and the object is still created; falsified by a WebKit release whose native `<object>` shows every page.
+- 2026-10-18: plan gate chose an injected probe that POSTs to a Node server over Appium or WebDriver because both need new dependencies and safaridriver does not drive the simulator alone; falsified by the probe POST not arriving reliably from simulator Safari.
+- 2026-10-18: DESIGN.md principle lines changed from `- **IP1 Title.**` to `- IP1: **Title.**` so `cairn_validate` reads them; wording unchanged.
+- 2026-10-18: assigned #3 to jmgirard with `gh issue edit`; re-read confirms the assignee.
+
+## Decisions
+
+## Review

@@ -75,37 +75,37 @@ Numbers are never reused._
 
 ### Inviolable (IP)
 
-- **IP1 Readable on every promised platform.** Every page of an embedded PDF
+- IP1: **Readable on every promised platform.** Every page of an embedded PDF
   is readable on desktop, Android Chrome, and iOS Safari. No release may break
   this. The rule is about the result, not the tool: PDF.js is today's way to
   meet it and could be replaced. A check in the iOS Simulator counts as the
   iOS check.
-- **IP2 An embed never breaks a render.** Every case falls back to something
+- IP2: **An embed never breaks a render.** Every case falls back to something
   usable: no JavaScript, non-HTML formats, and self-contained documents give a
   download link or `\includepdf`. A missing file gives a warning, never an
   error.
-- **IP3 Author values are escaped.** HTML that the Lua shortcode emits never
+- IP3: **Author values are escaped.** HTML that the Lua shortcode emits never
   contains an unescaped author-given value. `tests/test_shortcode.lua`
   checks it.
 
 ### Guiding (GP)
 
-- **GP1 A viewer, not a reader.** The canvas viewer shows pages, with zoom, a
+- GP1: **A viewer, not a reader.** The canvas viewer shows pages, with zoom, a
   page indicator, and download. Visible text selection, search, and
   annotations stay out. A hidden text layer for screen readers is in scope as
   an accessibility fix.
-- **GP2 Options are a public API.** Option names and defaults follow semver.
+- GP2: **Options are a public API.** Option names and defaults follow semver.
   A removal, rename, or default change needs a major bump, and the old form
   first warns for at least one minor release.
-- **GP3 A new option must earn its place.** It is added only when authors
+- GP3: **A new option must earn its place.** It is added only when authors
   cannot get the result with `class` plus their own CSS, and only when it
   works with both renderers.
-- **GP4 Low-end phones first.** Viewer changes are judged on a constrained
+- GP4: **Low-end phones first.** Viewer changes are judged on a constrained
   phone. Page rendering stays serialized and canvas size stays capped. A
   speedup that costs mobile memory needs a written reason.
-- **GP5 Light for desktop.** PDF.js loads only on the PDF.js path, so readers
+- GP5: **Light for desktop.** PDF.js loads only on the PDF.js path, so readers
   on the native path never download it. IP1 wins any conflict.
-- **GP6 PDF.js is vendored.** No CDN and no build step. PDF.js is updated only
+- GP6: **PDF.js is vendored.** No CDN and no build step. PDF.js is updated only
   for a bug fix, a security fix, or a feature the extension needs (D-001).
 
 ## Architecture
