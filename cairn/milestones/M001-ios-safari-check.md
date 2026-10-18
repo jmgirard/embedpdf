@@ -1,13 +1,13 @@
 # M001: iOS Safari check
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1, GP4, GP5
 - **Resolves:** #3 closes
 - **Surface tier:** user-facing — changes which renderer `renderer=auto` picks for readers on iPhone and iPad
-- **Branch/PR:** —
+- **Branch/PR:** m001-ios-safari-check
 
 ## Goal
 
@@ -70,7 +70,7 @@ CLAUDE.md, PROFILE.md and DESIGN.md text that the change makes stale.
       only on a full pass. Show it red on a planted defect (one embed with a blank page or a missing container) before
       trusting its green. Run it on the v1.0.2 build on both simulators and record, in one work-log line each, the
       renderer `auto` picks, `pdfViewerEnabled`, and what a `renderer=native` embed shows (simulator screenshot).
-- [ ] T3: Install `puppeteer-core` locally per CLAUDE.md (gitignored, already documented; not a new dependency).
+- [x] T3: Install `puppeteer-core` locally per CLAUDE.md (gitignored, already documented; not a new dependency).
 - [ ] T4: Add `--device iphone|ipad|mac-safari|windows-touch` to `tests/render_check.mjs`: user agent, touch points,
       viewport, and a `navigator.pdfViewerEnabled` override (iPhone and iPad take the T2 values; the others true).
       Run the iPhone and iPad emulations against the v1.0.2 viewer and record the native counts.
@@ -101,6 +101,10 @@ CLAUDE.md, PROFILE.md and DESIGN.md text that the change makes stale.
 - 2026-10-18: plan gate chose an injected probe that POSTs to a Node server over Appium or WebDriver because both need new dependencies and safaridriver does not drive the simulator alone; falsified by the probe POST not arriving reliably from simulator Safari.
 - 2026-10-18: DESIGN.md principle lines changed from `- **IP1 Title.**` to `- IP1: **Title.**` so `cairn_validate` reads them; wording unchanged.
 - 2026-10-18: assigned #3 to jmgirard with `gh issue edit`; re-read confirms the assignee.
+- 2026-10-18: implement started; branch m001-ios-safari-check cut from main at 011933b.
+- 2026-10-18: T3 done: `npm install --no-save puppeteer-core`. Google Chrome is not installed; Chromium 155.0.8059.39 is, so every render_check run uses `CHROME_PATH=/Applications/Chromium.app/Contents/MacOS/Chromium` (decided: same engine and PDF viewer; the script already reads CHROME_PATH).
+- 2026-10-18: finding: `python3 -m http.server` (3.14) on its default `::` bind resets Chromium's parallel requests to `localhost`, so no viewer JS loads and render_check reports 0/0 and exits 0; `--bind 127.0.0.1` with a 127.0.0.1 URL fixes it. Baseline on v1.0.2: 9 native, 2 PDF.js, 4/4 canvases with ink, exit 0. T4 adds expected counts so 0/0 fails; T6 updates the serve command in CLAUDE.md and PROFILE.md.
+- 2026-10-18: T1 blocked: `xcrun simctl` fails because CoreSimulator is missing (`xcodebuild -checkFirstLaunchStatus` exits 69); Xcode's first-launch install needs the user's admin password.
 
 ## Decisions
 
