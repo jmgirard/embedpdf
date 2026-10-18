@@ -1,4 +1,4 @@
-// End-to-end render check for the PDF.js viewer, run in REAL Google Chrome.
+// End-to-end render check for the PDF.js viewer, run in REAL Chrome or Chromium.
 //
 // Why not the Claude preview browser? Its headless GPU (SwiftShader) hangs
 // PDF.js `page.render()` on large canvases / multiple documents and reports 0

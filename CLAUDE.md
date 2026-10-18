@@ -34,7 +34,7 @@ behavior (a new option, output format, escaping rule, default, etc.).
 **After any change to `embedpdf-viewer.js` or `embedpdf.css`** — bump `version:`
 in **both** `_extension.yml` and the `add_html_dependency{ version = ... }` call
 in `embedpdf.lua` (the version is the dependency path; caches key on it), then
-verify real rendering in **real Google Chrome** (NOT the preview browser — see
+verify real rendering in **real Chrome or Chromium** (NOT the preview browser — see
 gotcha). From the repo root:
 
 ```

@@ -62,8 +62,9 @@ renderers.
   version is the dependency path that browser caches key on. (CLAUDE.md)
 - Every change to shortcode behavior adds a matching `check(...)` in
   `tests/test_shortcode.lua`. (CLAUDE.md)
-- PDF.js rendering is checked in real Google Chrome (`tests/render_check.mjs`),
-  never in the Claude preview browser. (CLAUDE.md)
+- PDF.js rendering is checked in real Chrome or Chromium
+  (`tests/render_check.mjs`), never in the Claude preview browser. (CLAUDE.md;
+  corrected M001)
 - A viewer change is also checked in Safari in the iOS Simulator before
   release. (interview 2026-10-18)
 
