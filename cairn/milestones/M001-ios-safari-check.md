@@ -138,6 +138,8 @@ CLAUDE.md, PROFILE.md and DESIGN.md text that the change makes stale.
 - 2026-10-18: re-audit: AC4 (full) — wording cleared; two minor ambiguities answered, not fixed: "the simulator T2 recorded" covers iPhone Duo 27.1 and iPhone 17 27.0, both pdfViewerEnabled true and 9 native, so the result is the same; the v1.0.2 runs used main's `docs/` (11 embeds), named in the Review evidence. This is AC4's second re-audit line, so no further reader for it.
 - 2026-10-18: amendment return: AC3 — "exits 0 in plain desktop Chrome or Chromium, in Chrome or Chromium emulating a Mac Safari user agent with 0 touch points, and in Chrome or Chromium emulating a Windows user agent with touch points"
 - 2026-10-18: amendment return: AC4 — "`node tests/render_check.mjs` against `docs/example.html` in Chrome or Chromium emulating an iPhone and, separately, an iPad"
+- 2026-10-18: review pass 2: AC3/AC4 re-verified and ticked; gate passed; 3 lenses; 12 fixed (536fbff), 2 rejected, 7 follow-up, 5 noted.
+- 2026-10-18: step-7 approval: m001-ios-safari-check approved for merge
 - 2026-10-18: T7 done: AC3/AC4 amended (wording only; what users see is unchanged); CLAUDE.md "real Google Chrome" lines and the render_check.mjs header now say Chrome or Chromium, matching CHROME_PATH.
 
 ## Decisions
