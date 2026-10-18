@@ -4,8 +4,9 @@
 // server listens with a backlog of 5, and a browser opening many connections
 // at once can get some of them reset, so the viewer JS sometimes never loads.
 //
-// serveDocs({ port, transformHtml, routes }) resolves to the listening server.
+// serveDocs({ port, transformHtml, routes, root }) resolves to the listening server.
 //   port           0 picks a free port (server.address().port)
+//   root           directory to serve (default docs/)
 //   transformHtml  optional (html) => html applied to every .html response
 //   routes         optional { "/path": (req, res) => void } handlers
 
@@ -29,18 +30,19 @@ const TYPES = {
   ".woff2": "font/woff2",
 };
 
-export function serveDocs({ port = 0, transformHtml = null, routes = {} } = {}) {
+export function serveDocs({ port = 0, transformHtml = null, routes = {}, root = DOCS } = {}) {
+  root = path.resolve(root);
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, "http://127.0.0.1");
     if (routes[url.pathname]) return routes[url.pathname](req, res);
     let file;
     try {
-      file = path.join(DOCS, decodeURIComponent(url.pathname));
+      file = path.join(root, decodeURIComponent(url.pathname));
     } catch {
       res.writeHead(400).end(); // malformed percent-escape
       return;
     }
-    if (!file.startsWith(DOCS + path.sep) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
+    if (!file.startsWith(root + path.sep) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
       res.writeHead(404).end();
       return;
     }
