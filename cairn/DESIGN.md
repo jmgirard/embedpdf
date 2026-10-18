@@ -62,8 +62,9 @@ renderers.
   version is the dependency path that browser caches key on. (CLAUDE.md)
 - Every change to shortcode behavior adds a matching `check(...)` in
   `tests/test_shortcode.lua`. (CLAUDE.md)
-- PDF.js rendering is checked in real Google Chrome (`tests/render_check.mjs`),
-  never in the Claude preview browser. (CLAUDE.md)
+- PDF.js rendering is checked in real Chrome or Chromium
+  (`tests/render_check.mjs`), never in the Claude preview browser. (CLAUDE.md;
+  corrected M001)
 - A viewer change is also checked in Safari in the iOS Simulator before
   release. (interview 2026-10-18)
 
@@ -114,8 +115,10 @@ The Lua shortcode runs at render time. For HTML it injects one HTML
 dependency (viewer script as an ES module, stylesheet, and the two PDF.js
 files as resources). It emits a `div.embedpdf` with `data-*` attributes and a
 download-link fallback for readers without JavaScript. In the browser,
-`embedpdf-viewer.js` picks a renderer per placeholder: `auto` uses the native
-`<object>` when `navigator.pdfViewerEnabled` is true, else PDF.js. PDF.js is
+`embedpdf-viewer.js` picks a renderer per placeholder: `auto` uses PDF.js on
+iPhone and iPad (an iPhone, iPod, or iPad user agent, or a Mac user agent with
+`maxTouchPoints > 1`). Elsewhere, `auto` uses the native `<object>` if
+`navigator.pdfViewerEnabled` is true, and otherwise PDF.js (corrected M001). PDF.js is
 imported on demand relative to the viewer script, so desktop visitors on the
 native path never download it. Page rendering goes through one queue shared
 by every viewer on the page, and canvas size is capped at 8,000,000 pixels
@@ -123,15 +126,20 @@ with device pixel ratio clamped to 2, for constrained mobile devices.
 
 ## Known issues
 
-- Self-contained documents (`embed-resources: true`) cannot render the PDF on
-  mobile, because PDF.js must fetch the file by URL (README "Known
-  limitations").
+- Self-contained documents (`embed-resources: true`) render no embed in any
+  browser. Quarto inlines the viewer script, and the script throws at
+  `new URL("./pdf.min.mjs", import.meta.url)` before it hydrates anything, so
+  readers get only the download link. The README "Known limitations" advice to
+  use `renderer=native` there does not work (corrected M001, observed in
+  Chromium 155 and iOS 27.0 Safari 2026-10-18).
 - The PDF.js viewer has no text selection or search (out of scope, see the
   contract boundary).
 - A PDF.js embed is a canvas with no text, so screen readers cannot read it.
   The download link is the only accessible path today — observed 2026-10-18.
-- Not yet checked on a real Android device loading the GitHub Pages site, or
-  on iOS at all (CLAUDE.md "Still unverified") — observed 2026-10-18.
+- Not yet checked on a real Android device, iPhone, or iPad loading the GitHub
+  Pages site (CLAUDE.md "Still unverified"). iOS is checked only in iOS 27.0
+  and 27.1 simulators by `tests/ios_check.mjs`, and iOS versions before 27 are
+  not checked (corrected M001) — observed 2026-10-18.
 - GitHub releases stop at v0.5.0 while tags reach v1.0.2, so the README
   version badge shows 0.5.0 — observed 2026-10-18.
 - First paint is fragile. v1.0.1 and v1.0.2 both fixed pages that never

@@ -6,9 +6,9 @@
 <script src="revealjs_test_files/libs/quarto-html/tippy.umd.min.js"></script>
 <link href="revealjs_test_files/libs/quarto-html/tippy.css" rel="stylesheet">
 <link href="revealjs_test_files/libs/quarto-html/light-border.css" rel="stylesheet">
-<link href="revealjs_test_files/libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<link href="revealjs_test_files/libs/quarto-contrib/embedpdf-1.0.2/embedpdf.css" rel="stylesheet"><meta charset="utf-8">
-  <meta name="generator" content="quarto-1.9.38">
+<link href="revealjs_test_files/libs/quarto-html/quarto-syntax-highlighting-bf27225e3a48a9273f3daa8f8e829971.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="revealjs_test_files/libs/quarto-contrib/embedpdf-1.0.3/embedpdf.css" rel="stylesheet"><meta charset="utf-8">
+  <meta name="generator" content="quarto-1.10.19">
 
   <title>embedpdf in RevealJS</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -20,10 +20,13 @@
     /* Default styles provided by pandoc.
     ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
     */
-    code{white-space: pre-wrap;}
     span.smallcaps{font-variant: small-caps;}
-    div.columns{display: flex; gap: min(4vw, 1.5em);}
-    div.column{flex: auto; overflow-x: auto;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
     div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
     ul.task-list{list-style: none;}
     ul.task-list li input[type="checkbox"] {
@@ -534,5 +537,5 @@
       </script>
     
 
-<script src="revealjs_test_files/libs/quarto-contrib/embedpdf-1.0.2/embedpdf-viewer.js" type="module"></script>
+<script src="revealjs_test_files/libs/quarto-contrib/embedpdf-1.0.3/embedpdf-viewer.js" type="module"></script>
 </body></html>

@@ -34,14 +34,35 @@ behavior (a new option, output format, escaping rule, default, etc.).
 **After any change to `embedpdf-viewer.js` or `embedpdf.css`** — bump `version:`
 in **both** `_extension.yml` and the `add_html_dependency{ version = ... }` call
 in `embedpdf.lua` (the version is the dependency path; caches key on it), then
-verify real rendering in **real Google Chrome** (NOT the preview browser — see
+verify real rendering in **real Chrome or Chromium** (NOT the preview browser — see
 gotcha). From the repo root:
 
 ```
-quarto render example.qmd
-python3 -m http.server 8000 --directory docs &   # serve; PDF.js needs http, not file://
-npm install puppeteer-core                        # once, if missing (gitignored)
-node tests/render_check.mjs http://localhost:8000/example.html   # exits 0 if canvases have ink
+quarto render
+npm install puppeteer-core            # once, if missing (gitignored)
+node tests/render_check.mjs example.html --expect-native 9 --expect-pdfjs 2
+node tests/render_check.mjs example.html --device mac-safari --expect-native 9 --expect-pdfjs 2
+node tests/render_check.mjs example.html --device windows-touch --expect-native 9 --expect-pdfjs 2
+node tests/render_check.mjs example.html --device iphone --expect-native 1 --expect-pdfjs 10
+node tests/render_check.mjs example.html --device ipad --expect-native 1 --expect-pdfjs 10
+node tests/ios_check.mjs --device "embedpdf iPhone"
+node tests/ios_check.mjs --device "embedpdf iPad"
+```
+
+`render_check.mjs` serves `docs/` itself with `tests/serve_docs.mjs`. If every
+PDF.js canvas has ink and the counts match, it exits 0. If Google Chrome is not
+installed, set `CHROME_PATH` to another Chrome or Chromium binary. Do not serve
+`docs/` with `python3 -m http.server`. It resets some of the browser's parallel
+connections, and then no embed loads.
+
+`ios_check.mjs` opens the page in Safari in an iOS simulator. If every embed not
+set to `renderer=native` uses PDF.js with every page inked, it exits 0.
+It needs Xcode, the iOS platform (`xcodebuild -downloadPlatform iOS`), and the
+two simulators, which you create once:
+
+```
+xcrun simctl create "embedpdf iPhone" "iPhone 17" com.apple.CoreSimulator.SimRuntime.iOS-27-0
+xcrun simctl create "embedpdf iPad" "iPad Air 11-inch (M4)" com.apple.CoreSimulator.SimRuntime.iOS-27-0
 ```
 
 **After doc/example changes** — `quarto render` and confirm it completes with no
@@ -58,15 +79,24 @@ errors.
   version (new dependency path) or serving on a new port loads changed viewer JS.
 - PDF.js 6.x `getDocument` needs an options object: `getDocument({ url })` — a
   bare string throws.
-- `renderer=auto` uses the native `<object>` when `navigator.pdfViewerEnabled`
-  is true, else PDF.js. Force with `renderer=native|pdfjs`; `pdfjs` is how you
-  preview the mobile path on a desktop.
+- `renderer=auto` uses PDF.js on iPhone and iPad (an iPad sends a Mac user
+  agent, so it is detected by `maxTouchPoints > 1`). Elsewhere, if
+  `navigator.pdfViewerEnabled` is true, it uses the native `<object>`, and
+  otherwise PDF.js.
+  Safari on iOS 27 reports `pdfViewerEnabled` true. Force a renderer with
+  `renderer=native|pdfjs`. Use `pdfjs` to preview the mobile path on a desktop.
+- A self-contained page (`embed-resources: true`) hydrates no embeds: the
+  inlined viewer throws at `new URL("./pdf.min.mjs", import.meta.url)`.
+- `quarto render` renders only `*.qmd` (`_quarto.yml`), so `cairn/` stays out
+  of `docs/`.
 - The viewer serializes rendering (one page at a time, shared PDF.js worker) and
   caps canvas pixels — keep both; they matter on constrained mobile devices.
 
 ## Still unverified
 - A real Android device loading the GitHub Pages site (the actual target
   environment; can only be checked by a human on a phone).
+- A real iPhone or iPad loading the GitHub Pages site, and any iOS version
+  before 27. `tests/ios_check.mjs` covers only iOS 27.0 and 27.1 simulators.
 
 ## Project tracking (cairn)
 
