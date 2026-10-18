@@ -7,21 +7,51 @@
 // renderer=pdfjs  -> always the PDF.js canvas viewer
 //
 // PDF.js core (pdf.min.mjs + pdf.worker.min.mjs, vendored from pdfjs-dist) is
-// resolved relative to this file via import.meta.url and loaded on demand, so
-// documents that only ever use the native path never download it.
+// added by the shortcode as two scripts whose types are not JavaScript types,
+// so the browser neither fetches nor runs them. PDF.js is loaded from them on
+// demand, so documents that only ever use the native path never download it.
+// A self-contained page (embed-resources: true) has the files inlined as the
+// scripts' text, and its PDFs inlined as data: URLs.
 
-const PDFJS_URL = new URL("./pdf.min.mjs", import.meta.url).href;
-const WORKER_URL = new URL("./pdf.worker.min.mjs", import.meta.url).href;
+// the URL of a PDF.js file: the script's src, or a blob: URL of its inlined text
+function pdfjsUrl(kind) {
+  const script = document.querySelector(`script[type="text/x-embedpdf-${kind}"]`);
+  if (!script) throw new Error(`the PDF.js ${kind} script is missing from the page`);
+  if (script.src) return script.src;
+  return URL.createObjectURL(new Blob([script.textContent], { type: "text/javascript" }));
+}
 
 let pdfjsPromise = null;
 function loadPdfjs() {
   if (!pdfjsPromise) {
-    pdfjsPromise = import(PDFJS_URL).then((lib) => {
-      lib.GlobalWorkerOptions.workerSrc = WORKER_URL;
+    pdfjsPromise = import(pdfjsUrl("pdfjs")).then((lib) => {
+      lib.GlobalWorkerOptions.workerSrc = pdfjsUrl("worker");
       return lib;
     });
   }
   return pdfjsPromise;
+}
+
+// The bytes and a blob: URL of an inlined (data:) PDF, decoded once per source.
+// A blob: URL keeps a large PDF out of attribute values and URL length limits.
+const inlinedPdfs = new Map();
+function inlinedPdf(src) {
+  if (!inlinedPdfs.has(src)) {
+    const comma = src.indexOf(",");
+    const meta = src.slice(5, comma);
+    const body = src.slice(comma + 1);
+    let bytes;
+    if (/;base64$/i.test(meta)) {
+      const bin = atob(body);
+      bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    } else {
+      bytes = new TextEncoder().encode(decodeURIComponent(body));
+    }
+    const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+    inlinedPdfs.set(src, { bytes, url });
+  }
+  return inlinedPdfs.get(src);
 }
 
 // Serialize page rendering across every viewer on the page. All viewers share
@@ -59,7 +89,7 @@ function nativeSupported() {
 function hydrateNative(el, opts) {
   const object = document.createElement("object");
   object.type = "application/pdf";
-  object.data = opts.page > 1 ? `${opts.src}#page=${opts.page}` : opts.src;
+  object.data = opts.page > 1 ? `${opts.href}#page=${opts.page}` : opts.href;
   if (opts.width) object.setAttribute("width", opts.width);
   if (opts.height) object.setAttribute("height", opts.height);
   // keep the no-JS fallback content (image or download link) inside the object
@@ -70,7 +100,11 @@ function hydrateNative(el, opts) {
 
 async function hydratePdfjs(el, opts) {
   const pdfjs = await loadPdfjs();
-  const doc = await pdfjs.getDocument({ url: new URL(opts.src, document.baseURI).href }).promise;
+  // PDF.js takes ownership of the bytes it is given, so it gets a copy
+  const source = opts.inlined
+    ? { data: inlinedPdf(opts.src).bytes.slice() }
+    : { url: new URL(opts.src, document.baseURI).href };
+  const doc = await pdfjs.getDocument(source).promise;
 
   el.textContent = "";
   el.classList.add("embedpdf-pdfjs");
@@ -194,8 +228,8 @@ async function hydratePdfjs(el, opts) {
 
     const download = document.createElement("a");
     download.className = "embedpdf-download";
-    download.href = opts.src;
-    download.setAttribute("download", "");
+    download.href = opts.href;
+    download.setAttribute("download", opts.filename);
     download.textContent = "⤓";
     download.title = "Download PDF";
 
@@ -255,6 +289,26 @@ function hydrate(el) {
     height: el.dataset.height || "",
   };
   if (!opts.src) return;
+  // A self-contained page has the PDF inlined in data-src, but its download
+  // links (the fallback link and the button) still name the separate file.
+  // Point them at the inlined PDF, under that file's name.
+  opts.inlined = /^data:/i.test(opts.src);
+  opts.href = opts.src;
+  opts.filename = "";
+  if (opts.inlined) {
+    const fallback = el.querySelector("a[download]");
+    const fileHref = fallback ? fallback.getAttribute("href") : "";
+    opts.href = inlinedPdf(opts.src).url;
+    opts.filename = (fileHref.split(/[?#]/)[0].split("/").pop() || "document.pdf");
+    const links = fallback ? [fallback] : [];
+    const next = el.nextElementSibling;
+    const button = next && next.querySelector("a.embedpdf-btn");
+    if (button && button.getAttribute("href") === fileHref) links.push(button);
+    for (const a of links) {
+      a.href = opts.href;
+      a.setAttribute("download", opts.filename);
+    }
+  }
   const useNative = opts.renderer === "native" || (opts.renderer === "auto" && nativeSupported());
   if (useNative) {
     hydrateNative(el, opts);
