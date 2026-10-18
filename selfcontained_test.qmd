@@ -1,0 +1,22 @@
+---
+title: "embedpdf in a self-contained page"
+format:
+  html:
+    embed-resources: true
+---
+
+This page is built with `embed-resources: true`, so it is one HTML file with
+the PDF and the viewer inside it. The checks in `tests/` open a copy of it with
+no other file beside it.
+
+## Auto renderer
+
+{{< pdf sample.pdf >}}
+
+## Native renderer
+
+{{< pdf sample.pdf renderer=native >}}
+
+## PDF.js renderer
+
+{{< pdf sample.pdf renderer=pdfjs button="Download the PDF" >}}

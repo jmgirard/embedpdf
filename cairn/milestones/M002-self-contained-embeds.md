@@ -1,13 +1,13 @@
 # M002: Self-contained embeds
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1, IP2, GP4, GP5, GP6
 - **Resolves:** —
 - **Surface tier:** user-facing — it changes what readers of self-contained Quarto pages and slides see
-- **Branch/PR:** —
+- **Branch/PR:** m002-self-contained-embeds
 
 ## Goal
 
@@ -45,7 +45,7 @@ A page or slide deck rendered with `embed-resources: true` shows its embeds inli
 
 ## Tasks
 
-- [ ] T1: Add `selfcontained_test.qmd` and `selfcontained_slides_test.qmd` (each embeds `sample.pdf` once per renderer, the pdfjs one with `button=`). Render them into `docs/`.
+- [x] T1: Add `selfcontained_test.qmd` and `selfcontained_slides_test.qmd` (each embeds `sample.pdf` once per renderer, the pdfjs one with `button=`). Render them into `docs/`.
 - [ ] T2: In `tests/render_check.mjs`, add a mode that copies the page alone into an empty temporary directory and loads it over HTTP or as a `file://` URL. Add the native `<object>` data fetch check, the download-link check, a per-embed page count, and a step that goes to each Reveal slide with `Reveal.slide()` before it measures. Run it on the v1.0.3 render and see it fail.
 - [ ] T3: In `tests/ios_check.mjs`, add a mode that serves a directory that holds only the page. Run it on the v1.0.3 render and see it fail.
 - [ ] T4: In `embedpdf.lua`, add a second HTML dependency at the first `auto` or `pdfjs` embed. It lists `pdf.min.mjs` and `pdf.worker.min.mjs` as script elements with a non-JavaScript `type`. Add the two `check(...)` cases to `tests/test_shortcode.lua`.
@@ -71,3 +71,5 @@ A page or slide deck rendered with `embed-resources: true` shows its embeds inli
 - 2026-10-18: criteria audit (full mode, fresh Opus reader), pass 1: 11 findings. Fixed: AC1 vacuous grep (exact counts, quote-tolerant pattern), AC2 native readability (object data fetch), AC2 run count wording, AC5 (old) button link outside the div (named selectors, count 4, merged into AC2), AC6 (old) stated as shortcode output, AC7 `renderer=native` grep added. Narrowed: goal drops Android, AC4 to example.html, README claim. Moved to tasks: the GP5 and IP2 record (D-002) and the DESIGN.md and CLAUDE.md edits, because records are not criteria.
 - 2026-10-18: criteria audit (full mode, same reader, changed criteria), pass 2: 5 findings. Fixed: AC1 counts are occurrences, AC2 per-embed page count and the default toolbar, AC6 slide navigation and per-embed page count (an off-screen Reveal slide renders nothing), AC7 names both no-JS links. Narrowed: the goal now names the AC2, AC3, and AC6 browsers, so slide decks are Chromium-only and iOS covers embeds not set to `renderer=native`.
 - 2026-10-18: split: self-contained slides on iOS go to the candidate row "Self-contained slides on iOS". The no-JS links go to the candidate row "Self-contained no-JS link".
+- 2026-10-18: implement started on branch m002-self-contained-embeds.
+- 2026-10-18: T1: added selfcontained_test.qmd and selfcontained_slides_test.qmd and rendered both into docs/ (v1.0.3 viewer). Each holds 3 inlined `data-src` PDFs and no file-name `src`. The HTML page holds 3 inlined module scripts, not 1: Quarto's two tabsets scripts are modules too, so AC1's module-script count needs a wording amendment (pending).
