@@ -1,6 +1,6 @@
 # M001: iOS Safari check
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
@@ -30,11 +30,11 @@ CLAUDE.md, PROFILE.md and DESIGN.md text that the change makes stale.
 
 ## Acceptance criteria
 
-- [ ] AC1: In Safari on an iPhone simulator with default settings (model and iOS runtime recorded with the evidence),
+- [x] AC1: In Safari on an iPhone simulator with default settings (model and iOS runtime recorded with the evidence),
       `docs/example.html` served over http from `docs/` renders each of the 10 embeds not set to `renderer=native` with
       PDF.js, with exactly 2 `.embedpdf-page` containers per embed (`sample.pdf` has 2 pages) and a canvas with ink in
       each, as reported by one run of `node tests/ios_check.mjs` that exits 0.
-- [ ] AC2: The same holds on an iPad simulator with Safari's default desktop-website setting (model and iOS runtime
+- [x] AC2: The same holds on an iPad simulator with Safari's default desktop-website setting (model and iOS runtime
       recorded with the evidence), by one run of `node tests/ios_check.mjs` that exits 0.
 - [ ] AC3: Desktop stays native: `node tests/render_check.mjs` against `docs/example.html` reports 9 native and 2 PDF.js
       embeds and exits 0 in plain desktop Chrome, in Chrome emulating a Mac Safari user agent with 0 touch points, and in
@@ -43,9 +43,9 @@ CLAUDE.md, PROFILE.md and DESIGN.md text that the change makes stale.
       with touch points), each with `navigator.pdfViewerEnabled` set to the value the T2 baseline recorded on that
       simulator, reports 1 native and 10 PDF.js embeds and exits 0; the same two runs against the v1.0.2
       `embedpdf-viewer.js` report the native count T2 recorded for that simulator.
-- [ ] AC5: `version:` in `_extensions/embedpdf/_extension.yml` and the `add_html_dependency` version in `embedpdf.lua` both
+- [x] AC5: `version:` in `_extensions/embedpdf/_extension.yml` and the `add_html_dependency` version in `embedpdf.lua` both
       read `1.0.3`, and `pandoc lua tests/test_shortcode.lua` prints `0 failed`.
-- [ ] AC6: `README.md` and `example.qmd` state that `renderer=auto` uses PDF.js on iPhone and iPad, and state what
+- [x] AC6: `README.md` and `example.qmd` state that `renderer=auto` uses PDF.js on iPhone and iPad, and state what
       `renderer=native` shows in iOS Safari, matching the AC1 and AC2 runs and the T2 baseline; each line that a search
       for `pdfViewerEnabled` finds in those two files states the iPhone and iPad exception or sits in a sentence that does.
 
@@ -124,7 +124,19 @@ CLAUDE.md, PROFILE.md and DESIGN.md text that the change makes stale.
 - 2026-10-18: T6 done: README (intro, `renderer` option row, a Known limitations line on `renderer=native` in iOS Safari), example.qmd (the `pdfViewerEnabled` paragraph states the iPhone/iPad exception; a line under the native example), CLAUDE.md (verify commands, simulator setup, `auto` gotcha, self-contained and render-list gotchas), PROFILE.md `verify`, DESIGN Architecture and Known issues. `quarto render` clean. Added README lines lint 0 hits with simple-english `ste_lint.py`; the file total went from 20 on main to 14.
 - 2026-10-18: claim audit: 46 claims read, 4 corrected — embedpdf-viewer.js, README.md, example.qmd, tests/render_check.mjs (Mac touch-point claim dropped; native-scroll claim narrowed to the iOS 27.1 iPhone run; "desktop never downloads PDF.js" narrowed; DEVICES comment limited to measured values). Re-read: all 4 hold. 3 Android claims (README intro and bullet, example.qmd) restate pre-branch text and stay.
 - 2026-10-18: implement complete: all tasks checked; quarto render clean after the audit fixes; status → review.
+- 2026-10-18: review pass 1: AC1, AC2, AC5, AC6 verified and ticked; AC3 and AC4 runs pass but used Chromium 155, while both criteria name Chrome.
+- 2026-10-18: amendment routed: AC3 — criterion names "Chrome" as the instrument; Google Chrome is not installed and every run used Chromium 155 via CHROME_PATH (same engine and PDF viewer).
+- 2026-10-18: amendment routed: AC4 — same instrument wording ("in Chrome emulating"); runs used Chromium 155.
 
 ## Decisions
 
 ## Review
+
+Pass 1, 2026-10-18, branch head 9aa3bf8; main unmoved (011933b), no sync needed.
+
+- AC1 evidence: `node tests/ios_check.mjs --device "embedpdf iPhone"` exit 0. iPhone 17, iOS 27.0 (24A434), default settings, viewer embedpdf-1.0.3; embeds 1-9 and 11 (the 10 not set to `renderer=native`) on PDF.js, 2 `.embedpdf-page` containers each, every page inked, no errors.
+- AC2 evidence: `node tests/ios_check.mjs --device "embedpdf iPad"` exit 0. iPad Air 11-inch (M4), iOS 27.0 (24A434), default desktop-website setting (UA "Macintosh; Intel Mac OS X 10_15_7 ... Version/27.0 Safari"); same embed result as AC1, no errors.
+- AC3 evidence (not ticked, see amendment): `render_check.mjs example.html` with `--expect-native 9 --expect-pdfjs 2`: plain, `--device mac-safari` (maxTouchPoints 0), `--device windows-touch` (maxTouchPoints 10), each pdfViewerEnabled true, 9 native, 2 PDF.js, 4/4 canvases inked, exit 0. Browser was Chromium 155.0.8059.39, not Google Chrome (not installed).
+- AC4 evidence (not ticked, see amendment): `--device iphone` and `--device ipad` (pdfViewerEnabled true, as T2 recorded) on v1.0.3: 1 native, 10 PDF.js, 20/20 canvases inked, exit 0. Same two runs against main's v1.0.2 `docs/` (served from a `git archive main docs` copy): 9 native, 2 PDF.js, exit 0, matching the 9 native T2 recorded on both simulators. Browser Chromium 155.
+- AC5 evidence: `version: 1.0.3` in `_extension.yml:3`, `version = "1.0.3"` in `embedpdf.lua:29`; `pandoc lua tests/test_shortcode.lua` prints `30 passed, 0 failed`.
+- AC6 evidence: README.md:61 and :85 and example.qmd:81 state that `renderer=auto` uses PDF.js on iPhone and iPad; README.md:85 and example.qmd:103 state what `renderer=native` shows in iOS Safari (own viewer, scroll to every page in the iOS 27.1 iPhone run), matching T2 and AC1/AC2. The only `pdfViewerEnabled` line in either file is example.qmd:81, whose paragraph states the iPhone/iPad exception; README.md has none.
