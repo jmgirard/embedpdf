@@ -10,9 +10,9 @@ Embed PDF files in Quarto HTML documents (including RevealJS presentations) — 
   <img src="man/figures/mobile-viewer.png" alt="A PDF rendered by embedpdf's built-in PDF.js viewer at phone width, showing a toolbar and the document text" width="330">
 </p>
 
-On desktop, PDFs are shown with the browser's built-in viewer. On mobile browsers — which cannot display embedded PDFs natively — the extension automatically renders the PDF with [PDF.js](https://mozilla.github.io/pdf.js/), Mozilla's JavaScript PDF renderer (pictured above), complete with a small toolbar for zooming, page tracking, and downloading.
+On desktop, PDFs are shown with the browser's built-in viewer. On iPhone and iPad, the extension renders the PDF with [PDF.js](https://mozilla.github.io/pdf.js/), Mozilla's JavaScript PDF renderer (pictured above). It does the same in mobile browsers that cannot display embedded PDFs, such as Chrome on Android. The PDF.js viewer has a small toolbar for zooming, page tracking, and downloading.
 
-- 📱 **Works on mobile**, where `<object>`/`<iframe>` embeds and Quarto's native `![](file.pdf)` show a blank box or a download prompt.
+- 📱 **Works on mobile**. On Android, `<object>`/`<iframe>` embeds and Quarto's native `![](file.pdf)` show a blank box or a download prompt. Users report that older iOS versions show only the first page.
 - 🪶 **Light by default** — the ~1.7 MB PDF.js library is bundled but only downloaded by browsers that actually need it; desktop visitors never fetch it.
 - 🎛️ **One shortcode, sensible options** — size, borders, initial page, a download button, and per-document/project defaults.
 - 🖥️ **Slides too** — renders inside RevealJS presentations.
@@ -58,7 +58,7 @@ resources:
 
 | Option | Default | Description |
 |---|---|---|
-| `renderer` | `auto` | `auto` uses the browser's native viewer when available and PDF.js otherwise (i.e., on mobile); `native` and `pdfjs` force one or the other |
+| `renderer` | `auto` | `auto` uses PDF.js on iPhone and iPad and in browsers with no built-in PDF viewer, such as Chrome on Android. Other browsers get their native viewer. `native` and `pdfjs` force one or the other. |
 | `width` | | Width of the viewer (pixels or percent) |
 | `height` | | Height of the viewer (pixels or percent) |
 | `page` | `1` | Initial page to display |
@@ -82,6 +82,7 @@ In LaTeX/PDF output, embedded PDFs are included page-by-page via the `pdfpages` 
 ### Known limitations
 
 - Self-contained documents (`embed-resources: true`) inline the viewer code, but PDF.js must fetch the PDF file by URL at view time. Use `renderer=native` and ship the PDF alongside the HTML file. Note that a self-contained document viewed on mobile cannot render the PDF inline at all (neither the native viewer nor PDF.js works without the separate file), so readers there fall back to the download link.
+- With `renderer=native`, Safari on iPhone and iPad shows the PDF in its own viewer. Readers scroll inside the embed to reach every page (checked in iOS 27.0 and 27.1 simulators on 2026-10-18). Users report that older iOS versions show only the first page ([#3](https://github.com/jmgirard/embedpdf/issues/3)). For this reason, `renderer=auto` uses PDF.js on iPhone and iPad.
 - The viewer requires JavaScript; with it disabled, embeds become a download link.
 - The PDF.js canvas viewer does not yet support text selection or search; use the native renderer on desktop (the default) if you need those.
 

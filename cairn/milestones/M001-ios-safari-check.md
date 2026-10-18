@@ -78,7 +78,7 @@ CLAUDE.md, PROFILE.md and DESIGN.md text that the change makes stale.
       Mac user agent and `maxTouchPoints > 1`, before reading `pdfViewerEnabled`. Bump `1.0.2` to `1.0.3` in
       `_extension.yml` and `embedpdf.lua`. Run `quarto render`, the shortcode tests, `render_check.mjs` in all five modes,
       and `ios_check.mjs` on both simulators.
-- [ ] T6: Docs. Update the renderer text in `README.md` and `example.qmd` (the `pdfViewerEnabled` lines and the
+- [x] T6: Docs. Update the renderer text in `README.md` and `example.qmd` (the `pdfViewerEnabled` lines and the
       self-contained-document advice for `renderer=native`) from the T2 and T5 observations, then `quarto render`. Add
       `node tests/ios_check.mjs` to CLAUDE.md "Verify before finishing" and the PROFILE.md `verify` slot for viewer
       changes, and update the CLAUDE.md `renderer=auto` gotcha. Update the DESIGN.md Architecture `auto` sentence and the
@@ -119,6 +119,9 @@ CLAUDE.md, PROFILE.md and DESIGN.md text that the change makes stale.
 - 2026-10-18: T5 done: `isAppleMobile()` (iPhone/iPod/iPad in UA, or Macintosh UA with maxTouchPoints > 1) makes `nativeSupported()` return false; version 1.0.3 in both files. Shortcode tests 30 passed, 0 failed. render_check v1.0.3: chrome, mac-safari, windows-touch 9 native / 2 PDF.js; iphone, ipad 1 native / 10 PDF.js, 20/20 canvases with ink; all exit 0.
 - 2026-10-18: T5 ios_check v1.0.3: iPhone 17 and iPad Air 11-inch (M4), iOS 27.0, each exit 0 with embeds 1-9 and 11 on PDF.js, 2 page containers each, 2/2 inked pages, no errors. Discrimination on iPhone: `--plant blank` exit 1 "embed 1: pages without ink: 2"; `--plant missing` exit 1 "embed 1: 1 page containers, expected 2".
 - 2026-10-18: discovered sub-task: `quarto render` rendered `cairn/*.md` into docs/cairn/; added `render: ["*.qmd"]` to `_quarto.yml` and deleted the output; rerender clean.
+- 2026-10-18: finding: a self-contained page (`embed-resources: true`, temporary `_sc_test.qmd`, deleted) hydrates no embed in iOS 27.0 Safari or Chromium 155: the inlined viewer throws `"./pdf.min.mjs" cannot be parsed as a URL`, so even `renderer=native` shows only the download link. Pre-existing (same line in v1.0.2). Recorded as a [high] ROADMAP candidate and corrected in DESIGN Known issues.
+- 2026-10-18: minor amendment: T6 leaves the README and example.qmd self-contained `renderer=native` advice unchanged, because the finding above makes it a separate bug; the candidate row owns the fix. AC6 does not cover that advice.
+- 2026-10-18: T6 done: README (intro, `renderer` option row, a Known limitations line on `renderer=native` in iOS Safari), example.qmd (the `pdfViewerEnabled` paragraph states the iPhone/iPad exception; a line under the native example), CLAUDE.md (verify commands, simulator setup, `auto` gotcha, self-contained and render-list gotchas), PROFILE.md `verify`, DESIGN Architecture and Known issues. `quarto render` clean. Added README lines lint 0 hits with simple-english `ste_lint.py`; the file total went from 20 on main to 14.
 
 ## Decisions
 

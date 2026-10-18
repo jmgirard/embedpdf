@@ -19,6 +19,7 @@ _Last hygiene check: 2026-10-18 (scaffolded by /cairn-init)_
      open each row with its short title, the words the cairn pane shows, then `: `;
      tracking-rules "Candidate short title" has the whole rule -->
 - [high] iOS Safari check: add an iOS Simulator check for viewer changes, and confirm which renderer `auto` picks on iOS and that every page shows (IP1) — added 2026-10-18 — DESIGN Known issues — started M001
+- [high] Self-contained embeds: a page with `embed-resources: true` hydrates no embed in any browser, because the inlined viewer throws at `new URL("./pdf.min.mjs", import.meta.url)`. The README "Known limitations" advice to use `renderer=native` there does not work. Found in M001 (Chromium 155, iOS 27.0 Safari) — added 2026-10-18 — DESIGN Known issues
 - GitHub releases for v1.0.x: publish GitHub releases for tags v1.0.0 to v1.0.2 so the README version badge is current — added 2026-10-18 — DESIGN Known issues
 - Screen-reader text layer: add a hidden PDF.js text layer so screen readers can read PDF.js embeds (GP1 allows it) — added 2026-10-18 — DESIGN Known issues
 - [low] First-paint robustness: find load cases where an on-screen page still does not render after the v1.0.1 and v1.0.2 fixes — added 2026-10-18 — DESIGN Known issues

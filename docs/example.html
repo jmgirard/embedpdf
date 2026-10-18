@@ -211,7 +211,7 @@ Important
 <section id="supporting-mobile-browsers" class="level2">
 <h2 class="anchored" data-anchor-id="supporting-mobile-browsers">Supporting Mobile Browsers</h2>
 <p>Mobile browsers (e.g., Chrome and Firefox on Android) do not support the inline rendering of PDF objects: they show a blank box or a download prompt instead. To solve this, the extension includes a JavaScript-based PDF renderer, <a href="https://mozilla.github.io/pdf.js/">PDF.js</a>.</p>
-<p>By default (<code>renderer=auto</code>), each embedded PDF checks whether the browser can display PDFs inline (via <code>navigator.pdfViewerEnabled</code>). If it can, the browser’s native PDF viewer is used, exactly as before. If it cannot (e.g., on mobile), the PDF is instead drawn page-by-page onto the screen by PDF.js, complete with a small toolbar for zooming, page tracking, and downloading. Desktop visitors never download the PDF.js library; it is only fetched when a browser actually needs it.</p>
+<p>By default (<code>renderer=auto</code>), each embedded PDF checks whether the browser can display PDFs inline (via <code>navigator.pdfViewerEnabled</code>). If it can, the browser’s native PDF viewer is used. If it cannot, as on Android, PDF.js draws the PDF page by page. The PDF.js viewer has a small toolbar for zooming, page tracking, and downloading. iPhone and iPad are the exception to the <code>pdfViewerEnabled</code> check. Safari there reports that it can display PDFs, but users report that older iOS versions show only the first page. For this reason, <code>renderer=auto</code> always uses PDF.js on iPhone and iPad. Desktop visitors never download the PDF.js library. A browser fetches it only for a PDF.js embed.</p>
 <section id="force-the-pdf.js-renderer" class="level3">
 <h3 class="anchored" data-anchor-id="force-the-pdf.js-renderer">Force the PDF.js renderer</h3>
 <p>Set <code>renderer=pdfjs</code> to always use PDF.js.</p>
@@ -236,6 +236,7 @@ Tip
 <p>Set <code>renderer=native</code> to always use the browser’s built-in viewer.</p>
 <p><code>{{&lt; pdf sample.pdf renderer=native height=400 &gt;}}</code></p>
 <div class="embedpdf" data-src="sample.pdf" data-renderer="native" data-height="400"><a href="sample.pdf" download="">Download PDF file.</a></div>
+<p>In Safari on iPhone and iPad, <code>renderer=native</code> shows the PDF in Safari’s own viewer. Readers scroll inside the embed to reach every page (checked in iOS 27.0 and 27.1 simulators on 2026-10-18).</p>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">

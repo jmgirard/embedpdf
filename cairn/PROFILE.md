@@ -21,11 +21,13 @@ ticking it off. This repo uses the checks in CLAUDE.md "Verify before
 finishing". Run them from the repo root:
 - After a change to `embedpdf.lua`, run `pandoc lua tests/test_shortcode.lua`.
   It must print `N passed, 0 failed`.
-- After a change to `embedpdf-viewer.js` or `embedpdf.css`, run `quarto render
-  example.qmd`. Serve `docs/` with `python3 -m http.server 8000 --directory
-  docs`. Then run `node tests/render_check.mjs http://localhost:8000/example.html`.
-  It drives real Google Chrome and exits 0 when the canvases have ink. It needs
-  `npm install puppeteer-core` once.
+- After a change to `embedpdf-viewer.js` or `embedpdf.css`, run `quarto
+  render`. Then run the five `node tests/render_check.mjs example.html` lines
+  and the two `node tests/ios_check.mjs` lines in CLAUDE.md "Verify before
+  finishing". Each one must exit 0. `render_check.mjs` drives Chrome (set
+  `CHROME_PATH` for Chromium) and serves `docs/` itself. It needs `npm install
+  puppeteer-core` once. `ios_check.mjs` drives Safari in the "embedpdf iPhone"
+  and "embedpdf iPad" iOS simulators.
 - After a doc or example change, run `quarto render`. It must finish with no
   errors.
 
