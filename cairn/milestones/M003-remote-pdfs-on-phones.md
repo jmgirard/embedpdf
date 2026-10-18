@@ -1,13 +1,13 @@
 # M003: Remote PDFs on phones
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1, IP2
 - **Resolves:** #2 closes, #8 closes
 - **Surface tier:** user-facing — changes what phone readers see and what the docs tell authors
-- **Branch/PR:** —
+- **Branch/PR:** m003-remote-pdfs-on-phones
 
 ## Goal
 
@@ -72,7 +72,7 @@ blocks cross-site reads.
 
 ## Tasks
 
-- [ ] T1: In `tests/render_check.mjs` add `--remote blocked|cors|missing`: a second `serveDocs` server on another
+- [x] T1: In `tests/render_check.mjs` add `--remote blocked|cors|missing`: a second `serveDocs` server on another
       port serves `docs/` with no `Access-Control-Allow-Origin` header, with `*`, or as 404 for every PDF, and a
       `transformHtml` points each embed's `data-src`, fallback link, and `button` link at it. Add `--expect-failed <n>`
       (AC1's state, href compared as absolute URLs) and count failed embeds so that "no embed was hydrated" does not
@@ -104,6 +104,8 @@ blocks cross-site reads.
 - 2026-10-18: version 1.1.1 chosen: no option or default changes (GP2).
 - 2026-10-18: criteria audit (full mode, fresh Opus reader): 11 findings, all fixed by narrowing — AC1 trigger limited to CORS and 404 with counts and page named, a RevealJS line added, href compared as absolute URLs; IP1 gap recorded as D-004; AC2 page and `--expect-pages 2` named; AC3 reworded to the renderer choice with counts; AC4 states what ios_check checks; AC5 limited to non-self-contained pages, the `*` header value, and emulated Android; AC6 fixed to the CLAUDE.md lines at `a093bb9`.
 - 2026-10-18: assigned jmgirard to #2 and #8 (`gh issue edit --add-assignee @me`; re-read shows jmgirard on both).
+- 2026-10-18: implement started on m003-remote-pdfs-on-phones; Chromium 155 via `CHROME_PATH=/Applications/Chromium.app/Contents/MacOS/Chromium` (no Google Chrome installed).
+- 2026-10-18: T1 done: `serveRemote`/`pointPdfsAt` in `serve_docs.mjs` (shared with ios_check); render_check gains `--remote`, `--expect-failed`, an `android` device, and console errors in its JSON. `missing` mode sends `Access-Control-Allow-Origin: *` on its 404 so the 404 is what PDF.js meets (console: ResponseException; `blocked` console: the CORS error, UnknownErrorException). Against v1.1.0 the AC1 iphone line and the AC3 line fail on `--expect-failed` (0 found); the AC2 iphone and android lines pass (20/20 canvases inked).
 
 ## Decisions
 

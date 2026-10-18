@@ -10,7 +10,7 @@
 //   e.g. node tests/render_check.mjs example.html
 //   A page path (default example.html) is served from docs/ by
 //   tests/serve_docs.mjs on a free port; an http(s) URL is opened as given.
-//   --device iphone|ipad|mac-safari|windows-touch
+//   --device iphone|ipad|android|mac-safari|windows-touch
 //                       emulate that device's user agent, platform, touch
 //                       points, viewport, and navigator.pdfViewerEnabled
 //                       (values in DEVICES below); default: plain Chrome
@@ -25,6 +25,16 @@
 //                       then serve it over HTTP or open it as a file:// URL.
 //                       Also fail unless each native <object> has a data: or
 //                       blob: URL whose bytes start with %PDF.
+//   --remote blocked|cors|missing
+//                       serve the PDFs from a second server on another port
+//                       (another origin) with no Access-Control-Allow-Origin
+//                       header, with "*", or as HTTP 404, and point each
+//                       embed's data-src and links at it
+//   --expect-failed <n> fail unless exactly n embeds show the load-failure
+//                       state: the text "This PDF cannot be shown here.", an
+//                       "Open the PDF" link to the same absolute URL as
+//                       data-src with target _blank, and no "Download PDF
+//                       file." link
 // Set CHROME_PATH to use another Chrome or Chromium binary.
 //
 // On a RevealJS page the check goes to each slide with Reveal.slide() and
@@ -39,11 +49,13 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import puppeteer from "puppeteer-core";
-import { serveDocs, DOCS } from "./serve_docs.mjs";
+import { serveDocs, serveRemote, pointPdfsAt, REMOTE_MODES, DOCS } from "./serve_docs.mjs";
 
 // For iphone and ipad, userAgent, maxTouchPoints, and pdfViewerEnabled are what
 // Safari reported in iOS 27.0 simulators (iPhone 17, iPad Air 11-inch M4) via
 // tests/ios_check.mjs on 2026-10-18; platform and viewport are not measured.
+// android is not measured: an Android Chrome user agent with pdfViewerEnabled
+// false, the case in which renderer=auto uses PDF.js.
 // The other devices report pdfViewerEnabled = true.
 const MAC_SAFARI_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15";
@@ -62,6 +74,14 @@ const DEVICES = {
     maxTouchPoints: 5,
     pdfViewerEnabled: true,
     viewport: { width: 820, height: 1180, deviceScaleFactor: 2, isMobile: false, hasTouch: true },
+  },
+  android: {
+    userAgent:
+      "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Mobile Safari/537.36",
+    platform: "Linux armv81",
+    maxTouchPoints: 5,
+    pdfViewerEnabled: false,
+    viewport: { width: 412, height: 915, deviceScaleFactor: 2.625, isMobile: true, hasTouch: true },
   },
   "mac-safari": {
     userAgent: MAC_SAFARI_UA,
@@ -82,7 +102,7 @@ const DEVICES = {
 
 // one optional page or URL, plus flags that each take a value; anything else
 // (a misspelled flag, --flag=value) is an error rather than silently ignored
-const FLAGS = ["device", "expect-native", "expect-pdfjs", "expect-pages", "expect-links", "alone"];
+const FLAGS = ["device", "expect-native", "expect-pdfjs", "expect-pages", "expect-links", "expect-failed", "alone", "remote"];
 const args = process.argv.slice(2);
 const flags = {};
 const positional = [];
@@ -107,10 +127,20 @@ const expectNative = flags["expect-native"] ?? null;
 const expectPdfjs = flags["expect-pdfjs"] ?? null;
 const expectPages = flags["expect-pages"] ?? null;
 const expectLinks = flags["expect-links"] ?? null;
+const expectFailed = flags["expect-failed"] ?? null;
 const alone = flags["alone"] ?? null;
+const remote = flags["remote"] ?? null;
 const target = positional[0] || "example.html";
 if (alone && alone !== "http" && alone !== "file") {
   console.error("render_check: --alone must be http or file");
+  process.exit(2);
+}
+if (remote && !REMOTE_MODES.includes(remote)) {
+  console.error(`render_check: --remote must be ${REMOTE_MODES.join(", ")}`);
+  process.exit(2);
+}
+if (remote && (alone || /^https?:/.test(target))) {
+  console.error("render_check: --remote needs a page under docs/, without --alone");
   process.exit(2);
 }
 if (alone && /^https?:/.test(target)) {
@@ -141,8 +171,14 @@ if (alone) {
   process.on("exit", () => fs.rmSync(aloneDir, { recursive: true, force: true }));
   fs.copyFileSync(source, path.join(aloneDir, path.basename(target)));
 }
+const remoteServer = remote ? await serveRemote(remote) : null;
+const remoteBase = remoteServer ? `http://127.0.0.1:${remoteServer.address().port}/` : null;
 const server =
-  /^https?:/.test(target) || alone === "file" ? null : await serveDocs(aloneDir ? { root: aloneDir } : {});
+  /^https?:/.test(target) || alone === "file"
+    ? null
+    : await serveDocs(
+        aloneDir ? { root: aloneDir } : remoteBase ? { transformHtml: (html) => pointPdfsAt(html, remoteBase) } : {}
+      );
 const url =
   alone === "file"
     ? pathToFileURL(path.join(aloneDir, path.basename(target))).href
@@ -157,6 +193,11 @@ const browser = await puppeteer.launch({
 });
 try {
   const page = await browser.newPage();
+  // console errors (a blocked or missing PDF names its cause here)
+  const consoleErrors = [];
+  page.on("console", (m) => {
+    if (m.type() === "error") consoleErrors.push(m.text());
+  });
   if (device) {
     await page.setUserAgent(device.userAgent);
     await page.setViewport(device.viewport);
@@ -231,6 +272,22 @@ try {
     const links = [...document.querySelectorAll(".embedpdf-download, .embedpdf object a[download], a.embedpdf-btn")].map(
       (a) => (a.getAttribute("href") || "").split(":")[0]
     );
+    // embeds in the load-failure state (see --expect-failed); each other embed
+    // that holds the failure text is reported as malformed
+    const failed = [];
+    const malformed = [];
+    document.querySelectorAll("div.embedpdf").forEach((el, i) => {
+      if (!el.textContent.includes("This PDF cannot be shown here.")) return;
+      const links = [...el.querySelectorAll("a")];
+      const open = links.find((a) => a.textContent.trim() === "Open the PDF");
+      const expected = new URL(el.dataset.src || "", document.baseURI).href;
+      const ok =
+        !!open &&
+        open.href === expected &&
+        open.target === "_blank" &&
+        !links.some((a) => a.textContent.trim() === "Download PDF file.");
+      (ok ? failed : malformed).push({ index: i + 1, href: open ? open.href : null, expected, target: open ? open.target : null });
+    });
     return {
       userAgent: navigator.userAgent,
       pdfViewerEnabled: navigator.pdfViewerEnabled,
@@ -242,14 +299,16 @@ try {
       pdfjsPages,
       objects,
       links,
+      failed,
+      malformed,
     };
   });
 
-  console.log(JSON.stringify({ device: deviceName || "chrome", alone, ...res }, null, 2));
+  console.log(JSON.stringify({ device: deviceName || "chrome", alone, remote, ...res, consoleErrors }, null, 2));
   // ok if there were no PDF.js blocks, or every rendered canvas has content
   let ok = res.pdfjs === 0 || (res.canvases > 0 && res.canvasesWithInk === res.canvases);
   if (!ok) console.error("render_check: PDF.js blocks did not all render content");
-  if (res.native + res.pdfjs === 0) {
+  if (res.native + res.pdfjs + res.failed.length === 0) {
     // a wrong page, or viewer JS that never loaded, must not pass as "no PDF.js blocks"
     console.error("render_check: no embed was hydrated");
     ok = false;
@@ -295,8 +354,17 @@ try {
       ok = false;
     }
   }
+  if (res.malformed.length) {
+    console.error(`render_check: embeds with the failure text but not the failure state: ${JSON.stringify(res.malformed)}`);
+    ok = false;
+  }
+  if (expectFailed !== null && res.failed.length !== Number(expectFailed)) {
+    console.error(`render_check: expected ${expectFailed} embeds in the load-failure state, found ${res.failed.length}`);
+    ok = false;
+  }
   if (!ok) process.exitCode = 1;
 } finally {
   await browser.close();
   server?.close();
+  remoteServer?.close();
 }
