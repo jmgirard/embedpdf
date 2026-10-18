@@ -1,13 +1,13 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-18 (scaffolded by /cairn-init)_
+_Last hygiene check: 2026-10-18 (M001 done and archived; "iOS Safari check" row graduated; 3 review follow-up rows added)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M001 | iOS Safari check | review | — | high | milestones/M001-ios-safari-check.md |
+| M001 | iOS Safari check | done | — | high | milestones/archive/M001-ios-safari-check.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
@@ -18,7 +18,6 @@ _Last hygiene check: 2026-10-18 (scaffolded by /cairn-init)_
      the opening token is `[high]`/`[low]` or absent (`normal`) — tracking-rules "Candidate priority token";
      open each row with its short title, the words the cairn pane shows, then `: `;
      tracking-rules "Candidate short title" has the whole rule -->
-- [high] iOS Safari check: add an iOS Simulator check for viewer changes, and confirm which renderer `auto` picks on iOS and that every page shows (IP1) — added 2026-10-18 — DESIGN Known issues — started M001
 - [high] Self-contained embeds: a page with `embed-resources: true` hydrates no embed in any browser, because the inlined viewer throws at `new URL("./pdf.min.mjs", import.meta.url)`. The README "Known limitations" advice to use `renderer=native` there does not work. Found in M001 (Chromium 155, iOS 27.0 Safari) — added 2026-10-18 — DESIGN Known issues
 - GitHub releases for v1.0.x: publish GitHub releases for tags v1.0.0 to v1.0.2 so the README version badge is current — added 2026-10-18 — DESIGN Known issues
 - Screen-reader text layer: add a hidden PDF.js text layer so screen readers can read PDF.js embeds (GP1 allows it) — added 2026-10-18 — DESIGN Known issues
