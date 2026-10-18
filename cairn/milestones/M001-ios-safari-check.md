@@ -159,3 +159,30 @@ Pass 2, 2026-10-18, branch head fe8f95d (after the AC3/AC4 amendment return); ma
 - AC4 evidence (amended wording): Chromium 155, against `docs/example.html`, `--device iphone` and `--device ipad` with `--expect-native 1 --expect-pdfjs 10`: each 1 native, 10 PDF.js, 20/20 inked, exit 0. The v1.0.2 runs from pass 1 (9 native on both, matching T2) stand, since main is unmoved.
 - Consistency gate: `cairn_validate.py` all checks passed (exit 0); no IP/GP principle text changed, so `cairn_impact` skipped; generic profile names no toolchain checks.
 - Note: in pass 2 the AC3/AC4 ticks landed one edit before this evidence block, because an anchor mismatch failed the evidence write; both runs had completed beforehand.
+
+Independent review, pass 2. spawned: diff-bug, blame-history, prior-review
+
+- prior-review: no prior-review evidence (archive empty; PR comments probe returned []; no PRs).
+- diff-bug #1: `/__report` accepts the first POST with no run check, so a leftover Safari tab could post a stale report (for example green during a `--plant` run) — fix now, fixed 536fbff (per-run token; other reports ignored).
+- diff-bug #2: a wrong page path or 404 exits 0 in render_check's page-path mode when no expect counts are passed — fix now, fixed 536fbff (fails on a non-OK load and on 0 hydrated embeds; `docs/example.html` now exits 1 with HTTP 404).
+- diff-bug #3: misspelled or `--flag=value` arguments are silently ignored in both scripts — fix now, fixed 536fbff (exit 2 naming the argument).
+- diff-bug #4: CLAUDE.md "Still unverified" lists only Android, though DESIGN and the Out scope point there for iPhone/iPad — fix now, fixed 536fbff.
+- diff-bug #5: changing what `auto` does on iPhone/iPad in a patch release conflicts with GP2 — reject, planned change: the plan question set chose version 1.0.3, and the change restores IP1 (every page readable on iOS).
+- diff-bug #6: `serve_docs.mjs` containment is a bare prefix match — fix now, fixed 536fbff (`DOCS + path.sep`; `/..%2fdocs-x/a` → 404).
+- diff-bug #7: a malformed percent-escape throws in the request handler and kills the test — fix now, fixed 536fbff (400; checked).
+- diff-bug #8: ios_check ignores collected page errors in pass/fail — reject, planned change: T2 and AC1 define the pass as renderer, page count and ink; errors are still reported in the JSON.
+- diff-bug #9: render_check counts canvases globally, not per embed — follow-up, "Check script gaps" row (pre-existing).
+- diff-bug #10: ink sampling reads only the red channel of every 100th pixel — follow-up, "Check script gaps" row (copied from pre-existing logic).
+- diff-bug #11: simulator lookup by name takes the first match and ignores availability — fix now, fixed 536fbff (available devices only; more than one match exits 2 asking for a udid).
+- diff-bug #12: viewer comment implies the iPad was seen on iOS 27.1 — fix now, fixed 536fbff.
+- diff-bug #13: README/example.qmd imply an iPad check on 27.1 and call the agent's swipe "readers scrolled" — fix now, fixed 536fbff.
+- diff-bug #14: README "desktop visitors never fetch it" is false for `renderer=pdfjs` pages — fix now, fixed 536fbff.
+- diff-bug #15: self-contained `renderer=native` advice still ships — follow-up, existing "Self-contained embeds" row.
+- diff-bug #16: Mac UA plus touch points may match visionOS Safari or a touch-driver Mac — follow-up, new "Apple touch detection edge cases" row.
+- diff-bug #17, #18, #20, #22, #23: checks with nothing found (detection cases, version bump, render list, emulation, doc commands) — noted.
+- diff-bug #19: missing content types and no Range support in serve_docs — follow-up, "Check script gaps" row.
+- diff-bug #21: fixed port gives an uncaught EADDRINUSE on concurrent runs — follow-up, "Check script gaps" row.
+- blame-history #1: iOS now relies on the timer-based first paint (808b403, 9887d47), and ios_check scrolls before measuring, so a no-scroll first paint is untested — follow-up, absorbed into the "First-paint robustness" row.
+- blame-history #2: README "Light by default" bullet not updated for iPad fetching PDF.js — fix now, fixed 536fbff (same as diff-bug #14).
+- blame-history #3: `decodeURIComponent` crash and prefix containment in serve_docs — fix now, fixed 536fbff (same as diff-bug #6, #7).
+- After fixes: `quarto render` clean; shortcode tests 30 passed, 0 failed; render_check five modes pass (9/2 ×3, 1/10 ×2, exit 0); ios_check iPhone 17 and iPad Air (iOS 27.0) exit 0; `--plant blank` exit 1 "embed 1: pages without ink: 2"; bad flags exit 2.
