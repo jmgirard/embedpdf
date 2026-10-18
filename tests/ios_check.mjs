@@ -23,17 +23,21 @@
 //   --plant blank|missing  plant a defect before measuring (blank the last
 //                          page canvas of the first PDF.js embed, or remove
 //                          that page's container); the check must then fail
+//   --alone yes|no         yes: serve a copy of the page from an empty
+//                          temporary directory instead of docs/ (default no)
 //
 // Exits 0 only when every embed not set to renderer=native used PDF.js, has
 // exactly --expect-pages page containers, and every page canvas has ink, and
 // the number of such embeds equals --expect-embeds.
 
+import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { serveDocs } from "./serve_docs.mjs";
+import { serveDocs, DOCS } from "./serve_docs.mjs";
 
 const args = process.argv.slice(2);
-const FLAGS = ["device", "page", "expect-embeds", "expect-pages", "port", "timeout", "screenshot", "shot-embed", "plant"];
+const FLAGS = ["device", "page", "expect-embeds", "expect-pages", "port", "timeout", "screenshot", "shot-embed", "plant", "alone"];
 for (let i = 0; i < args.length; i += 2) {
   if (!FLAGS.includes(args[i].replace(/^--/, "")) || !args[i].startsWith("--") || i + 1 >= args.length) {
     console.error(`ios_check: unexpected argument "${args[i]}" (flags: --${FLAGS.join(", --")}, each with a value)`);
@@ -53,6 +57,11 @@ const timeoutS = Number(opt("timeout", "180"));
 const screenshot = opt("screenshot", "");
 const plant = opt("plant", "");
 const shotEmbed = opt("shot-embed", "");
+const alone = opt("alone", "no");
+if (alone !== "yes" && alone !== "no") {
+  console.error("ios_check: --alone must be yes or no");
+  process.exit(2);
+}
 if (!device) {
   console.error("ios_check: --device <simulator name or udid> is required");
   process.exit(2);
@@ -182,8 +191,19 @@ const reported = new Promise((r) => (onReport = r));
 // run (restored or reloaded by Safari) carries another token and is ignored.
 const runId = String(Date.now());
 
+// --alone yes: serve a directory that holds only the page, so nothing it
+// fetches by a relative URL can be found
+let aloneDir = null;
+let servedPath = pagePath;
+if (alone === "yes") {
+  aloneDir = fs.mkdtempSync(path.join(os.tmpdir(), "embedpdf-alone-"));
+  servedPath = path.basename(pagePath);
+  fs.copyFileSync(path.join(DOCS, pagePath), path.join(aloneDir, servedPath));
+}
+
 const server = await serveDocs({
   port,
+  ...(aloneDir ? { root: aloneDir } : {}),
   transformHtml: (html) => html.replace("</body>", PROBE + "</body>"),
   routes: {
     "/__report": (req, res) => {
@@ -202,7 +222,7 @@ const server = await serveDocs({
 let exitCode = 1;
 try {
   simctl("bootstatus", dev.udid, "-b");
-  const target = `http://127.0.0.1:${port}/${pagePath}?run=${runId}${plant ? "&plant=" + plant : ""}${shotEmbed ? "&shot=" + shotEmbed : ""}`;
+  const target = `http://127.0.0.1:${port}/${servedPath}?run=${runId}${plant ? "&plant=" + plant : ""}${shotEmbed ? "&shot=" + shotEmbed : ""}`;
   simctl("openurl", dev.udid, target);
 
   const timer = new Promise((_, rej) =>
@@ -235,5 +255,6 @@ try {
   console.error("ios_check: " + err.message);
 } finally {
   server.close();
+  if (aloneDir) fs.rmSync(aloneDir, { recursive: true, force: true });
   process.exit(exitCode);
 }
