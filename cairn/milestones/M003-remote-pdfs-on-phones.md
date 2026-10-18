@@ -1,0 +1,110 @@
+# M003: Remote PDFs on phones
+
+- **Status:** planned
+- **Priority:** normal
+- **Depends on:** —
+- **Driving RR:** —
+- **Principles touched:** IP1, IP2
+- **Resolves:** #2 closes, #8 closes
+- **Surface tier:** user-facing — changes what phone readers see and what the docs tell authors
+- **Branch/PR:** —
+
+## Goal
+
+When the PDF.js viewer cannot load a PDF from another site, the embed tells the reader so and links to the PDF, and the docs say what such a site must send.
+
+## Scope
+
+**In:** In `embedpdf-viewer.js`, when PDF.js `getDocument` rejects, the embed shows a message and a link that opens
+the PDF in a new tab, in place of the no-JS "Download PDF file." link. CSS for that state. Version 1.1.1.
+`render_check.mjs` gets `--remote blocked|cors|missing`, `--expect-failed`, and an `android` device. `ios_check.mjs`
+gets `--remote blocked`. README "Known limitations", a new `example.qmd` section, CLAUDE.md check lines, and the
+DESIGN.md Architecture paragraph describe the new state. D-004 records that IP1 does not cover a PDF whose site
+blocks cross-site reads.
+
+**Out:**
+- Showing a PDF whose site blocks cross-site reads on the PDF.js path. A static extension has no server to fetch it
+  through. D-004 records this, and the docs say how to avoid it.
+- Failures that the native `<object>` meets. The browser's own viewer reports those, and the viewer cannot see them.
+- Other failure causes (a corrupt or encrypted PDF, a failed PDF.js import, a failed inlined PDF, a page render
+  error): they take the same code path, but this milestone checks only the two causes in AC1.
+- The dead no-JS link in self-contained pages: candidate row "Self-contained no-JS link".
+- Issue #7: the text it names is gone from `example.qmd`. `/milestone` triages it.
+
+## Acceptance criteria
+
+- [ ] AC1: When PDF.js `getDocument` rejects for a cross-origin PDF whose server sends no
+      `Access-Control-Allow-Origin` header, or for an HTTP 404, the embed shows the text "This PDF cannot be shown
+      here." and a link with the text "Open the PDF" whose `href` resolves to the same absolute URL as the embed's
+      `data-src` and whose `target` is `_blank`, and it holds no "Download PDF file." link. Shown by
+      `node tests/render_check.mjs example.html --remote blocked --expect-native 1 --expect-pdfjs 0 --expect-failed 10`
+      and the same line with `--remote missing`, each with `--device iphone` and with `--device android`, and by
+      `node tests/render_check.mjs revealjs_test.html --remote blocked --device iphone --expect-native 1 --expect-pdfjs 0 --expect-failed 2`,
+      each exiting 0. `--expect-failed` counts embeds in exactly that state.
+- [ ] AC2: A cross-origin PDF whose server sends `Access-Control-Allow-Origin: *` renders in the PDF.js viewer:
+      `node tests/render_check.mjs example.html --remote cors --expect-native 1 --expect-pdfjs 10 --expect-pages 2 --expect-failed 0`
+      exits 0 with `--device iphone` and with `--device android`.
+- [ ] AC3: On desktop, `renderer=auto` still picks the native viewer for a cross-origin PDF:
+      `node tests/render_check.mjs example.html --remote blocked --expect-native 9 --expect-pdfjs 0 --expect-failed 2`
+      exits 0 with no `--device`, with `--device mac-safari`, and with `--device windows-touch`.
+- [ ] AC4: Safari in the iOS simulators shows AC1's state for a cross-origin PDF whose server sends no
+      `Access-Control-Allow-Origin` header: `node tests/ios_check.mjs --device "embedpdf iPhone" --remote blocked`
+      and the same with `--device "embedpdf iPad"` exit 0 only when each of the 10 embeds of `example.html` not set
+      to `renderer=native` shows AC1's message and link and holds no "Download PDF file." link.
+- [ ] AC5: README "Known limitations" and a new `example.qmd` section say that on a page that is not
+      self-contained, an embed that uses PDF.js (iPhone, iPad, Android, or `renderer=pdfjs`) shows a PDF from
+      another site only if that site sends `Access-Control-Allow-Origin: *`, that otherwise the reader sees AC1's
+      message and link, and that putting the PDF in the Quarto project avoids this. They say that Android was
+      checked by emulation in Chrome, not on a device. Each claim about a named site's headers carries the date of
+      the `curl -I` run that showed it. `quarto render` completes with no errors.
+- [ ] AC6: The version is 1.1.1 in `_extension.yml` and in the `add_html_dependency` call in `embedpdf.lua`,
+      `pandoc lua tests/test_shortcode.lua` prints `0 failed`, and every `node tests/render_check.mjs` and
+      `node tests/ios_check.mjs` line in CLAUDE.md "Verify before finishing" at commit `a093bb9` exits 0.
+
+## Coverage
+
+- AC1 → T1, T2
+- AC2 → T1, T2
+- AC3 → T1, T2
+- AC4 → T3
+- AC5 → T4
+- AC6 → T2
+
+## Tasks
+
+- [ ] T1: In `tests/render_check.mjs` add `--remote blocked|cors|missing`: a second `serveDocs` server on another
+      port serves `docs/` with no `Access-Control-Allow-Origin` header, with `*`, or as 404 for every PDF, and a
+      `transformHtml` points each embed's `data-src`, fallback link, and `button` link at it. Add `--expect-failed <n>`
+      (AC1's state, href compared as absolute URLs) and count failed embeds so that "no embed was hydrated" does not
+      fire on them. Add an `android` device (Android Chrome user agent, `pdfViewerEnabled` false, stated as not
+      measured). Run the AC1 lines against the v1.1.0 viewer and see them fail, and run AC2 and AC3 to see the
+      server modes work.
+- [ ] T2: In `embedpdf-viewer.js`, on a `getDocument` rejection replace the embed's content with the message and the
+      link (`target="_blank"`, `rel="noopener"`), and log the error. Style it in `embedpdf.css`. Bump the version to
+      1.1.1 in both places. `quarto render`, then run the AC1 to AC3 lines and the AC6 lines.
+- [ ] T3: In `tests/ios_check.mjs` add `--remote blocked` (a second server on its own port, the same rewrite), and a
+      probe report per embed of AC1's state. Run it with `--plant` style proof: against the v1.1.0 viewer it fails.
+      Run the AC4 lines.
+- [ ] T4: Run `curl -I` on each site the docs name (for example GitHub Pages, nbviewer.org). Write the README
+      "Known limitations" line and the `example.qmd` section (code shown, no live remote embed). Add the AC1 to AC4
+      lines to CLAUDE.md "Verify before finishing" and the failure state to DESIGN.md Architecture. `quarto render`.
+
+## Work log
+
+- 2026-10-18: created by /milestone-plan.
+- 2026-10-18: tier check: not run — work named at the question set.
+- 2026-10-18: question set: what to work on — remote PDFs on phones (inbox sweep: #2, #8 use nbviewer.org, which sends no `Access-Control-Allow-Origin`, observed by `curl -I`).
+- 2026-10-18: question set: what a reader sees on failure — a message and a link that opens the PDF in a new tab.
+- 2026-10-18: question set: assign the operator to #2 and #8 — yes (viewerPermission ADMIN; neither had an assignee).
+- 2026-10-18: plan gate chose a message plus open link over falling back to Safari's own viewer on iPhone and iPad because it is the same on every phone and adds no case to check; falsified by readers on iOS who cannot open the linked PDF.
+- 2026-10-18: plan gate chose a second local server on another port over a test page with a hard-coded remote URL because it needs no network and can switch the header; falsified by a browser that treats two ports of 127.0.0.1 as one origin.
+- 2026-10-18: collision check: no candidate, archive entry, or D-entry covers remote PDFs; checker-regress shape not hit (render_check and ios_check check the shipped viewer, not tracking files).
+- 2026-10-18: inbox sweep: #2 and #8 taken as `closes`; #7 has no overlap (its text is gone from example.qmd); 0 open PRs.
+- 2026-10-18: lessons harvest: M002's RevealJS lesson applies to the revealjs_test.html line in AC1 (render_check already steps slides).
+- 2026-10-18: version 1.1.1 chosen: no option or default changes (GP2).
+- 2026-10-18: criteria audit (full mode, fresh Opus reader): 11 findings, all fixed by narrowing — AC1 trigger limited to CORS and 404 with counts and page named, a RevealJS line added, href compared as absolute URLs; IP1 gap recorded as D-004; AC2 page and `--expect-pages 2` named; AC3 reworded to the renderer choice with counts; AC4 states what ios_check checks; AC5 limited to non-self-contained pages, the `*` header value, and emulated Android; AC6 fixed to the CLAUDE.md lines at `a093bb9`.
+- 2026-10-18: assigned jmgirard to #2 and #8 (`gh issue edit --add-assignee @me`; re-read shows jmgirard on both).
+
+## Decisions
+
+## Review

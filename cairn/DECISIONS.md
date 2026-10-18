@@ -20,3 +20,9 @@ choices with rationale — never deferrals ("not now" is a ROADMAP fact).
 **Context:** D-002 says that self-contained documents with JavaScript disabled still give a download link. M002's review found that this link, and the `button` link, point at the separate PDF file, which a self-contained page does not ship.
 **Decision:** D-002's choice stands. For a self-contained page with JavaScript disabled, IP2's usable fallback is not met. This was so before M002 too, and the candidate row "Self-contained no-JS link" holds the fix.
 **Consequences:** README "Known limitations" and DESIGN.md Known issues state the dead link. IP2 holds for this case only once that row ships.
+
+### D-004 (2026-10-18): Annotates IP1 for a PDF whose site blocks cross-site reads
+
+**Context:** IP1 says every page of an embedded PDF is readable on every promised platform. The PDF.js path (iPhone, iPad, Android) fetches the PDF from the page, so the browser blocks a PDF on another site that sends no `Access-Control-Allow-Origin` header. Issues #2 and #8 embed such a PDF. A static extension has no server to fetch it through.
+**Decision:** The user chose, at M003's plan, that such an embed shows a message and a link that opens the PDF in a new tab. IP1 covers PDFs the page's site may read: its own files and files from a site whose header allows the read. A PDF the browser blocks is outside IP1, and IP2's usable fallback for it is the link.
+**Consequences:** The docs tell authors to put the PDF in the Quarto project or use a site that sends the header. M003 carries out the change. A future proxy or other way to read such a PDF would take a new D-entry.
