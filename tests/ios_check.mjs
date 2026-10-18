@@ -1,0 +1,220 @@
+// End-to-end check of embedpdf in Safari on an iOS simulator.
+//
+// Serves docs/ (tests/serve_docs.mjs), injects a probe script into every HTML
+// response, opens the page in the simulator's Safari with `simctl openurl`, and
+// waits for the probe to POST a per-embed report: which renderer each embed
+// used, how many .embedpdf-page containers it has, and whether each page's
+// canvas has ink. No dependencies beyond Node and Xcode's simctl.
+//
+// Setup (once): install Xcode, run its first-launch setup, download the iOS
+// platform (xcodebuild -downloadPlatform iOS), and create a simulator, e.g.
+//   xcrun simctl create "embedpdf iPhone" "iPhone 17"
+//
+// Usage:  node tests/ios_check.mjs --device "embedpdf iPhone" [options]
+//   --device <name|udid>   simulator to use (required); booted if needed
+//   --page <path>          page under docs/ to open (default example.html)
+//   --expect-embeds <n>    embeds not set to renderer=native (default 10)
+//   --expect-pages <n>     pages per PDF.js embed (default 2: sample.pdf)
+//   --port <n>             server port on 127.0.0.1 (default 8766)
+//   --timeout <s>          seconds to wait for the report (default 180)
+//   --screenshot <file>    save a simulator screenshot, taken with the first
+//                          renderer=native embed scrolled into view
+//   --shot-embed <n>       scroll embed n (1-based) into view for the screenshot
+//   --plant blank|missing  plant a defect before measuring (blank the last
+//                          page canvas of the first PDF.js embed, or remove
+//                          that page's container); the check must then fail
+//
+// Exits 0 only when every embed not set to renderer=native used PDF.js, has
+// exactly --expect-pages page containers, and every page canvas has ink, and
+// the number of such embeds equals --expect-embeds.
+
+import path from "node:path";
+import { execFileSync } from "node:child_process";
+import { serveDocs } from "./serve_docs.mjs";
+
+const args = process.argv.slice(2);
+const opt = (name, fallback) => {
+  const i = args.indexOf("--" + name);
+  return i >= 0 && i + 1 < args.length ? args[i + 1] : fallback;
+};
+const device = opt("device", "");
+const pagePath = opt("page", "example.html");
+const expectEmbeds = Number(opt("expect-embeds", "10"));
+const expectPages = Number(opt("expect-pages", "2"));
+const port = Number(opt("port", "8766"));
+const timeoutS = Number(opt("timeout", "180"));
+const screenshot = opt("screenshot", "");
+const plant = opt("plant", "");
+const shotEmbed = opt("shot-embed", "");
+if (!device) {
+  console.error("ios_check: --device <simulator name or udid> is required");
+  process.exit(2);
+}
+if (plant && plant !== "blank" && plant !== "missing") {
+  console.error("ios_check: --plant must be blank or missing");
+  process.exit(2);
+}
+
+const simctl = (...a) => execFileSync("xcrun", ["simctl", ...a], { encoding: "utf8" });
+
+// resolve the simulator and record its model and runtime with the evidence
+function findDevice(key) {
+  const list = JSON.parse(simctl("list", "devices", "-j")).devices;
+  for (const [runtime, devs] of Object.entries(list)) {
+    for (const d of devs) {
+      if (d.udid === key || d.name === key) return { ...d, runtime };
+    }
+  }
+  return null;
+}
+const dev = findDevice(device);
+if (!dev) {
+  console.error(`ios_check: no simulator named or with udid "${device}"`);
+  process.exit(2);
+}
+const runtimeName = dev.runtime.replace("com.apple.CoreSimulator.SimRuntime.", "");
+const deviceType = (dev.deviceTypeIdentifier || "").replace("com.apple.CoreSimulator.SimDeviceType.", "");
+
+// The probe runs in Safari. It waits for every embed to hydrate, scrolls each
+// one (and each of its pages) into view so lazy rendering fires, waits for the
+// canvases, optionally plants a defect, measures, and POSTs the report.
+const PROBE = `<script>
+(async () => {
+  const errors = [];
+  window.addEventListener("error", (e) => errors.push(String(e.message)));
+  window.addEventListener("unhandledrejection", (e) => errors.push(String(e.reason)));
+  const origError = console.error;
+  console.error = (...a) => { errors.push(a.map(String).join(" ")); origError.apply(console, a); };
+  const params = new URLSearchParams(location.search);
+  const plant = params.get("plant") || "";
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const embeds = () => [...document.querySelectorAll("div.embedpdf")];
+  const kind = (el) =>
+    el.classList.contains("embedpdf-pdfjs") ? "pdfjs" :
+    el.classList.contains("embedpdf-native") ? "native" : "none";
+  const settled = () => embeds().every((el) => {
+    if (kind(el) === "native") return true;
+    if (kind(el) === "none") return false;
+    const pages = [...el.querySelectorAll(".embedpdf-page")];
+    return pages.length > 0 && pages.every((p) => p.querySelector("canvas"));
+  });
+  const scrollAll = async () => {
+    for (const el of embeds()) {
+      el.scrollIntoView({ block: "center" });
+      await sleep(300);
+      for (const p of el.querySelectorAll(".embedpdf-page")) {
+        p.scrollIntoView({ block: "nearest" });
+        await sleep(400);
+      }
+    }
+  };
+  const t0 = Date.now();
+  while (Date.now() - t0 < 90000) {
+    await scrollAll();
+    if (settled()) break;
+    await sleep(1000);
+  }
+  await sleep(1000);
+
+  if (plant) {
+    const first = embeds().find((el) => kind(el) === "pdfjs");
+    const pages = first ? first.querySelectorAll(".embedpdf-page") : [];
+    const last = pages[pages.length - 1];
+    if (last && plant === "missing") last.remove();
+    const canvas = last && last.querySelector("canvas");
+    if (canvas && plant === "blank") {
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+  }
+
+  const hasInk = (c) => {
+    try {
+      const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data;
+      for (let i = 0; i < d.length; i += 400) if (d[i] < 128 && d[i + 3] > 0) return true;
+    } catch (e) { errors.push("ink: " + e); }
+    return false;
+  };
+  const report = {
+    userAgent: navigator.userAgent,
+    pdfViewerEnabled: navigator.pdfViewerEnabled,
+    maxTouchPoints: navigator.maxTouchPoints,
+    viewer: [...document.scripts].map((s) => s.src).find((s) => /embedpdf-viewer\\.js/.test(s)) || "",
+    plant,
+    embeds: embeds().map((el, i) => {
+      const pages = [...el.querySelectorAll(".embedpdf-page")];
+      return {
+        index: i + 1,
+        requested: el.dataset.renderer || "auto",
+        renderer: kind(el),
+        pages: pages.length,
+        ink: pages.map((p) => { const c = p.querySelector("canvas"); return !!c && hasInk(c); }),
+      };
+    }),
+    errors,
+  };
+
+  const shotIndex = Number(params.get("shot") || 0);
+  const shot = shotIndex ? embeds()[shotIndex - 1] : embeds().find((el) => el.dataset.renderer === "native");
+  if (shot) { shot.scrollIntoView({ block: "center" }); await sleep(2000); }
+  await fetch("/__report", { method: "POST", body: JSON.stringify(report) });
+})();
+</script>`;
+
+let onReport;
+const reported = new Promise((r) => (onReport = r));
+
+const server = await serveDocs({
+  port,
+  transformHtml: (html) => html.replace("</body>", PROBE + "</body>"),
+  routes: {
+    "/__report": (req, res) => {
+      let body = "";
+      req.on("data", (c) => (body += c));
+      req.on("end", () => {
+        res.end("ok");
+        onReport(JSON.parse(body));
+      });
+    },
+  },
+});
+
+let exitCode = 1;
+try {
+  simctl("bootstatus", dev.udid, "-b");
+  const target = `http://127.0.0.1:${port}/${pagePath}?run=${Date.now()}${plant ? "&plant=" + plant : ""}${shotEmbed ? "&shot=" + shotEmbed : ""}`;
+  simctl("openurl", dev.udid, target);
+
+  const timer = new Promise((_, rej) =>
+    setTimeout(() => rej(new Error(`no report within ${timeoutS} s`)), timeoutS * 1000)
+  );
+  const report = await Promise.race([reported, timer]);
+
+  if (screenshot) simctl("io", dev.udid, "screenshot", path.resolve(screenshot));
+
+  const checked = report.embeds.filter((e) => e.requested !== "native");
+  const failures = [];
+  if (checked.length !== expectEmbeds) {
+    failures.push(`expected ${expectEmbeds} embeds not set to renderer=native, found ${checked.length}`);
+  }
+  for (const e of checked) {
+    if (e.renderer !== "pdfjs") failures.push(`embed ${e.index}: renderer ${e.renderer}, expected pdfjs`);
+    else if (e.pages !== expectPages) failures.push(`embed ${e.index}: ${e.pages} page containers, expected ${expectPages}`);
+    else if (!e.ink.every(Boolean)) failures.push(`embed ${e.index}: pages without ink: ${e.ink.map((v, i) => (v ? null : i + 1)).filter(Boolean).join(", ")}`);
+  }
+  const out = {
+    device: { name: dev.name, udid: dev.udid, type: deviceType, runtime: runtimeName },
+    url: target,
+    ...report,
+    pass: failures.length === 0,
+    failures,
+  };
+  console.log(JSON.stringify(out, null, 2));
+  exitCode = failures.length === 0 ? 0 : 1;
+} catch (err) {
+  console.error("ios_check: " + err.message);
+} finally {
+  server.close();
+  process.exit(exitCode);
+}
