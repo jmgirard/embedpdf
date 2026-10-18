@@ -82,9 +82,9 @@ Numbers are never reused._
   meet it and could be replaced. A check in the iOS Simulator counts as the
   iOS check.
 - IP2: **An embed never breaks a render.** Every case falls back to something
-  usable: no JavaScript, non-HTML formats, and self-contained documents give a
-  download link or `\includepdf`. A missing file gives a warning, never an
-  error.
+  usable: no JavaScript and non-HTML formats give a download link or
+  `\includepdf`. A missing file gives a warning, never an error. (Self-contained
+  documents dropped from the fallback list by D-002: they render inline.)
 - IP3: **Author values are escaped.** HTML that the Lua shortcode emits never
   contains an unescaped author-given value. `tests/test_shortcode.lua`
   checks it.
@@ -105,33 +105,40 @@ Numbers are never reused._
   phone. Page rendering stays serialized and canvas size stays capped. A
   speedup that costs mobile memory needs a written reason.
 - GP5: **Light for desktop.** PDF.js loads only on the PDF.js path, so readers
-  on the native path never download it. IP1 wins any conflict.
+  on the native path never download it. IP1 wins any conflict. Exception
+  (D-002): a self-contained page with an `auto` or `pdfjs` embed carries PDF.js
+  inline, so every reader of that file downloads it.
 - GP6: **PDF.js is vendored.** No CDN and no build step. PDF.js is updated only
   for a bug fix, a security fix, or a feature the extension needs (D-001).
 
 ## Architecture
 
-The Lua shortcode runs at render time. For HTML it injects one HTML
-dependency (viewer script as an ES module, stylesheet, and the two PDF.js
-files as resources). It emits a `div.embedpdf` with `data-*` attributes and a
+The Lua shortcode runs at render time. For HTML it injects the `embedpdf`
+dependency (viewer script as an ES module, and the stylesheet). At the first
+embed not set to `renderer=native`, it also injects `embedpdf-pdfjs`: the two
+PDF.js files as scripts of types `text/x-embedpdf-pdfjs` and
+`text/x-embedpdf-worker`, which the browser neither fetches nor runs
+(corrected M002). It emits a `div.embedpdf` with `data-*` attributes and a
 download-link fallback for readers without JavaScript. In the browser,
 `embedpdf-viewer.js` picks a renderer per placeholder: `auto` uses PDF.js on
 iPhone and iPad (an iPhone, iPod, or iPad user agent, or a Mac user agent with
 `maxTouchPoints > 1`). Elsewhere, `auto` uses the native `<object>` if
 `navigator.pdfViewerEnabled` is true, and otherwise PDF.js (corrected M001). PDF.js is
-imported on demand relative to the viewer script, so desktop visitors on the
-native path never download it. Page rendering goes through one queue shared
+imported on demand from those scripts' `src`, so desktop visitors on the
+native path never download it. With `embed-resources: true`, Quarto inlines
+the viewer as a `data:` module, the PDF.js files as the scripts' text, and
+each PDF as a `data:` URL in `data-src`. The viewer then loads PDF.js from
+`blob:` URLs of that text, and gives the native `<object>` and the download
+links a `blob:` URL of the PDF (corrected M002). Page rendering goes through one queue shared
 by every viewer on the page, and canvas size is capped at 8,000,000 pixels
 with device pixel ratio clamped to 2, for constrained mobile devices.
 
 ## Known issues
 
-- Self-contained documents (`embed-resources: true`) render no embed in any
-  browser. Quarto inlines the viewer script, and the script throws at
-  `new URL("./pdf.min.mjs", import.meta.url)` before it hydrates anything, so
-  readers get only the download link. The README "Known limitations" advice to
-  use `renderer=native` there does not work (corrected M001, observed in
-  Chromium 155 and iOS 27.0 Safari 2026-10-18).
+- In a self-contained document with JavaScript disabled, the fallback link
+  and the `button` link point at the separate PDF file, which is not shipped
+  (corrected M002; self-contained embeds render since v1.1.0). Self-contained
+  RevealJS slides are checked only in Chromium — observed 2026-10-18.
 - The PDF.js viewer has no text selection or search (out of scope, see the
   contract boundary).
 - A PDF.js embed is a canvas with no text, so screen readers cannot read it.
