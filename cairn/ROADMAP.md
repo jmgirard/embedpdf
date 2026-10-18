@@ -1,13 +1,13 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-18 (M001 done and archived; "iOS Safari check" row graduated; 3 review follow-up rows added)_
+_Last hygiene check: 2026-10-18 (M002 done and archived; "Self-contained embeds" row graduated; "Self-contained native checks" row added)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M002 | Self-contained embeds | review | — | high | milestones/M002-self-contained-embeds.md |
+| M002 | Self-contained embeds | done | — | high | milestones/archive/M002-self-contained-embeds.md |
 | M001 | iOS Safari check | done | — | high | milestones/archive/M001-ios-safari-check.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
@@ -19,7 +19,6 @@ _Last hygiene check: 2026-10-18 (M001 done and archived; "iOS Safari check" row 
      the opening token is `[high]`/`[low]` or absent (`normal`) — tracking-rules "Candidate priority token";
      open each row with its short title, the words the cairn pane shows, then `: `;
      tracking-rules "Candidate short title" has the whole rule -->
-- [high] Self-contained embeds: a page with `embed-resources: true` hydrates no embed in any browser, because the inlined viewer throws at `new URL("./pdf.min.mjs", import.meta.url)`. The README "Known limitations" advice to use `renderer=native` there does not work. Found in M001 (Chromium 155, iOS 27.0 Safari) — added 2026-10-18 — DESIGN Known issues — started M002
 - Self-contained no-JS link: with JavaScript disabled, the fallback link and the `button` link in a self-contained page point at the separate PDF file, which is not shipped, because Quarto inlines `data-src` but not `<a href>` (M002 plan) — added 2026-10-18
 - Self-contained native checks: in a self-contained page the native `<object>` gets a `blob:` PDF, but only its bytes are checked (fetch in Chromium). Its display in desktop Safari and Firefox, `#page=` on a `blob:` URL, and the file name that the native viewer's own save button uses are not checked (M002 review) — added 2026-10-18
 - Self-contained slides on iOS: check self-contained RevealJS slides in Safari on iPhone and iPad with `tests/ios_check.mjs`; M002 checks them only in Chrome or Chromium (M002 plan) — added 2026-10-18
