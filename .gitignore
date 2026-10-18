@@ -11,3 +11,8 @@
 node_modules/
 package.json
 package-lock.json
+
+# cairn
+cairn/references/sources/
+cairn/.merge-approved
+cairn/.merge-approved.pending
