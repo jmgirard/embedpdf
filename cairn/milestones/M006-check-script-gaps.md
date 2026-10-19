@@ -2,7 +2,7 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M006: Check script gaps
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
@@ -47,9 +47,11 @@ CLAUDE.md and script header updates.
       matching `Content-Range`, and a body equal to bytes a through b of the file on disk, and answers a range that
       starts past the end of the file with 416. `node tests/helpers_test.mjs` shows each case, and fails when its walk
       finds no extension.
-- [ ] AC4: Without `--port`, `ios_check.mjs` serves on a free port that the system picks: a run while another process
-      holds port 8766 exits 0. With `--port <n>` for a port that another process holds, it exits 2 with a message that
-      names the port, not an `EADDRINUSE` stack trace.
+- [ ] AC4: Without `--port`, `ios_check.mjs` passes 0 to `serveDocs`, so the system picks the port:
+      `node tests/ios_check.mjs --device "embedpdf iPhone"`, run while another process holds
+      `net.createServer().listen(8766, "127.0.0.1")`, exits 0. `node tests/ios_check.mjs --device "embedpdf iPhone"
+      --port 8766`, with no other option and the same holder, exits 2 with "ios_check: port 8766 is in use" and no
+      stack trace.
 - [ ] AC5: Every `node tests/render_check.mjs` line in CLAUDE.md "Verify before finishing", as the section reads at
       the milestone branch head, exits 0, and `node tests/helpers_test.mjs` prints `N passed, 0 failed`.
 - [ ] AC6: Every `node tests/ios_check.mjs` line in that section, as it reads at the branch head, exits 0 on the
@@ -112,6 +114,8 @@ CLAUDE.md and script header updates.
 - 2026-10-18: amendment routed: AC4 — a holder on `0.0.0.0` or `::` does not stop `serveDocs` binding 127.0.0.1 on macOS, so "a port that another process holds" promises an exit 2 that no bind on 127.0.0.1 can detect (diff-bug #1).
 - 2026-10-18: re-audit: AC4 (reduced) — on the draft "a port that another process holds on 127.0.0.1": "holds" is wider than a TCP bind detects (a UDP socket does not block it), and the exit-0 run is not named; suggested naming a TCP listener on 127.0.0.1 and the command lines.
 - 2026-10-18: re-audit: AC4 (reduced) — on the reader-fixed draft: clause 2 still quantifies over every `<n>` (0, leading zeros, ports below 1024, dual-stack sockets) and every other option, a demonstration family; suggested one concrete run with the EADDRINUSE branch cited. Second re-audit line on AC4: the wording goes to the user.
+- 2026-10-18: amendment return: AC4 — "Without `--port`, `ios_check.mjs` passes 0 to `serveDocs`, so the system picks the port: `node tests/ios_check.mjs --device "embedpdf iPhone"`, run while another process holds `net.createServer().listen(8766, "127.0.0.1")`, exits 0. `node tests/ios_check.mjs --device "embedpdf iPhone" --port 8766`, with no other option and the same holder, exits 2 with "ios_check: port 8766 is in use" and no stack trace." (wording chosen by the user at the stop: one concrete run; no further reader, per the second re-audit line)
+- 2026-10-18: amendment done; status review.
 
 ## Decisions
 
