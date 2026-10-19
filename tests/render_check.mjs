@@ -24,9 +24,11 @@
 //                       scroll, before the ink check; the run must then
 //                       fail: blank paints the last page's canvas white,
 //                       nocanvas removes that canvas, nopages removes every
-//                       page of the embed. namefailed instead names the
-//                       first embed in the load-failure state (use with
-//                       --expect-failed). Needs no other flag.
+//                       page of the embed. These three need no other flag.
+//                       namefailed instead gives the first embed in the
+//                       load-failure state an aria-label; it needs such an
+//                       embed, so use it with --remote blocked|missing or
+//                       --missing-pdfs and the matching --expect-failed.
 //   --expect-links <n>  fail unless exactly n download links
 //                       (.embedpdf-download, .embedpdf object a[download],
 //                       a.embedpdf-btn) exist, each with a data: or blob: href
@@ -140,12 +142,14 @@
 //                       tree must read "Page 1 of <pages>" with the pages at
 //                       the top, and no "i / n" text; on the page it must
 //                       show "1 / <pages>" and keep "Page 1 of <pages>" in a
-//                       1px, overflow-hidden, absolute box. The first embed whose
+//                       1px, overflow-hidden, absolute box clipped by
+//                       clip-path: inset(50%). The first embed whose
 //                       pages can scroll page 1 above the middle of their
 //                       frame then scrolls to page 2 and must read "Page 2
 //                       of <pages>"; the report names it as page2Checked.
-//                       On a page with no slides, the run fails when such
-//                       an embed exists and none could be read at page 2.
+//                       On a page with no slides, the run fails when an
+//                       embed with a toolbar and 2 or more pages exists and
+//                       none could be read at page 2.
 //   --plant wrongname|dupdesc|duplink|norole|notoolbar|nonumber|rawindicator|staleindicator|showindicator|tallframe
 //                       with --expect-name, plant a defect in the first
 //                       PDF.js embed; the run must then fail: wrongname
@@ -161,8 +165,9 @@
 //                       not update (nothing to plant in unless that embed
 //                       is the one scrolled to page 2, see page2Checked),
 //                       showindicator makes its "Page i of n" text visible,
-//                       tallframe makes no embed's frame scroll (on a page
-//                       with no slides).
+//                       tallframe makes no embed's frame scroll, so the
+//                       page-2 rule fails (nothing to plant in on a deck,
+//                       where that rule does not apply).
 // Set CHROME_PATH to use another Chrome or Chromium binary.
 //
 // On a RevealJS page the check goes to each slide with Reveal.slide() and
@@ -1091,9 +1096,12 @@ try {
         expectName,
         plant,
         // staleindicator shows only on the embed scrolled to page 2, so it
-        // counts as planted only when that embed is the one it went into
+        // counts as planted only when that embed is the one it went into;
+        // tallframe fails only the page-2 rule, which a deck skips
         planted:
-          plant === "staleindicator" && !page2First ? null : nameReports.map((r) => r.planted).find(Boolean) || null,
+          (plant === "staleindicator" && !page2First) || (plant === "tallframe" && slides)
+            ? null
+            : nameReports.map((r) => r.planted).find(Boolean) || null,
         embeds: nameReports.reduce((n, r) => n + r.embeds, 0),
         page2Checked,
         failures: nameReports.flatMap((r) => r.failures),
