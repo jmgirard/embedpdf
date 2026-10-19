@@ -79,7 +79,7 @@ blocks cross-site reads.
       fire on them. Add an `android` device (Android Chrome user agent, `pdfViewerEnabled` false, stated as not
       measured). Run the AC1 lines against the v1.1.0 viewer and see them fail, and run AC2 and AC3 to see the
       server modes work.
-- [ ] T2: In `embedpdf-viewer.js`, on a `getDocument` rejection replace the embed's content with the message and the
+- [x] T2: In `embedpdf-viewer.js`, on a `getDocument` rejection replace the embed's content with the message and the
       link (`target="_blank"`, `rel="noopener"`), and log the error. Style it in `embedpdf.css`. Bump the version to
       1.1.1 in both places. `quarto render`, then run the AC1 to AC3 lines and the AC6 lines.
 - [ ] T3: In `tests/ios_check.mjs` add `--remote blocked` (a second server on its own port, the same rewrite), and a
@@ -106,6 +106,7 @@ blocks cross-site reads.
 - 2026-10-18: assigned jmgirard to #2 and #8 (`gh issue edit --add-assignee @me`; re-read shows jmgirard on both).
 - 2026-10-18: implement started on m003-remote-pdfs-on-phones; Chromium 155 via `CHROME_PATH=/Applications/Chromium.app/Contents/MacOS/Chromium` (no Google Chrome installed).
 - 2026-10-18: T1 done: `serveRemote`/`pointPdfsAt` in `serve_docs.mjs` (shared with ios_check); render_check gains `--remote`, `--expect-failed`, an `android` device, and console errors in its JSON. `missing` mode sends `Access-Control-Allow-Origin: *` on its 404 so the 404 is what PDF.js meets (console: ResponseException; `blocked` console: the CORS error, UnknownErrorException). Against v1.1.0 the AC1 iphone line and the AC3 line fail on `--expect-failed` (0 found); the AC2 iphone and android lines pass (20/20 canvases inked).
+- 2026-10-18: T2 done: `showFailure()` in the viewer; the try block covers the PDF.js import, the inlined Blob read, `getDocument`, and `getPage(1)`, so the out-of-scope causes take the same path unchecked. CSS `.embedpdf-failed`. v1.1.1. `quarto render` clean; shortcode tests 40 passed, 0 failed. AC1 (5 lines), AC2 (2), AC3 (3) exit 0 in Chromium 155; planted `target="_self"` makes the AC1 iphone line exit 1 (malformed + 0 failed). All 21 render_check lines and 4 ios_check lines of CLAUDE.md at a093bb9 exit 0 (iOS 27.0 iPhone and iPad).
 
 ## Decisions
 

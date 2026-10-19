@@ -87,14 +87,38 @@ function hydrateNative(el, opts) {
   el.classList.add("embedpdf-native");
 }
 
+// PDF.js could not load the PDF, for example a PDF on another site that sends
+// no Access-Control-Allow-Origin header, or a missing file. Say so, and link to
+// the PDF so the browser can open it in a new tab.
+function showFailure(el, opts) {
+  const msg = document.createElement("p");
+  msg.className = "embedpdf-failed-text";
+  msg.textContent = "This PDF cannot be shown here. ";
+  const link = document.createElement("a");
+  link.href = opts.href;
+  link.target = "_blank";
+  link.rel = "noopener";
+  link.textContent = "Open the PDF";
+  msg.appendChild(link);
+  el.replaceChildren(msg);
+  el.classList.add("embedpdf-failed");
+}
+
 async function hydratePdfjs(el, opts) {
-  const pdfjs = await loadPdfjs();
-  // an inlined PDF is read from its Blob only now, so a native embed never
-  // holds its bytes as an array
-  const source = opts.blob
-    ? { data: new Uint8Array(await opts.blob.arrayBuffer()) }
-    : { url: new URL(opts.src, document.baseURI).href };
-  const doc = await pdfjs.getDocument(source).promise;
+  let doc, page1;
+  try {
+    const pdfjs = await loadPdfjs();
+    // an inlined PDF is read from its Blob only now, so a native embed never
+    // holds its bytes as an array
+    const source = opts.blob
+      ? { data: new Uint8Array(await opts.blob.arrayBuffer()) }
+      : { url: new URL(opts.src, document.baseURI).href };
+    doc = await pdfjs.getDocument(source).promise;
+    page1 = await doc.getPage(1);
+  } catch (err) {
+    showFailure(el, opts);
+    throw err; // the caller logs it
+  }
 
   el.textContent = "";
   el.classList.add("embedpdf-pdfjs");
@@ -110,7 +134,6 @@ async function hydratePdfjs(el, opts) {
   const state = { doc, pagesEl, zoom, pageEls: [], ratios: [] };
 
   // page 1 sets the placeholder aspect ratio; refined per page on render
-  const page1 = await doc.getPage(1);
   const vp1 = page1.getViewport({ scale: 1 });
   const defaultRatio = vp1.height / vp1.width;
 
