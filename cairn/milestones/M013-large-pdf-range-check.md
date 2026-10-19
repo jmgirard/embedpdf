@@ -49,13 +49,13 @@ no range in 3 of 3 runs. When the server sent the whole-file answer slowly
 
 ## Acceptance criteria
 
-- [ ] AC1: `files/large.pdf` is a PDF of 14 pages and over 131,072 bytes
+- [x] AC1: `files/large.pdf` is a PDF of 14 pages and over 131,072 bytes
       (`pdfinfo`, `wc -c`). It is made of seven copies of `sample.pdf`, and
       `files/large-2.pdf` is a byte copy of it (`cmp`). `quarto render`
       completes with no errors, and `docs/large_test.html` holds two embeds:
       `files/large.pdf` with `renderer=pdfjs`, and `files/large-2.pdf` with
       `renderer=auto`.
-- [ ] AC2: With `--expect-ranges`, the PDFs' server sends the whole-file
+- [x] AC2: With `--expect-ranges`, the PDFs' server sends the whole-file
       answer for `files/large.pdf` and `files/large-2.pdf` slowly. A run of
       `tests/render_check.mjs` or `tests/ios_check.mjs` then fails unless
       that server answered at least one HTTP 206 request for each PDF.js
@@ -63,7 +63,7 @@ no range in 3 of 3 runs. When the server sent the whole-file answer slowly
       server for render_check `--remote cors`. With `--plant noranges`, a run
       of each script on `large_test.html` exits non-zero and names each
       PDF.js embed's address.
-- [ ] AC3: Each run below on `large_test.html` exits 0 with
+- [x] AC3: Each run below on `large_test.html` exits 0 with
       `--expect-ranges`, `--expect-pages 14`, and `--expect-name
       "large.pdf|large-2.pdf"`. The render_check runs are plain Chrome
       (`--expect-native 1 --expect-pdfjs 1`), `--device iphone`, and
@@ -71,12 +71,12 @@ no range in 3 of 3 runs. When the server sent the whole-file answer slowly
       also include `--remote cors` with each of those two devices. The
       ios_check runs use the "embedpdf iPhone" and "embedpdf iPad"
       simulators (`--expect-embeds 2`).
-- [ ] AC4: `node tests/helpers_test.mjs` prints `N passed, 0 failed`. Its
+- [x] AC4: `node tests/helpers_test.mjs` prints `N passed, 0 failed`. Its
       cases show three things. With the slow option, `serveDocs` and
       `serveRemote` send a whole-file answer in pieces. They count HTTP 206
       answers per address. Without the new options, they send each file
       whole, with the same headers as before.
-- [ ] AC5: CLAUDE.md "Verify before finishing" holds each run that AC3 names
+- [x] AC5: CLAUDE.md "Verify before finishing" holds each run that AC3 names
       as a fenced line. It says what `--expect-ranges` and `--plant noranges`
       do and how `files/large.pdf` was made. Its "Still unverified" list says
       that byte-range loading is not checked on GitHub Pages or on a real
@@ -145,3 +145,32 @@ no range in 3 of 3 runs. When the server sent the whole-file answer slowly
 ## Decisions
 
 ## Review
+
+Pass 1 (2026-10-19) found AC4 short (no remote whole-file case, no header checks) and returned (review return 1, T6). Pass 2 below, on head 98f3a8a; main not moved (c878094). Browser runs: Chromium 155 via CHROME_PATH; iOS 27.0 simulators.
+
+- AC1 evidence: `pdfinfo files/large.pdf` Pages 14; `wc -c` 171198 (> 131072); `cmp files/large.pdf files/large-2.pdf` same; `pdftotext` of a fresh `pdfunite` of seven `sample.pdf` copies has the same md5 as `pdftotext files/large.pdf`; `quarto render` exit 0, only the known `files/100%.pdf` URI warning, docs/ unchanged after it; docs/large_test.html holds `data-src="files/large.pdf" data-renderer="pdfjs"` and `data-src="files/large-2.pdf" data-renderer="auto"`.
+- AC2 evidence: helpers_test (113 passed, 0 failed) shows `slowWhole` sending `files/large.pdf` in pieces from `serveDocs` and `serveRemote` cors (at most 12,288 bytes in 500 ms), and render_check/ios_check pass `slowWhole` with `--expect-ranges` (render_check.mjs rangeOpts, ios_check.mjs serveDocs call). The 7 AC3 runs print 3 counted 206 answers per PDF.js embed address, on the remote server for the two `--remote cors` runs. `--plant noranges`: render_check plain exit 1 "no byte-range request (HTTP 206) answered for …/files/large.pdf"; render_check `--remote cors --device iphone` exit 1 naming `/files/large.pdf` and `/files/large-2.pdf`; ios_check "embedpdf iPhone" exit 1 with failures "embed 1 … /files/large.pdf" and "embed 2 … /files/large-2.pdf". No ink or page failure in the plant runs.
+- AC3 evidence: each of the 7 lines exit 0 with `--expect-ranges --expect-pages 14 --expect-name "large.pdf|large-2.pdf"`: render_check plain (`--expect-native 1 --expect-pdfjs 1`), `--device iphone`, `--device android`, `--remote cors --device iphone`, `--remote cors --device android` (each `--expect-native 0 --expect-pdfjs 2`); ios_check "embedpdf iPhone" and "embedpdf iPad" (`--expect-embeds 2`), report `ranges` 3 and 3. No retry.
+- AC4 evidence: `node tests/helpers_test.mjs` prints "113 passed, 0 failed". Cases: "docs slowWhole: large.pdf is sent in pieces" and "remote cors slowWhole: …" (pieces); "server: rangeCounts counts the three 206 answers", "docs: rangeCounts counts 206 answers per path, %20 as sent", "remote cors: …" (count per address); "docs default: large.pdf comes whole within 1 s", "docs default: whole-file headers", "remote cors default: …" and "remote cors default: Access-Control- headers" (no new options), with the earlier range, 416, and OPTIONS cases unchanged.
+- AC5 evidence: CLAUDE.md lines 204-210 are the 7 AC3 runs as fenced lines (the same flags as the runs above); lines 189-201 say what `--expect-ranges` and `--plant noranges` do and that `files/large.pdf` is seven copies of `sample.pdf` joined with `pdfunite`; "Still unverified" line 285 says byte-range loading is checked only on the local test servers, not on GitHub Pages or a real phone.
+- Consistency gate: `cairn_validate.py` all checks passed; the generic profile's consistency-gate names no toolchain checks; no principle changed, so no `cairn_impact` run.
+- spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1: `--expect-ranges` on a page whose PDFs are all at or under 131,072 bytes fails as if the viewer were broken, not as a bad argument — fix now (exit 2 naming the size).
+- diff-bug #2: the 206 count is per address, so a native embed's range requests at the same address can pass a PDF.js embed — fix now (exit 2 when a PDF.js embed's address is also another embed's).
+- diff-bug #3: a counted 206 does not prove PDF.js asked for it — reject (false once #2 is fixed: only the PDF.js embed loads its address, and the download links are not clicked).
+- diff-bug #4: `--plant noranges` has no "found nothing to plant in" exit — fix now (exit 2 with no PDF.js embed; a small or shared PDF exits 2 by #1 and #2).
+- diff-bug #5: the "sent in pieces" bound of 3 pieces can fail when the event loop runs late — fix now (bound is under half the file).
+- diff-bug #6: helpers_test reads docs/files/large.pdf and docs/large_test_files at load and crashes if they are missing — reject (false premise: docs/ is committed, and helpers_test already reads docs/ files at load).
+- diff-bug #7: a HEAD request with `slowWhole` ends only after about 8.4 s — fix now (HEAD is answered at once; helpers_test case).
+- diff-bug #8: the slow rule matches `.pdf` case-sensitively — fix now (case-insensitive).
+- diff-bug #9: the race timer in `bytesIn500ms` is not cleared when the read wins — reject (style: it settles within 500 ms and changes no result).
+- diff-bug #10: the slow writer ignores `res.write()` backpressure — reject (false as a defect: at most 42 pieces of 4096 bytes are buffered).
+- prior-review #1: per-address counting lets one embed's 206 cover another at the same path, as in the row "Remote failure line count" — fix now (same fix as diff-bug #2).
+- prior-review #2: `--plant noranges` never exits 2 for nothing to plant in — fix now (same fix as diff-bug #4).
+- prior-review #3: a plant run might fail on ink timing rather than on the range check — reject (false: the 3 plant runs show only range failures, every page inked).
+- prior-review #4: ios_check skips the range check for a stuck embed and render_check has no such gate — reject (false as a defect: a stuck embed already fails ios_check, and render_check has no stuck state).
+- blame-history #1: a native embed's 206 answers at the same address can pass a PDF.js embed — fix now (same fix as diff-bug #2).
+- blame-history #2: the slow answer also reaches the desktop native embed of large-2.pdf — reject (planned change: AC2 slows both files, and that run passes).
+- blame-history #3: the 8.4 s slow answer is not measured against the scripts' waits — reject (false: the plant runs, where every PDF answer is slow, pass every ink and page check).
+- blame-history #4: helpers_test aborts at load if docs/ lacks the new files — reject (false premise, as diff-bug #6).
+- ripple #1: ROADMAP row "Large PDF range check" still says every test PDF is under 128 KB — reject (planned change: post-merge hygiene graduates and removes the row).
