@@ -1,0 +1,19 @@
+---
+title: "embedpdf with a large PDF"
+resources:
+  - "files/large.pdf"
+  - "files/large-2.pdf"
+---
+
+Both embeds show a PDF of 14 pages and over 128 KB, made of seven copies of
+`sample.pdf` with `pdfunite` (`pdfinfo` and `wc -c` give its size). `files/large-2.pdf` is a copy of
+`files/large.pdf`. PDF.js loads a PDF of this size by byte ranges when the
+server allows it, so the checks in `tests/` use this page to check that path.
+
+## PDF.js
+
+{{< pdf files/large.pdf renderer=pdfjs >}}
+
+## Auto
+
+{{< pdf files/large-2.pdf >}}

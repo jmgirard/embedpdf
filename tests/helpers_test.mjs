@@ -8,7 +8,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { inkInPixels } from "./ink.mjs";
 import { expectedNames } from "./expect_names.mjs";
-import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, docsFile, REMOTE_MODES, DOCS } from "./serve_docs.mjs";
+import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, docsFile, REMOTE_MODES, DOCS, SLOW_ABOVE } from "./serve_docs.mjs";
+
+// the one test PDF over SLOW_ABOVE bytes
+const LARGE = fs.readFileSync(path.join(DOCS, "files", "large.pdf"));
 
 let passed = 0;
 let failed = 0;
@@ -158,6 +161,10 @@ try {
   await r3.arrayBuffer();
   check("server: range past the end is 416", r3.status === 416, String(r3.status));
   check("server: 416 Content-Range", r3.headers.get("content-range") === `bytes */${size}`, r3.headers.get("content-range"));
+  // r1, r2, and r4 got 206; r3 (416), r5 and r6 (200), and full (200) do not count
+  check("server: rangeCounts counts the three 206 answers", same([...server.rangeCounts], [["/sample.pdf", 3]]), JSON.stringify([...server.rangeCounts]));
+
+  check("server: large.pdf is over SLOW_ABOVE", LARGE.length > SLOW_ABOVE, `${LARGE.length} bytes`);
 
   // a port another server holds: serveDocs rejects instead of crashing
   let err = null;
@@ -170,6 +177,87 @@ try {
   check("server: a port in use rejects with EADDRINUSE", err && err.code === "EADDRINUSE", String(err));
 } finally {
   server.close();
+}
+
+// --- slowWhole and noRanges ---------------------------------------------------
+// Read a whole-file answer for 500 ms, then drop it: a slow answer has given
+// part of the file by then (about 3 pieces of 4096 bytes; the check allows
+// less than half the file, so a late timer does not fail it).
+async function bytesIn500ms(url) {
+  const r = await fetch(url);
+  const reader = r.body.getReader();
+  let got = 0;
+  const until = Date.now() + 500;
+  while (Date.now() < until) {
+    const left = until - Date.now();
+    const part = await Promise.race([reader.read(), new Promise((res) => setTimeout(() => res(null), left))]);
+    if (!part || part.done) break;
+    got += part.value.length;
+  }
+  await reader.cancel();
+  return { status: r.status, got, length: r.headers.get("content-length") };
+}
+// one Range request: its status and body
+async function getRange(url, range) {
+  const r = await fetch(url, { headers: { Range: range } });
+  return { status: r.status, body: Buffer.from(await r.arrayBuffer()), ranges: r.headers.get("accept-ranges") };
+}
+const SAMPLE = fs.readFileSync(path.join(DOCS, "sample.pdf"));
+// a file under docs/ over SLOW_ABOVE bytes that is not a PDF (PDF.js itself)
+const BIG_LIB = path.join("large_test_files", "libs", "quarto-contrib", fs.readdirSync(path.join(DOCS, "large_test_files", "libs", "quarto-contrib")).find((d) => d.startsWith("embedpdf-pdfjs-")), "pdf.min.mjs");
+check("slow: pdf.min.mjs is over SLOW_ABOVE", fs.statSync(path.join(DOCS, BIG_LIB)).size > SLOW_ABOVE, BIG_LIB);
+for (const kind of ["docs", "remote cors"]) {
+  const start = (opts) => (kind === "docs" ? serveDocs(opts) : serveRemote("cors", opts));
+  const slow = await start({ slowWhole: true });
+  const at = `http://127.0.0.1:${slow.address().port}/`;
+  try {
+    const part = await bytesIn500ms(at + "files/large.pdf");
+    check(`${kind} slowWhole: large.pdf is sent in pieces`, part.status === 200 && part.length === String(LARGE.length) && part.got > 0 && part.got < LARGE.length / 2, `${part.status}, ${part.got} of ${part.length} bytes in 500 ms`);
+    const t0 = Date.now();
+    const small = await fetch(at + "sample.pdf");
+    const smallBody = Buffer.from(await small.arrayBuffer());
+    check(`${kind} slowWhole: sample.pdf (not over SLOW_ABOVE) comes whole at once`, smallBody.equals(SAMPLE) && Date.now() - t0 < 1000, `${Date.now() - t0} ms`);
+    const t1 = Date.now();
+    const lib = await fetch(at + BIG_LIB.split(path.sep).map(encodeURIComponent).join("/"));
+    const libBody = Buffer.from(await lib.arrayBuffer());
+    check(`${kind} slowWhole: a file over SLOW_ABOVE that is not a PDF comes whole at once`, libBody.equals(fs.readFileSync(path.join(DOCS, BIG_LIB))) && Date.now() - t1 < 1000, `${BIG_LIB}: ${Date.now() - t1} ms`);
+    const a = await getRange(at + "files/large.pdf", "bytes=0-99");
+    const b = await getRange(at + "files/large.pdf", `bytes=${LARGE.length - 100}-`);
+    const c = await getRange(at + "files/sample%20copy.pdf", "bytes=0-9");
+    const t3 = Date.now();
+    const head = await fetch(at + "files/large.pdf", { method: "HEAD" });
+    await head.arrayBuffer();
+    const headMs = Date.now() - t3;
+    check(`${kind} slowWhole: a HEAD request is answered at once`, head.status === 200 && head.headers.get("content-length") === String(LARGE.length) && headMs < 1000, `${head.status} ${head.headers.get("content-length")} in ${headMs} ms`);
+    check(`${kind} slowWhole: ranges of large.pdf are 206 at once`, a.status === 206 && a.body.equals(LARGE.subarray(0, 100)) && b.status === 206 && b.body.equals(LARGE.subarray(-100)), `${a.status} ${b.status}`);
+    check(`${kind}: rangeCounts counts 206 answers per path, %20 as sent`, same([...slow.rangeCounts], [["/files/large.pdf", 2], ["/files/sample%20copy.pdf", 1]]), JSON.stringify([...slow.rangeCounts]));
+  } finally {
+    slow.close();
+  }
+  // without the new options: large.pdf comes whole at once, with the headers
+  // a whole-file answer always had
+  const plain = await start();
+  try {
+    const t2 = Date.now();
+    const r = await fetch(`http://127.0.0.1:${plain.address().port}/files/large.pdf`);
+    const body = Buffer.from(await r.arrayBuffer());
+    const ms = Date.now() - t2;
+    const h = (k) => r.headers.get(k);
+    check(`${kind} default: large.pdf comes whole within 1 s`, r.status === 200 && body.equals(LARGE) && ms < 1000, `${r.status} in ${ms} ms`);
+    check(`${kind} default: whole-file headers`, h("content-type") === "application/pdf" && h("content-length") === String(LARGE.length) && h("accept-ranges") === "bytes" && h("cache-control") === "no-store", JSON.stringify([...r.headers]));
+    if (kind !== "docs") check(`${kind} default: Access-Control- headers`, h("access-control-allow-origin") === "*" && h("access-control-expose-headers") === "Accept-Ranges, Content-Range", JSON.stringify([...r.headers]));
+  } finally {
+    plain.close();
+  }
+  const none = await start({ noRanges: true });
+  const at2 = `http://127.0.0.1:${none.address().port}/`;
+  try {
+    const r = await getRange(at2 + "files/large.pdf", "bytes=0-99");
+    check(`${kind} noRanges: a range request gets the whole file (200)`, r.status === 200 && r.body.equals(LARGE) && r.ranges === "bytes", `${r.status} ${r.body.length} bytes`);
+    check(`${kind} noRanges: rangeCounts stays empty`, none.rangeCounts.size === 0, JSON.stringify([...none.rangeCounts]));
+  } finally {
+    none.close();
+  }
 }
 
 // --- docs/ server with missingPdfs --------------------------------------------

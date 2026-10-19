@@ -15,12 +15,13 @@ Key files:
   (GitHub Pages). `dummy*.pdf` are blank test files; `sample.pdf` is the realistic
   example used by `example.qmd`.
 - `name_test.qmd`, `name_edge_test.qmd`, `percent_test.qmd`,
-  `selfcontained_test.qmd`, `selfcontained_slides_test.qmd`, and
-  `selfcontained_failed_test.qmd` are test pages, also rendered into
-  `docs/`. `files/` holds copies of `sample.pdf` under the names they test,
-  and `inlined-sample.md`, the hand-written embed that `name_edge_test.qmd`
-  includes. It also holds `broken.pdf` and `undecodable-embeds.md` for
-  `selfcontained_failed_test.qmd`.
+  `selfcontained_test.qmd`, `selfcontained_slides_test.qmd`,
+  `selfcontained_failed_test.qmd`, and `large_test.qmd` are test pages, also
+  rendered into `docs/`. `files/` holds copies of `sample.pdf` under the names
+  they test, and `inlined-sample.md`, the hand-written embed that
+  `name_edge_test.qmd` includes. It also holds `broken.pdf` and
+  `undecodable-embeds.md` for `selfcontained_failed_test.qmd`, and
+  `large.pdf` and `large-2.pdf` for `large_test.qmd`.
 
 ## Verify before finishing — you are the test runner (no CI)
 
@@ -185,6 +186,31 @@ node tests/ios_check.mjs --device "embedpdf iPhone" --missing-pdfs
 node tests/ios_check.mjs --device "embedpdf iPad" --missing-pdfs
 ```
 
+A PDF that PDF.js loads by byte ranges: PDF.js asks for ranges only for a PDF
+over 128 KB (131,072 bytes). `files/large.pdf` is seven copies of `sample.pdf`
+joined with `pdfunite`, 14 pages and over that size. `files/large-2.pdf` is a
+copy of it. `large_test.html` shows `large.pdf` with `renderer=pdfjs` and
+`large-2.pdf` with `renderer=auto`, so the two embeds load different
+addresses. `--expect-ranges` (no value) makes the server that serves the PDFs
+send each whole `.pdf` file over 128 KB slowly. On a local server PDF.js
+otherwise often gets the whole file before it asks for a range. The run then
+fails unless that server answered at least one byte-range request (HTTP 206)
+for each PDF.js embed's address. With `--remote cors`, that server is the
+second one. If a PDF.js embed's PDF is not over 128 KB, or another embed
+loads the same address, the run exits 2. `--plant noranges` makes that
+server ignore every Range header, and the run must then fail. The text repeats every two pages, so these lines
+take no `--expect-text`:
+
+```
+node tests/render_check.mjs large_test.html --expect-ranges --expect-native 1 --expect-pdfjs 1 --expect-pages 14 --expect-name "large.pdf|large-2.pdf"
+node tests/render_check.mjs large_test.html --expect-ranges --device iphone --expect-native 0 --expect-pdfjs 2 --expect-pages 14 --expect-name "large.pdf|large-2.pdf"
+node tests/render_check.mjs large_test.html --expect-ranges --device android --expect-native 0 --expect-pdfjs 2 --expect-pages 14 --expect-name "large.pdf|large-2.pdf"
+node tests/render_check.mjs large_test.html --expect-ranges --remote cors --device iphone --expect-native 0 --expect-pdfjs 2 --expect-pages 14 --expect-name "large.pdf|large-2.pdf"
+node tests/render_check.mjs large_test.html --expect-ranges --remote cors --device android --expect-native 0 --expect-pdfjs 2 --expect-pages 14 --expect-name "large.pdf|large-2.pdf"
+node tests/ios_check.mjs --device "embedpdf iPhone" --page large_test.html --expect-ranges --expect-embeds 2 --expect-pages 14 --expect-name "large.pdf|large-2.pdf"
+node tests/ios_check.mjs --device "embedpdf iPad" --page large_test.html --expect-ranges --expect-embeds 2 --expect-pages 14 --expect-name "large.pdf|large-2.pdf"
+```
+
 `render_check.mjs` serves `docs/` itself with `tests/serve_docs.mjs`. If every
 page of every PDF.js embed has a canvas with ink and the counts match, it exits
 0. Both scripts use the ink rule in `tests/ink.mjs`. If Google Chrome is not
@@ -257,6 +283,9 @@ errors.
 - A PDF from another site on a real phone, with or without
   `Access-Control-Allow-Origin`. Safari is checked only with no header, in the
   iOS 27.0 simulators.
+- A large PDF that PDF.js loads by byte ranges, on GitHub Pages or on a real
+  phone. It is checked only on the local test servers, with a slow
+  whole-file answer, in Chromium and in the iOS 27.0 simulators.
 - A PDF missing from the page's own site (HTTP 404) on a real phone. It is
   checked only in Chromium and in the iOS 27.0 simulators.
 - A self-contained embed that cannot show its PDF gives a "Download the PDF"

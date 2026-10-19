@@ -6,16 +6,23 @@
 // server listens with a backlog of 5, and a browser opening many connections
 // at once can get some of them reset, so the viewer JS sometimes never loads.
 //
-// serveDocs({ port, transformHtml, routes, root, missingPdfs }) resolves to the listening
-// server, or rejects on a listen error. It answers single byte ranges.
+// serveDocs({ port, transformHtml, routes, root, missingPdfs, slowWhole, noRanges })
+// resolves to the listening server, or rejects on a listen error. It answers
+// single byte ranges.
 //   port           0 picks a free port (server.address().port)
 //   root           directory to serve (default docs/)
 //   transformHtml  optional (html) => html applied to every .html response
 //   routes         optional { "/path": (req, res) => void } handlers
 //   missingPdfs    true: answer 404 for every path that ends in .pdf, so each
 //                  PDF the page names is missing from its own origin
-// serveRemote(mode) and pointPdfsAt(html, base, page) put the PDFs on another
-// origin.
+//   slowWhole      true: send a whole-file answer for a .pdf file over
+//                  SLOW_ABOVE bytes slowly (see sendData), so PDF.js loads it
+//                  by ranges
+//   noRanges       true: ignore every Range header and send the whole file
+// The server's rangeCounts Map holds the number of 206 answers per request
+// path, as sent (still percent-encoded, no ?query).
+// serveRemote(mode, { port, slowWhole, noRanges }) and pointPdfsAt(html, base,
+// page) put the PDFs on another origin.
 
 import http from "node:http";
 import fs from "node:fs";
@@ -41,14 +48,27 @@ const TYPES = {
   ".yml": "text/yaml",
 };
 
+// PDF.js 6.1.200 asks for byte ranges only for a file over this many bytes
+// (2 × its 65536-byte range chunk; validateRangeRequestCapabilities in
+// pdfjs/pdf.min.mjs)
+export const SLOW_ABOVE = 2 * 65536;
+const SLOW_PIECE = 4096; // bytes per piece of a slow whole-file answer
+const SLOW_EVERY = 200; // ms between pieces
+
 // Send `data` whole (200) or, for a single "bytes=a-b" or "bytes=a-" Range
 // header, only those bytes (206); a range that starts past the end gets 416.
 // Any other Range form is ignored and the whole file is sent, as RFC 9110
 // allows. Content-Length and Accept-Ranges let PDF.js load a large PDF by
-// ranges, as it does from a static web host.
-function sendData(req, res, data, headers) {
+// ranges, as it does from a static web host. Returns the status code.
+//   slowWhole  a whole-file answer for a file over SLOW_ABOVE bytes is sent
+//              SLOW_PIECE bytes every SLOW_EVERY ms. On a local server PDF.js
+//              otherwise often gets the whole file before it asks for a
+//              range, so this makes it load by ranges.
+//   noRanges   every Range header is ignored, so each answer is the whole
+//              file (200), still with Accept-Ranges
+function sendData(req, res, data, headers, { slowWhole = false, noRanges = false } = {}) {
   const size = data.length;
-  const m = /^bytes=(\d+)-(\d*)$/.exec(req.headers.range || "");
+  const m = noRanges ? null : /^bytes=(\d+)-(\d*)$/.exec(req.headers.range || "");
   if (m) {
     const start = Number(m[1]);
     const last = m[2] === "" ? Infinity : Number(m[2]);
@@ -56,7 +76,7 @@ function sendData(req, res, data, headers) {
     // a range whose end is before its start is invalid, so it is ignored
     if (last >= start && start >= size) {
       res.writeHead(416, { ...headers, "Content-Range": `bytes */${size}` }).end();
-      return;
+      return 416;
     }
     if (last >= start) {
       res.writeHead(206, {
@@ -66,11 +86,33 @@ function sendData(req, res, data, headers) {
         "Content-Length": end - start + 1,
       });
       res.end(data.subarray(start, end + 1));
-      return;
+      return 206;
     }
   }
   res.writeHead(200, { ...headers, "Accept-Ranges": "bytes", "Content-Length": size });
-  res.end(data);
+  // a HEAD answer has no body to send slowly
+  if (!slowWhole || size <= SLOW_ABOVE || req.method === "HEAD") {
+    res.end(data);
+    return 200;
+  }
+  let at = 0;
+  const timer = setInterval(() => {
+    if (res.destroyed) return clearInterval(timer);
+    res.write(data.subarray(at, at + SLOW_PIECE));
+    at += SLOW_PIECE;
+    if (at >= size) {
+      clearInterval(timer);
+      res.end();
+    }
+  }, SLOW_EVERY);
+  // the browser drops the answer once it has the file by ranges
+  res.on("close", () => clearInterval(timer));
+  return 200;
+}
+
+// Count one 206 answer for a request path (as sent, still percent-encoded)
+function countRange(server, status, url) {
+  if (status === 206) server.rangeCounts.set(url.pathname, (server.rangeCounts.get(url.pathname) || 0) + 1);
 }
 
 // resolves to the server once it listens; rejects on a listen error (such as
@@ -85,7 +127,7 @@ function listen(server, port) {
   });
 }
 
-export function serveDocs({ port = 0, transformHtml = null, routes = {}, root = DOCS, missingPdfs = false } = {}) {
+export function serveDocs({ port = 0, transformHtml = null, routes = {}, root = DOCS, missingPdfs = false, slowWhole = false, noRanges = false } = {}) {
   root = path.resolve(root);
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, "http://127.0.0.1");
@@ -109,8 +151,11 @@ export function serveDocs({ port = 0, transformHtml = null, routes = {}, root = 
     let data = fs.readFileSync(file);
     if (ext === ".html" && transformHtml) data = Buffer.from(transformHtml(data.toString("utf8")), "utf8");
     // no-store: the browser must load the viewer build under test, not a cached one
-    sendData(req, res, data, { "Content-Type": TYPES[ext] || "application/octet-stream", "Cache-Control": "no-store" });
+    const headers = { "Content-Type": TYPES[ext] || "application/octet-stream", "Cache-Control": "no-store" };
+    // only a PDF is slow: Bootstrap's CSS and PDF.js itself are over SLOW_ABOVE too
+    countRange(server, sendData(req, res, data, headers, { slowWhole: slowWhole && ext.toLowerCase() === ".pdf", noRanges }), url);
   });
+  server.rangeCounts = new Map();
   return listen(server, port);
 }
 
@@ -127,7 +172,7 @@ export function serveDocs({ port = 0, transformHtml = null, routes = {}, root = 
 // and the Range header, and in mode blocked it sends no Access-Control-
 // header.
 export const REMOTE_MODES = ["blocked", "cors", "missing"];
-export function serveRemote(mode, { port = 0 } = {}) {
+export function serveRemote(mode, { port = 0, slowWhole = false, noRanges = false } = {}) {
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, "http://127.0.0.1");
     // Expose-Headers lets a cross-origin reader see the range headers
@@ -148,8 +193,9 @@ export function serveRemote(mode, { port = 0 } = {}) {
       return;
     }
     const headers = { "Content-Type": TYPES[path.extname(file)] || "application/octet-stream", "Cache-Control": "no-store", ...cors };
-    sendData(req, res, fs.readFileSync(file), headers);
+    countRange(server, sendData(req, res, fs.readFileSync(file), headers, { slowWhole: slowWhole && path.extname(file).toLowerCase() === ".pdf", noRanges }), url);
   });
+  server.rangeCounts = new Map();
   return listen(server, port);
 }
 
