@@ -196,3 +196,30 @@ Pass 2, 2026-10-18, at 4471ba4 (code as of f04754f; later commits touch `cairn/`
   before finishing" for `node tests/(render|ios)_check.mjs` lines with `--expect-name` or `revealjs_test.html`
   finds 25 lines, and all 25 exit 0. render_check.mjs's header describes `duplink`, `norole`, and the `|` list;
   ios_check.mjs's header describes `norole`.
+- Gate: `cairn_validate.py` exit 0; no principle changed; the generic profile names no toolchain checks.
+- spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1: the stuck count is read before the embeds, so an embed that hydrates in between is both checked and
+  reported stuck — fix now (count again after the embeds are read).
+- diff-bug #2: when nothing is planted, the exit-2 path never prints the stuck line — fix now (print it first).
+- diff-bug #3: the header says the `--expect-text` checks wait for hydration, but only the text read does — fix now.
+- diff-bug #4: the header names the wait only for RevealJS pages — fix now (whole page too).
+- diff-bug #5: the stuck line does not say what "not hydrated" means — reject (false as a defect: the
+  `nameFailures()` comment and the class list define it).
+- diff-bug #6: ios_check's new header sentence has no period — fix now.
+- diff-bug #7: the literal `--alone http` percent line duplicates the standing rerun note — reject (planned change:
+  AC6 asks for the AC5 runs as command lines; a second run of one command is harmless).
+- diff-bug #8: the CLAUDE.md list note leaves out the `|` limit — fix now.
+- blame-history #1: the stuck line can fail a one-name run that passed before — reject (planned change: pass 1
+  diff-bug #1 asked for this failure).
+- blame-history #2: the stuck count and the embed list can disagree — same as diff-bug #1.
+- blame-history #3: render_check alone cannot take a name with `|` — reject (planned change: the list is
+  render_check's).
+- blame-history #4: `fileName()` still catches the bare-`%` decode — reject (a confirmation, no finding).
+- blame-history #5: README and DESIGN do not describe the list or the stuck failure — reject (false: those files
+  describe the viewer's names, and the list and the wait belong to the check scripts, documented in CLAUDE.md and
+  the headers).
+- prior-review: no regression found.
+- ripple #1: the iphone `percent_test` `--alone file` line has no literal `--alone http` twin — reject (false: the
+  standing note "Run each `--alone file` line again with `--alone http`" covers it, as for the other
+  self-contained lines).
+- ripple #2: row "Name plant slide target" names only exit 2 and a wrong plant — fix now (row reworded).

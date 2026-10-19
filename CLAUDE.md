@@ -63,8 +63,8 @@ page 2. In render_check it also checks Chrome's accessibility tree.
 checks that each PDF.js embed is a group named "PDF: <file name>", and in
 render_check that each toolbar control's name is its tooltip and is not
 repeated as its description. In render_check, `--expect-name "a.pdf|b.pdf"`
-gives one name per PDF.js embed in page order, as on `revealjs_test.html`, and
-it must name every PDF.js embed.
+gives one name per PDF.js embed in page order, as on `revealjs_test.html`. The
+list must name every PDF.js embed, and it cannot hold a file name with `|`.
 `name_test.html` shows `files/sample copy.pdf` by a path with a space and by
 one with `%20`. `percent_test.html` is self-contained. It shows
 `files/100%.pdf` by `files/100%25.pdf` and by a bare `%`.

@@ -110,9 +110,10 @@
 // Set CHROME_PATH to use another Chrome or Chromium binary.
 //
 // On a RevealJS page the check goes to each slide with Reveal.slide() and
-// scrolls each embed's pages into view before it measures. The --expect-text
-// and --expect-name checks of a slide first wait at most 10 s for its embeds
-// to be hydrated; the name check fails when that wait runs out.
+// scrolls each embed's pages into view before it measures. On each slide (or
+// on the whole page when it has no slides), the --expect-text text read and
+// the --expect-name check first wait at most 10 s for the embeds to be
+// hydrated; the name check fails when that wait runs out.
 //
 // Ink: a canvas has ink by the rule in tests/ink.mjs (some pixel neither
 // transparent nor white, read over every pixel and channel).
@@ -526,8 +527,19 @@ async function nameFailures(page, slide, before) {
   );
   const embeds = await root.$$(".embedpdf-pdfjs");
   const out = [];
-  // a late embed is missing from this count, and later "|" names then shift
-  if (stuck) out.push(`${stuck} embed(s)${where || " on the page"} still not hydrated after 10 s`);
+  // a late embed is missing from this count, and later "|" names then shift;
+  // count again after the embeds are read, so an embed that hydrated in
+  // between is not reported as stuck
+  const stillStuck = stuck
+    ? await page.evaluate(
+        (slide) =>
+          (slide === null ? document : window.Reveal.getSlides()[slide]).querySelectorAll(
+            "div.embedpdf:not(.embedpdf-pdfjs):not(.embedpdf-native):not(.embedpdf-failed)"
+          ).length,
+        slide
+      )
+    : 0;
+  if (stillStuck) out.push(`${stillStuck} embed(s)${where || " on the page"} still not hydrated after 10 s`);
   for (const [i, embed] of embeds.entries()) {
     const at = `PDF.js embed ${i + 1}${where}`;
     const expected = expectNames.length === 1 ? expectNames[0] : expectNames[before + i];
@@ -772,6 +784,8 @@ try {
   console.log(JSON.stringify({ device: deviceName || "chrome", alone, remote, missingPdfs, ...res, text, names, consoleErrors }, null, 2));
   if (names) {
     if (plant && NAME_PLANTS.includes(plant) && !names.planted) {
+      // an embed that never hydrated is the likely cause, so name it first
+      for (const f of names.failures.filter((f) => f.endsWith("still not hydrated after 10 s"))) console.error("render_check: " + f);
       console.error(`render_check: --plant ${plant} found nothing to plant in`);
       await browser.close();
       server?.close();
