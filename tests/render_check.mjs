@@ -100,8 +100,8 @@
 // Ink: a canvas has ink by the rule in tests/ink.mjs (some pixel neither
 // transparent nor white, read over every pixel and channel).
 //
-// Exits non-zero if the page does not load, if no embed is hydrated, if a
-// PDF.js embed has no pages, or a page with no canvas or a canvas without
+// Exits non-zero if the page does not load or no embed is hydrated, if a
+// PDF.js embed has no pages or has a page whose canvas is missing or has no
 // ink, if an expected count does
 // not match, or if an --expect-text check fails. Exits 2 on a bad argument,
 // or when --plant finds nothing to plant in.
@@ -267,14 +267,19 @@ if (alone) {
   process.on("exit", () => fs.rmSync(aloneDir, { recursive: true, force: true }));
   fs.copyFileSync(source, path.join(aloneDir, path.basename(target)));
 }
-const remoteServer = remote ? await serveRemote(remote) : null;
+// a server that cannot listen exits 2 with a message, not a stack trace
+const cannotServe = (what) => (err) => {
+  console.error(`render_check: cannot start the ${what} server: ${err.message}`);
+  process.exit(2);
+};
+const remoteServer = remote ? await serveRemote(remote).catch(cannotServe("remote")) : null;
 const remoteBase = remoteServer ? `http://127.0.0.1:${remoteServer.address().port}/` : null;
 const server =
   /^https?:/.test(target) || alone === "file"
     ? null
     : await serveDocs(
         aloneDir ? { root: aloneDir } : remoteBase ? { transformHtml: (html) => pointPdfsAt(html, remoteBase) } : {}
-      );
+      ).catch(cannotServe("docs"));
 const url =
   alone === "file"
     ? pathToFileURL(path.join(aloneDir, path.basename(target))).href
@@ -580,7 +585,14 @@ try {
   const res = await page.evaluate(async (inkSource, plant) => {
     // the ink rule of tests/ink.mjs, rebuilt from its source text
     const inkInPixels = new Function("return " + inkSource)();
-    const hasInk = (c) => inkInPixels(c.getContext("2d").getImageData(0, 0, c.width, c.height).data);
+    // "ok", "no ink", or why the canvas could not be read
+    const inkOf = (c) => {
+      try {
+        return inkInPixels(c.getContext("2d").getImageData(0, 0, c.width, c.height).data) ? "ok" : "no ink";
+      } catch (err) {
+        return "unreadable (" + err + ")";
+      }
+    };
     // an ink plant goes into the first PDF.js embed before anything is measured
     let inkPlanted = null;
     const first = document.querySelector(".embedpdf-pdfjs");
@@ -600,16 +612,18 @@ try {
       firstPages.forEach((p) => p.remove());
       inkPlanted = plant;
     }
-    const canvases = [...document.querySelectorAll(".embedpdf-page canvas")];
-    const withInk = canvases.filter(hasInk).length;
+    const canvases = document.querySelectorAll(".embedpdf-page canvas").length;
     // per PDF.js embed: one entry per .embedpdf-page, "ok" when its canvas has
-    // ink, else "no canvas" or "no ink"
+    // ink, else "no canvas", "no ink", or "unreadable (…)". The embed counts
+    // are read here too, before the awaits below, so they match pdfjsPages.
     const pdfjsPages = [...document.querySelectorAll(".embedpdf-pdfjs")].map((el) =>
       [...el.querySelectorAll(".embedpdf-page")].map((p) => {
         const c = p.querySelector("canvas");
-        return !c ? "no canvas" : hasInk(c) ? "ok" : "no ink";
+        return c ? inkOf(c) : "no canvas";
       })
     );
+    const native = document.querySelectorAll(".embedpdf-native").length;
+    const pdfjs = pdfjsPages.length;
     const objects = [];
     for (const o of document.querySelectorAll(".embedpdf-native object")) {
       const entry = { scheme: String(o.data).split(":")[0], pdf: false };
@@ -650,10 +664,9 @@ try {
       userAgent: navigator.userAgent,
       pdfViewerEnabled: navigator.pdfViewerEnabled,
       maxTouchPoints: navigator.maxTouchPoints,
-      native: document.querySelectorAll(".embedpdf-native").length,
-      pdfjs: document.querySelectorAll(".embedpdf-pdfjs").length,
-      canvases: canvases.length,
-      canvasesWithInk: withInk,
+      native,
+      pdfjs,
+      canvases,
       pdfjsPages,
       objects,
       links,

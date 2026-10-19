@@ -61,8 +61,8 @@ checks that each PDF.js embed is a group named "PDF: <file name>", and in
 render_check that each toolbar control's name is its tooltip and is not
 repeated as its description.
 `name_test.html` shows `files/sample copy.pdf` by a path with a space and by
-one with `%20`. `--plant` in both scripts plants one defect so you can see a
-check fail.
+one with `%20`. `--plant` in each script plants one defect so you can see a
+check fail. The two scripts have different plant lists (see each header).
 
 Self-contained pages (`embed-resources: true`): `--alone http|file` (render_check)
 and `--alone yes` (ios_check) load a copy of the page with no other file beside it.

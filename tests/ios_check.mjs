@@ -91,8 +91,9 @@ const pagePath = opt("page", "example.html");
 const expectEmbeds = Number(opt("expect-embeds", "10"));
 const expectPages = Number(opt("expect-pages", "2"));
 // 0: the system picks a free port
-const port = Number(opt("port", "0"));
-if (!Number.isInteger(port) || port < 0 || port > 65535) {
+const portArg = opt("port", "0");
+const port = Number(portArg);
+if (!/^\d+$/.test(portArg) || port > 65535) {
   console.error("ios_check: --port must be a port number from 0 to 65535");
   process.exit(2);
 }
@@ -347,7 +348,12 @@ if (alone === "yes") {
   fs.copyFileSync(source, path.join(aloneDir, servedPath));
 }
 
-const remoteServer = remote ? await serveRemote(remote) : null;
+const remoteServer = remote
+  ? await serveRemote(remote).catch((err) => {
+      console.error(`ios_check: cannot start the remote server: ${err.message}`);
+      process.exit(2);
+    })
+  : null;
 const remoteBase = remoteServer ? `http://127.0.0.1:${remoteServer.address().port}/` : null;
 
 const server = await serveDocs({
@@ -376,7 +382,7 @@ const server = await serveDocs({
   console.error(
     err.code === "EADDRINUSE"
       ? `ios_check: port ${port} is in use; pass another --port, or none for a free port`
-      : `ios_check: cannot serve on port ${port}: ${err.message}`
+      : `ios_check: cannot start the docs server: ${err.message}`
   );
   process.exit(2);
 });

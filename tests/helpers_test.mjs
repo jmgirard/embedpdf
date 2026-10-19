@@ -30,6 +30,7 @@ const WHITE = [255, 255, 255, 255];
 check("ink: all white is no ink", inkInPixels(pixels(1000, WHITE)) === false);
 check("ink: all transparent is no ink", inkInPixels(pixels(1000, [0, 0, 0, 0])) === false);
 check("ink: one gray-252 pixel is no ink", inkInPixels(pixels(1000, WHITE, 517, [252, 252, 252, 255])) === false);
+check("ink: one gray-249 pixel is ink", inkInPixels(pixels(1000, WHITE, 517, [249, 249, 249, 255])) === true);
 check("ink: one pure red pixel is ink", inkInPixels(pixels(1000, WHITE, 517, [255, 0, 0, 255])) === true);
 // 999 is not a multiple of 100, so a check of every 100th pixel misses it
 check("ink: one black last pixel is ink", inkInPixels(pixels(1000, WHITE, 999, [0, 0, 0, 255])) === true);
@@ -37,6 +38,8 @@ check("ink: a black but transparent pixel is no ink", inkInPixels(pixels(1000, W
 check("ink: no pixels is no ink", inkInPixels(new Uint8ClampedArray(0)) === false);
 // the rule must run as injected source in a page, so it uses no outer names
 check("ink: rule runs from its source text", new Function("return " + inkInPixels.toString())()(pixels(10, WHITE, 3, [0, 0, 255, 255])) === true);
+// ios_check pastes the source into an HTML <script>, which "</script" or "<!--" would break
+check("ink: source text is safe inside a <script>", !/<\/script|<!--/i.test(inkInPixels.toString()));
 
 // --- docs/ server -----------------------------------------------------------
 const server = await serveDocs();
@@ -79,6 +82,14 @@ try {
   check("server: open-ended range is 206", r2.status === 206, String(r2.status));
   check("server: open-ended range Content-Range", r2.headers.get("content-range") === `bytes ${size - 50}-${size - 1}/${size}`, r2.headers.get("content-range"));
   check("server: open-ended range body", b2.equals(pdf.subarray(size - 50)), `${b2.length} bytes`);
+
+  const r4 = await fetch(base + "sample.pdf", { headers: { Range: `bytes=${size - 10}-${size + 500}` } });
+  const b4 = Buffer.from(await r4.arrayBuffer());
+  check("server: a range end past the file is clamped", r4.status === 206 && r4.headers.get("content-range") === `bytes ${size - 10}-${size - 1}/${size}` && b4.equals(pdf.subarray(size - 10)), `${r4.status} ${r4.headers.get("content-range")}`);
+
+  const r5 = await fetch(base + "sample.pdf", { headers: { Range: "bytes=200-100" } });
+  const b5 = Buffer.from(await r5.arrayBuffer());
+  check("server: a range that ends before it starts gets the whole file", r5.status === 200 && b5.equals(pdf), String(r5.status));
 
   const r3 = await fetch(base + "sample.pdf", { headers: { Range: `bytes=${size}-${size + 10}` } });
   await r3.arrayBuffer();
