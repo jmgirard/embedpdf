@@ -178,7 +178,9 @@ export function serveDocs({ port = 0, transformHtml = null, routes = {}, root = 
 //   mode cors     Access-Control-Allow-Origin: *
 //   mode missing  HTTP 404 for every GET, with Access-Control-Allow-Origin: *
 //                 so that the 404 itself, not CORS, is what PDF.js meets
-// A file is sent whole or by a single byte range, as serveDocs sends it. In
+// A file is sent whole or by a single byte range, as serveDocs sends it, but
+// slowWhole slows only a request with an Origin header (a CORS read, such as
+// PDF.js's): a native viewer's read of the same PDF has none. In
 // modes cors and missing, Access-Control-Expose-Headers lets a cross-origin
 // reader see Accept-Ranges and Content-Range. An OPTIONS request (a CORS
 // preflight) gets 204 in every mode; in modes cors and missing it allows GET
@@ -206,7 +208,11 @@ export function serveRemote(mode, { port = 0, slowWhole = false, noRanges = fals
       return;
     }
     const headers = { "Content-Type": TYPES[path.extname(file)] || "application/octet-stream", "Cache-Control": "no-store", ...cors };
-    countRange(server, sendData(req, res, fs.readFileSync(file), headers, { slowWhole: slowWhole && path.extname(file).toLowerCase() === ".pdf", noRanges }), url, req);
+    // only a CORS read (PDF.js's, with an Origin header) is slow: a native
+    // viewer's read of the same PDF sends none, and comes at once, so it is
+    // done before PDF.js reads the PDF
+    const slow = slowWhole && path.extname(file).toLowerCase() === ".pdf" && req.headers.origin !== undefined;
+    countRange(server, sendData(req, res, fs.readFileSync(file), headers, { slowWhole: slow, noRanges }), url, req);
   });
   server.rangeCounts = new Map();
   server.requests = [];

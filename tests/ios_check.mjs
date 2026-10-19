@@ -143,19 +143,25 @@
 //                          ResponseException, one line per embed. Needs
 //                          --expect-embeds above 0. Not with --remote,
 //                          --alone yes, --plant, --expect-text, --expect-name.
-//   --expect-ranges        takes no value: the docs server sends each
-//                          whole-file answer for a .pdf file over SLOW_ABOVE
-//                          bytes (tests/serve_docs.mjs) slowly, so PDF.js
-//                          loads it by byte ranges. Fail unless the server
-//                          answered at least one byte-range request (HTTP
-//                          206) for each PDF.js embed's address; the report's
-//                          "ranges" gives the count per path. Answers are
-//                          counted per address, so the run exits 2 when a
-//                          PDF.js embed's address is also another embed's,
-//                          or when its PDF under docs/ is not over
-//                          SLOW_ABOVE bytes (PDF.js then asks for no range).
-//                          Not with --remote, --missing-pdfs, or --alone yes.
-//   --plant noranges       with --expect-ranges: the server ignores every
+//   --expect-ranges        takes no value: the server that serves the PDFs
+//                          (the docs server, or the remote one with --remote
+//                          cors) sends each whole-file answer for a .pdf file
+//                          over SLOW_ABOVE bytes (tests/serve_docs.mjs)
+//                          slowly, so PDF.js loads it by byte ranges. Fail
+//                          unless that server answered at least one
+//                          byte-range request (HTTP 206) for each PDF.js
+//                          embed's address; the report's "ranges" gives the
+//                          count per path. Answers are counted per address
+//                          path, so the run exits 2 when a PDF.js embed's
+//                          address is also another embed's. With --remote
+//                          cors only answers to requests with an Origin
+//                          header count (a native viewer's requests have
+//                          none), so there it exits 2 only when the address
+//                          is also another PDF.js embed's. It also exits 2
+//                          when its PDF under docs/ is not over SLOW_ABOVE
+//                          bytes (PDF.js then asks for no range). Not with
+//                          --remote blocked, --missing-pdfs, or --alone yes.
+//   --plant noranges       with --expect-ranges: that server ignores every
 //                          Range header and sends the whole file (HTTP 200),
 //                          so the check must fail and name each PDF.js
 //                          embed's address; with no PDF.js embed it exits 2
@@ -301,8 +307,8 @@ if (RANGE_PLANTS.includes(plant) && !expectRanges) {
   console.error(`ios_check: --plant ${plant} needs --expect-ranges`);
   process.exit(2);
 }
-if (expectRanges && (remote || missingPdfs || alone === "yes")) {
-  console.error("ios_check: --expect-ranges cannot be combined with --remote, --missing-pdfs, or --alone yes");
+if (expectRanges && (blocked || missingPdfs || alone === "yes")) {
+  console.error("ios_check: --expect-ranges cannot be combined with --remote blocked, --missing-pdfs, or --alone yes");
   process.exit(2);
 }
 // one entry per embed on the page, in page order, each in the load-failure
@@ -700,7 +706,7 @@ if (alone === "yes") {
 }
 
 const remoteServer = remote
-  ? await serveRemote(remote).catch((err) => {
+  ? await serveRemote(remote, { slowWhole: expectRanges, noRanges: plant === "noranges" }).catch((err) => {
       console.error(`ios_check: cannot start the remote server: ${err.message}`);
       process.exit(2);
     })
@@ -914,26 +920,37 @@ try {
     if (inl.length) failures.push(`${inl.length} embeds with an inlined PDF are in the load-failure state (embeds ${inl.map((e) => e.index).join(", ")}); pass --expect-download`);
   }
   // --expect-ranges: each PDF.js embed's PDF must have had at least one 206
-  // answer from the docs server (counted per address, so embeds that share
-  // an address share the count)
-  const ranges = expectRanges ? Object.fromEntries(server.rangeCounts) : undefined;
+  // answer from the server that serves the PDFs (the remote one with --remote
+  // cors), counted per address path, so embeds that share an address share
+  // the count. With --remote cors only answers to requests with an Origin
+  // header count: PDF.js reads that server by CORS, which sends one, and a
+  // native viewer's request sends none, so a native embed of the same address
+  // is counted apart.
+  const pdfServer = remoteServer || server;
+  const byOrigin = remote === "cors";
+  const ranges = expectRanges ? Object.fromEntries(pdfServer.rangeCounts) : undefined;
   // a page on which the check cannot tell PDF.js loaded by ranges is a bad
   // argument (exit 2): a PDF too small for PDF.js to ask for ranges, or an
-  // address that another embed also loads
+  // address that another embed (with --remote cors, another PDF.js embed)
+  // also loads
   const misuse = [];
   if (expectRanges && !report.stuck) {
-    const origin = `http://127.0.0.1:${server.address().port}`;
+    const origin = `http://127.0.0.1:${pdfServer.address().port}`;
     const pdfjsEmbeds = report.embeds.filter((e) => e.renderer === "pdfjs");
     if (plant === "noranges" && !pdfjsEmbeds.length) misuse.push("--plant noranges found nothing to plant in: no embed uses PDF.js");
     for (const e of pdfjsEmbeds) {
-      if (report.embeds.filter((o) => o.failure.expected === e.failure.expected).length > 1) misuse.push(`embed ${e.index}: ${e.failure.expected} is the address of more than one embed, so its count would be shared`);
+      const sharing = byOrigin ? pdfjsEmbeds : report.embeds;
+      if (sharing.filter((o) => o.failure.expected === e.failure.expected).length > 1) misuse.push(`embed ${e.index}: ${e.failure.expected} is the address of more than one ${byOrigin ? "PDF.js embed" : "embed"}, so its count would be shared`);
       const file = docsFile(new URL(e.failure.expected).pathname.slice(1));
       if (file && fs.statSync(file).size <= SLOW_ABOVE) misuse.push(`embed ${e.index}: ${e.failure.expected} is ${fs.statSync(file).size} bytes, not over ${SLOW_ABOVE}, so PDF.js does not ask for ranges`);
     }
     if (!pdfjsEmbeds.length) failures.push("--expect-ranges given, but no embed uses PDF.js");
     for (const e of pdfjsEmbeds) {
       const u = new URL(e.failure.expected);
-      if (u.origin !== origin || !server.rangeCounts.get(u.pathname)) {
+      const count = byOrigin
+        ? pdfServer.requests.filter((r) => r.path === u.pathname && r.status === 206 && r.origin !== null).length
+        : pdfServer.rangeCounts.get(u.pathname);
+      if (u.origin !== origin || !count) {
         failures.push(`embed ${e.index}: no byte-range request (HTTP 206) answered for ${e.failure.expected}`);
       }
     }
