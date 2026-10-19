@@ -44,6 +44,10 @@ const ROWS = [
   ["\tsample.pdf\n", "sample.pdf"],
   ["files/my%20report", "my report"],
   ["files/report?", ""],
+  ["files/100%25%.pdf", "100%25%.pdf"],
+  ["get?id=5&file=a.pdf", "a.pdf"],
+  ["get?file=a.pdf/b", ""],
+  ["https://u@h", ""],
   [" data:application/pdf;base64,JVBERi0x", ""],
 ];
 
