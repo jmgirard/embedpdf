@@ -165,10 +165,10 @@ if (phrases && (remote || missingPdfs)) {
   console.error("ios_check: --expect-text cannot be combined with --remote or --missing-pdfs (no embed shows a PDF there)");
   process.exit(2);
 }
-const TEXT_PLANTS = ["notext", "swap", "visible"];
+const TEXT_PLANTS = ["notext", "swap", "visible", "inert", "cvhidden"];
 const NAME_PLANTS = ["wrongname", "norole"];
 if (plant && !["blank", "missing", ...NAME_PLANTS, ...TEXT_PLANTS].includes(plant)) {
-  console.error("ios_check: --plant must be blank, missing, notext, swap, visible, wrongname, or norole");
+  console.error(`ios_check: --plant must be blank, missing, ${[...TEXT_PLANTS, ...NAME_PLANTS].join(", ")}`);
   process.exit(2);
 }
 const expectName = opt("expect-name", null);
@@ -260,20 +260,36 @@ const PROBE = `<script>
     (embeds().some((el) => kind(el) === "none") || !blocks().every((t) => t && t.textContent.trim()))) await sleep(100);
   const textWaitedMs = Date.now() - tText;
   let textPlanted = "";
-  if (["notext", "swap", "visible"].includes(plant)) {
+  if (["notext", "swap", "visible", "inert", "cvhidden"].includes(plant)) {
     const first = embeds().find((el) => kind(el) === "pdfjs");
     const t = first ? [...first.querySelectorAll(".embedpdf-page .embedpdf-text")] : [];
     const last = t[t.length - 1];
     if (plant === "notext" && last) last.textContent = "";
     if (plant === "swap" && t.length > 1) [t[0].textContent, t[1].textContent] = [t[1].textContent, t[0].textContent];
     if (plant === "visible" && last) last.style.overflow = "visible";
+    if (plant === "inert" && last) last.closest(".embedpdf-page").setAttribute("inert", "");
+    if (plant === "cvhidden" && last) last.style.contentVisibility = "hidden";
     if (last && (plant !== "swap" || t.length > 1)) textPlanted = plant;
   }
+  // the text block and each element that contains it, where it has the inert
+  // attribute or content-visibility: hidden (either drops the text from the
+  // accessibility tree)
+  const named = (e, t) => e === t ? "the text block" : e.tagName.toLowerCase() + (e.className ? "." + [...e.classList].join(".") : "");
+  const hiders = (t) => {
+    const inert = [], cv = [];
+    for (let e = t; e; e = e.parentElement) {
+      if (e.hasAttribute("inert")) inert.push(named(e, t));
+      if (getComputedStyle(e).contentVisibility === "hidden") cv.push(named(e, t));
+    }
+    return { inert, cv };
+  };
   const text = embeds().map((el) => [...el.querySelectorAll(".embedpdf-page")].map((p) => {
     const t = p.querySelector(".embedpdf-text");
     if (!t) return null;
     const s = getComputedStyle(t);
+    const h = hiders(t);
     return {
+      inertOn: h.inert, contentHiddenOn: h.cv,
       text: t.textContent, width: s.width, height: s.height, overflow: s.overflow,
       userSelect: s.userSelect || s.webkitUserSelect, display: s.display, visibility: s.visibility,
       ariaHidden: !!t.closest('[aria-hidden="true"]'),
@@ -502,6 +518,8 @@ try {
         if (b.display === "none") failures.push(`${at}: text display is none`);
         if (b.visibility !== "visible") failures.push(`${at}: text visibility is ${b.visibility}`);
         if (b.ariaHidden) failures.push(`${at}: text is under aria-hidden`);
+        for (const n of b.inertOn) failures.push(`${at}: text is under inert (on ${n})`);
+        for (const n of b.contentHiddenOn) failures.push(`${at}: text is under content-visibility: hidden (on ${n})`);
       });
     }
   }

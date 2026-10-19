@@ -1,13 +1,13 @@
 # M009: Text check gaps
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** —
 - **Resolves:** —
 - **Surface tier:** internal — check scripts only; the extension code does not change
-- **Branch/PR:** —
+- **Branch/PR:** m009-text-check-gaps
 
 ## Goal
 
@@ -89,7 +89,7 @@ slide's canvas wait runs out (render_check); the plants and the `--slow-text` ai
 
 ## Tasks
 
-- [ ] T1: Hidden-text cases. In render_check `measureText()` (line 366) and the ios_check probe (line 272), walk
+- [x] T1: Hidden-text cases. In render_check `measureText()` (line 366) and the ios_check probe (line 272), walk
       from each `.embedpdf-text` block up to `document.documentElement` and record `inert` (the attribute, since an
       inert ancestor leaves the block's `inert` property false) and computed `content-visibility`. Add the failure
       lines to `textFailures()` (line 392) and ios_check's text block (line 488). Add `inert` and `cvhidden` to both
@@ -125,6 +125,8 @@ slide's canvas wait runs out (render_check); the plants and the `--slow-text` ai
 - 2026-10-19: plan gate chose one whole-page text wait before the slide loop over one wait per slide, because the viewer reads every embed's text at load on one queue whatever slide is shown; falsified by a deck whose embed text arrives only once its slide is shown.
 - 2026-10-19: plan gate chose a wait that ends after 10 s with no progress over a longer fixed wait, because a fixed wait fails a long PDF and makes a broken page slow; falsified by a page whose text reads stall over 10 s between pages and then finish.
 - 2026-10-19: plan gate chose to stop the slide loop at the first canvas wait that runs out over going on, because the run already fails there; falsified by a deck where a later slide's failure lines are needed to find the cause.
+
+- 2026-10-19: T1 done: both scripts walk from each text block to `<html>` and fail on the `inert` attribute or computed `content-visibility: hidden`, naming the element; plants `inert`, `cvhidden`. AC1 runs: render_check both exit 1 with the line for embed 1 page 2; ios_check (iPhone) both exit 1 with that one `failures` entry; unplanted render_check desktop and ios_check iPhone text lines exit 0. ios_check plant lists were edited by a script, not the Edit tool (one slip).
 
 ## Decisions
 

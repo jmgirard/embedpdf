@@ -186,7 +186,7 @@ const DEVICES = {
 // rather than silently ignored
 const FLAGS = ["device", "expect-native", "expect-pdfjs", "expect-pages", "expect-links", "expect-failed", "expect-text", "expect-name", "plant", "alone", "remote"];
 const BOOL_FLAGS = ["missing-pdfs"];
-const TEXT_PLANTS = ["notext", "swap", "visible", "gone"];
+const TEXT_PLANTS = ["notext", "swap", "visible", "gone", "inert", "cvhidden"];
 const TREE_PLANTS = ["nolabel", "canvas", "noname"];
 const NAME_PLANTS = ["wrongname", "dupdesc", "duplink", "norole", "notoolbar"];
 const INK_PLANTS = ["blank", "nocanvas", "nopages"];
@@ -361,14 +361,32 @@ function measureText(page, slide) {
         if (plant === "swap" && t.length > 1) [t[0].textContent, t[1].textContent] = [t[1].textContent, t[0].textContent];
         if (plant === "visible" && last) last.style.overflow = "visible";
         if (plant === "gone" && last) last.style.display = "none";
+        if (plant === "inert" && last) last.closest(".embedpdf-page").setAttribute("inert", "");
+        if (plant === "cvhidden" && last) last.style.contentVisibility = "hidden";
         if (last && (plant !== "swap" || t.length > 1)) planted = plant;
       }
+      // the text block and each element that contains it, where it has the
+      // inert attribute or content-visibility: hidden (either drops the text
+      // from the accessibility tree)
+      const named = (e, t) => (e === t ? "the text block" : e.tagName.toLowerCase() + (e.className ? "." + [...e.classList].join(".") : ""));
+      const hiders = (t) => {
+        const inert = [];
+        const cv = [];
+        for (let e = t; e; e = e.parentElement) {
+          if (e.hasAttribute("inert")) inert.push(named(e, t));
+          if (getComputedStyle(e).contentVisibility === "hidden") cv.push(named(e, t));
+        }
+        return { inert, cv };
+      };
       const pages = embeds().map((el) =>
         [...el.querySelectorAll(".embedpdf-page")].map((p) => {
           const t = p.querySelector(".embedpdf-text");
           if (!t) return null;
           const s = getComputedStyle(t);
+          const h = hiders(t);
           return {
+            inertOn: h.inert,
+            contentHiddenOn: h.cv,
             text: t.textContent,
             width: s.width,
             height: s.height,
@@ -409,6 +427,8 @@ function textFailures(report) {
       if (b.display === "none") out.push(`${at}: text display is none`);
       if (b.visibility !== "visible") out.push(`${at}: text visibility is ${b.visibility}`);
       if (b.ariaHidden) out.push(`${at}: text is under aria-hidden`);
+      for (const e of b.inertOn) out.push(`${at}: text is under inert (on ${e})`);
+      for (const e of b.contentHiddenOn) out.push(`${at}: text is under content-visibility: hidden (on ${e})`);
     });
   });
   return out;
