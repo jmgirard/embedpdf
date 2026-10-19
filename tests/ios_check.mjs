@@ -42,13 +42,13 @@
 //                          1px, overflow hidden, user-select none, display
 //                          not none, visibility visible, no aria-hidden on it
 //                          or an ancestor. Whitespace is collapsed first.
-//                          Checks only embeds not set to renderer=native,
-//                          and is skipped under --remote.
+//                          Checks only embeds not set to renderer=native;
+//                          cannot be combined with --remote or --missing-pdfs.
 //   --expect-name "<file name>"
 //                          fail unless each PDF.js embed has role="group" and
 //                          aria-label "PDF: <file name>" in the DOM (Safari's
 //                          accessibility tree is not read); cannot be
-//                          combined with --remote
+//                          combined with --remote or --missing-pdfs
 //   --plant wrongname      with --expect-name: change the first PDF.js
 //                          embed's aria-label to "PDF: wrong.pdf"; the check
 //                          must then fail
@@ -57,35 +57,57 @@
 //   --remote blocked       serve the PDFs from a second server on another port
 //                          (another origin) that sends no
 //                          Access-Control-Allow-Origin header, and point each
-//                          embed's data-src and links at it
+//                          embed's data-src and links at it. A page whose
+//                          embeds hold their PDF inline (self-contained)
+//                          exits 2 before the simulator opens.
+//   --missing-pdfs         takes no value: the page's own server answers HTTP
+//                          404 for every path that ends in .pdf. Each embed
+//                          not set to renderer=native must then show the
+//                          load-failure state for a URL on that server, and
+//                          the page's errors must hold the viewer's "failed
+//                          to render <data-src>" line with PDF.js
+//                          ResponseException, one line per embed. Needs
+//                          --expect-embeds above 0. Not with --remote,
+//                          --alone yes, --plant, --expect-text, --expect-name.
 //
 // Exits 0 only when every embed not set to renderer=native used PDF.js, has
 // exactly --expect-pages page containers, and every page canvas has ink, and
-// the number of such embeds equals --expect-embeds. With --remote blocked,
-// each such embed must instead show the load-failure state: the text "This
-// PDF cannot be shown here.", an "Open the PDF" link to the same absolute URL
-// as data-src with target _blank, and no "Download PDF file." link; its
-// data-src must be on the remote server, and the console must show the fetch
-// of that URL failing ("Load failed").
+// the number of such embeds equals --expect-embeds. With --remote blocked or
+// --missing-pdfs, each such embed must instead show the load-failure state:
+// the text "This PDF cannot be shown here.", an "Open the PDF" link to the
+// same absolute URL as data-src with target _blank, and no "Download PDF
+// file." link. With --remote blocked its data-src must be on the remote
+// server, and the console must show the fetch of that URL failing ("Load
+// failed"); with --missing-pdfs, see that flag.
 
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { serveDocs, serveRemote, pointPdfsAt, DOCS } from "./serve_docs.mjs";
+import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, docsFile, DOCS } from "./serve_docs.mjs";
 import { inkInPixels } from "./ink.mjs";
 
 const args = process.argv.slice(2);
 const FLAGS = ["device", "page", "expect-embeds", "expect-pages", "expect-text", "expect-name", "port", "timeout", "screenshot", "shot-embed", "plant", "alone", "remote"];
-for (let i = 0; i < args.length; i += 2) {
+// flags that take no value
+const BOOL_FLAGS = ["missing-pdfs"];
+// parsed flags: a value flag's value is taken as it is, even when it starts
+// with "--", so it is never read as a flag
+const parsed = {};
+for (let i = 0; i < args.length; i++) {
+  if (args[i].startsWith("--") && BOOL_FLAGS.includes(args[i].slice(2))) {
+    parsed[args[i].slice(2)] = true;
+    continue;
+  }
   if (!FLAGS.includes(args[i].replace(/^--/, "")) || !args[i].startsWith("--") || i + 1 >= args.length) {
-    console.error(`ios_check: unexpected argument "${args[i]}" (flags: --${FLAGS.join(", --")}, each with a value)`);
+    console.error(`ios_check: unexpected argument "${args[i]}" (flags: --${FLAGS.join(", --")}, each with a value, and --${BOOL_FLAGS.join(", --")})`);
     process.exit(2);
   }
+  parsed[args[i].slice(2)] = args[++i];
 }
+const missingPdfs = parsed["missing-pdfs"] === true;
 const opt = (name, fallback) => {
-  const i = args.indexOf("--" + name);
-  return i >= 0 ? args[i + 1] : fallback;
+  return name in parsed ? parsed[name] : fallback;
 };
 const device = opt("device", "");
 const pagePath = opt("page", "example.html");
@@ -118,6 +140,14 @@ if (remote && (alone === "yes" || plant)) {
   console.error("ios_check: --remote cannot be combined with --alone yes or --plant");
   process.exit(2);
 }
+if (missingPdfs && (remote || alone === "yes" || plant)) {
+  console.error("ios_check: --missing-pdfs cannot be combined with --remote, --alone yes, or --plant");
+  process.exit(2);
+}
+if (missingPdfs && !(expectEmbeds > 0)) {
+  console.error("ios_check: --missing-pdfs needs --expect-embeds above 0");
+  process.exit(2);
+}
 if (!device) {
   console.error("ios_check: --device <simulator name or udid> is required");
   process.exit(2);
@@ -128,8 +158,8 @@ if (phrases && phrases.some((p) => !p)) {
   console.error("ios_check: --expect-text needs a non-empty phrase for each page");
   process.exit(2);
 }
-if (phrases && remote) {
-  console.error("ios_check: --expect-text cannot be combined with --remote (no embed shows a PDF there)");
+if (phrases && (remote || missingPdfs)) {
+  console.error("ios_check: --expect-text cannot be combined with --remote or --missing-pdfs (no embed shows a PDF there)");
   process.exit(2);
 }
 const TEXT_PLANTS = ["notext", "swap", "visible"];
@@ -142,8 +172,8 @@ if (expectName === "") {
   console.error("ios_check: --expect-name needs a file name");
   process.exit(2);
 }
-if (expectName && remote) {
-  console.error("ios_check: --expect-name cannot be combined with --remote (no embed shows a PDF there)");
+if (expectName && (remote || missingPdfs)) {
+  console.error("ios_check: --expect-name cannot be combined with --remote or --missing-pdfs (no embed shows a PDF there)");
   process.exit(2);
 }
 if (plant === "wrongname" && !expectName) {
@@ -300,6 +330,8 @@ const PROBE = `<script>
         text: el.textContent.includes("This PDF cannot be shown here."),
         href: open ? open.href : null,
         expected: new URL(el.dataset.src || "", document.baseURI).href,
+        // data-src as written, which the viewer's "failed to render" line names
+        src: el.dataset.src || "",
         target: open ? open.target : null,
         downloadLink: links.some((a) => a.textContent.trim() === "Download PDF file."),
       };
@@ -356,14 +388,26 @@ const remoteServer = remote
     })
   : null;
 const remoteBase = remoteServer ? `http://127.0.0.1:${remoteServer.address().port}/` : null;
+// --remote on a page with an embed whose PDF stays off the remote server (such
+// as the inlined PDFs of a self-contained page) would check nothing remote for
+// it, so the run stops here, before the simulator
+const pageFile = remoteBase ? docsFile(pagePath) : null;
+if (pageFile) {
+  const off = embedSrcsOffRemote(fs.readFileSync(pageFile, "utf8"), remoteBase, pagePath);
+  if (off.length) {
+    console.error(`ios_check: --remote: ${pagePath} has embeds whose PDF is not a relative .pdf URL that can move to the remote server (a self-contained page holds its PDFs inline as data: URLs): ${off.join(", ")}`);
+    process.exit(2);
+  }
+}
 
 const server = await serveDocs({
   port,
+  missingPdfs,
   ...(aloneDir ? { root: aloneDir } : {}),
   // before the last </body>: a self-contained page can hold the text "</body>"
   // inside an inlined script
   transformHtml: (html) => {
-    if (remoteBase) html = pointPdfsAt(html, remoteBase);
+    if (remoteBase) html = pointPdfsAt(html, remoteBase, pagePath);
     const i = html.lastIndexOf("</body>");
     return i < 0 ? html + PROBE : html.slice(0, i) + PROBE + html.slice(i);
   },
@@ -414,6 +458,16 @@ try {
       if (!e.failure.ok) failures.push(`embed ${e.index}: not in the load-failure state: ${JSON.stringify(e.failure)}`);
       else if (!e.failure.expected.startsWith(remoteBase)) failures.push(`embed ${e.index}: ${e.failure.expected} is not on ${remoteBase}`);
       else if (!logged) failures.push(`embed ${e.index}: no "failed to render ${e.failure.expected} … Load failed" error`);
+    } else if (missingPdfs) {
+      // the page's own server answered 404 for the PDF; the viewer names it
+      // by its data-src as written, and Safari logs PDF.js's ResponseException
+      const own = `http://127.0.0.1:${server.address().port}/`;
+      // one line per embed: embeds that share a data-src need as many lines
+      const lines = report.errors.filter((t) => t.includes("embedpdf: failed to render " + e.failure.src + " ") && t.includes("ResponseException")).length;
+      const logged = lines >= checked.filter((o) => o.failure.src === e.failure.src).length;
+      if (!e.failure.ok) failures.push(`embed ${e.index}: not in the load-failure state: ${JSON.stringify(e.failure)}`);
+      else if (!e.failure.expected.startsWith(own)) failures.push(`embed ${e.index}: ${e.failure.expected} is not on ${own}`);
+      else if (!logged) failures.push(`embed ${e.index}: ${lines} "failed to render ${e.failure.src} … ResponseException" errors, fewer than the embeds that show that PDF`);
     } else if (e.renderer !== "pdfjs") failures.push(`embed ${e.index}: renderer ${e.renderer}, expected pdfjs`);
     else if (e.pages !== expectPages) failures.push(`embed ${e.index}: ${e.pages} page containers, expected ${expectPages}`);
     else if (!e.ink.every(Boolean)) failures.push(`embed ${e.index}: pages without ink: ${e.ink.map((v, i) => (v ? null : i + 1)).filter(Boolean).join(", ")}`);
@@ -449,6 +503,7 @@ try {
     device: { name: dev.name, udid: dev.udid, type: deviceType, runtime: runtimeName },
     url: target,
     remote: remote || null,
+    missingPdfs,
     ...report,
     pass: failures.length === 0,
     failures,

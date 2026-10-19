@@ -4,13 +4,16 @@
 // server listens with a backlog of 5, and a browser opening many connections
 // at once can get some of them reset, so the viewer JS sometimes never loads.
 //
-// serveDocs({ port, transformHtml, routes, root }) resolves to the listening
+// serveDocs({ port, transformHtml, routes, root, missingPdfs }) resolves to the listening
 // server, or rejects on a listen error. It answers single byte ranges.
 //   port           0 picks a free port (server.address().port)
 //   root           directory to serve (default docs/)
 //   transformHtml  optional (html) => html applied to every .html response
 //   routes         optional { "/path": (req, res) => void } handlers
-// serveRemote(mode) and pointPdfsAt(html, base) put the PDFs on another origin.
+//   missingPdfs    true: answer 404 for every path that ends in .pdf, so each
+//                  PDF the page names is missing from its own origin
+// serveRemote(mode) and pointPdfsAt(html, base, page) put the PDFs on another
+// origin.
 
 import http from "node:http";
 import fs from "node:fs";
@@ -80,11 +83,15 @@ function listen(server, port) {
   });
 }
 
-export function serveDocs({ port = 0, transformHtml = null, routes = {}, root = DOCS } = {}) {
+export function serveDocs({ port = 0, transformHtml = null, routes = {}, root = DOCS, missingPdfs = false } = {}) {
   root = path.resolve(root);
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, "http://127.0.0.1");
     if (routes[url.pathname]) return routes[url.pathname](req, res);
+    if (missingPdfs && /\.pdf$/i.test(url.pathname)) {
+      res.writeHead(404).end();
+      return;
+    }
     let file;
     try {
       file = path.join(root, decodeURIComponent(url.pathname));
@@ -109,13 +116,27 @@ export function serveDocs({ port = 0, transformHtml = null, routes = {}, root = 
 // makes it another origin than the page's server.
 //   mode blocked  no Access-Control-Allow-Origin header, so PDF.js cannot read it
 //   mode cors     Access-Control-Allow-Origin: *
-//   mode missing  HTTP 404 for every path, with Access-Control-Allow-Origin: *
+//   mode missing  HTTP 404 for every GET, with Access-Control-Allow-Origin: *
 //                 so that the 404 itself, not CORS, is what PDF.js meets
+// A file is sent whole or by a single byte range, as serveDocs sends it. In
+// modes cors and missing, Access-Control-Expose-Headers lets a cross-origin
+// reader see Accept-Ranges and Content-Range. An OPTIONS request (a CORS
+// preflight) gets 204 in every mode; in modes cors and missing it allows GET
+// and the Range header, and in mode blocked it sends no Access-Control-
+// header.
 export const REMOTE_MODES = ["blocked", "cors", "missing"];
 export function serveRemote(mode, { port = 0 } = {}) {
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, "http://127.0.0.1");
-    const cors = mode === "blocked" ? {} : { "Access-Control-Allow-Origin": "*" };
+    // Expose-Headers lets a cross-origin reader see the range headers
+    // (Content-Length is exposed already)
+    const cors =
+      mode === "blocked" ? {} : { "Access-Control-Allow-Origin": "*", "Access-Control-Expose-Headers": "Accept-Ranges, Content-Range" };
+    if (req.method === "OPTIONS") {
+      const allow = mode === "blocked" ? {} : { "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS", "Access-Control-Allow-Headers": "Range" };
+      res.writeHead(204, { ...cors, ...allow }).end();
+      return;
+    }
     let file = null;
     try {
       file = path.join(DOCS, decodeURIComponent(url.pathname));
@@ -125,17 +146,61 @@ export function serveRemote(mode, { port = 0 } = {}) {
       return;
     }
     const headers = { "Content-Type": TYPES[path.extname(file)] || "application/octet-stream", "Cache-Control": "no-store", ...cors };
-    res.writeHead(200, headers);
-    res.end(fs.readFileSync(file));
+    sendData(req, res, fs.readFileSync(file), headers);
   });
   return listen(server, port);
 }
 
-// Point each relative .pdf in a double-quoted data-src or href at the remote
+// The attributes the shortcode writes, always double-quoted (embedpdf.lua):
+// the data-src of <div class="embedpdf">, and the href of the fallback and
+// button links, which carry `download`. Quarto can add attributes before
+// class (role="img" on a self-contained page). Other quoting forms are not
+// matched.
+const DIV_TAG = /<div\b[^>]*>/gi;
+const A_TAG = /<a\b[^>]*>/gi;
+const isEmbedDiv = (tag) => /\sclass="(?:[^"]*\s)?embedpdf(?:\s[^"]*)?"/i.test(tag);
+// `download` as an attribute name, outside any quoted value
+const hasDownload = (tag) => /\sdownload(?=[\s=>/])/i.test(tag.replace(/"[^"]*"/g, '""'));
+// a relative URL (no scheme, not //host) whose path ends in .pdf
+const isRelativePdf = (v) => !/^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(v) && /^[^?#]*\.pdf(?:[?#]|$)/i.test(v);
+
+// Point each relative PDF URL of the shortcode's attributes at the remote
 // origin `base` (e.g. "http://127.0.0.1:9000/"), so each embed, fallback link,
-// and button link names the remote PDF. Paths resolve against the remote root,
-// so this fits pages at the root of docs/; a .pdf with a query or #fragment is
-// left as it is.
-export function pointPdfsAt(html, base) {
-  return html.replace(/\b(data-src|href)="(?![a-z][a-z0-9+.-]*:)([^"#?]+\.pdf)"/gi, (_, attr, file) => `${attr}="${new URL(file, base).href}"`);
+// and button link names the remote PDF. `page` is the page's path under docs/
+// (e.g. "sub/p.html"), read as a URL path as the scripts read it: a URL
+// resolves against the page's folder on `base`, and keeps its ?query or
+// #fragment. Other links are left as they are.
+export function pointPdfsAt(html, base, page = "") {
+  const pageUrl = new URL(page, base);
+  const point = (attr) => (tag) =>
+    tag.replace(new RegExp(`(\\s${attr}=")([^"]*)"`, "i"), (m, pre, v) => (isRelativePdf(v) ? `${pre}${new URL(v, pageUrl).href}"` : m));
+  return html
+    .replace(DIV_TAG, (tag) => (isEmbedDiv(tag) ? point("data-src")(tag) : tag))
+    .replace(A_TAG, (tag) => (hasDownload(tag) ? point("href")(tag) : tag));
+}
+
+// The embed data-src values that pointPdfsAt leaves off `base`, such as the
+// data: URLs of a self-contained page, each cut to its first 40 characters.
+// A --remote run on such a page would check nothing remote.
+export function embedSrcsOffRemote(html, base, page = "") {
+  const off = [];
+  for (const tag of pointPdfsAt(html, base, page).match(DIV_TAG) || []) {
+    const m = isEmbedDiv(tag) && /\sdata-src="([^"]*)"/i.exec(tag);
+    if (m && !m[1].startsWith(base)) off.push(m[1].length > 40 ? m[1].slice(0, 40) + "…" : m[1]);
+  }
+  return off;
+}
+
+// The file under docs/ that a page path or URL path names (any ?query or
+// #fragment removed), or null when it is not a file there. The --remote
+// preflight reads this file.
+export function docsFile(page) {
+  try {
+    // decoded as serveDocs decodes a request path
+    const file = path.resolve(DOCS, decodeURIComponent(page.replace(/[?#].*$/, "")));
+    if (!file.startsWith(DOCS + path.sep)) return null;
+    return fs.statSync(file).isFile() ? file : null;
+  } catch {
+    return null;
+  }
 }

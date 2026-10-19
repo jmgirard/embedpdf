@@ -41,7 +41,16 @@
 //                       and unless the console shows each failure's cause
 //                       (PDF.js UnknownErrorException for the CORS block of
 //                       blocked, ResponseException for the 404 of missing).
-//                       blocked and missing need --expect-failed.
+//                       blocked and missing need --expect-failed. A page
+//                       whose embeds hold their PDF inline (self-contained)
+//                       exits 2 before the browser opens.
+//   --missing-pdfs      takes no value: the page's own server answers HTTP
+//                       404 for every path that ends in .pdf; fail unless
+//                       each failed embed's data-src is on that server and
+//                       the console shows the viewer's "failed to render"
+//                       line for it with PDF.js ResponseException (one
+//                       line per embed). Needs --expect-failed above 0; not
+//                       with --remote or --alone.
 //   --expect-failed <n> fail unless exactly n embeds show the load-failure
 //                       state: the text "This PDF cannot be shown here.", an
 //                       "Open the PDF" link to the same absolute URL as
@@ -111,7 +120,7 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import puppeteer from "puppeteer-core";
-import { serveDocs, serveRemote, pointPdfsAt, REMOTE_MODES, DOCS } from "./serve_docs.mjs";
+import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, docsFile, REMOTE_MODES, DOCS } from "./serve_docs.mjs";
 import { inkInPixels } from "./ink.mjs";
 
 // For iphone and ipad, userAgent, maxTouchPoints, and pdfViewerEnabled are what
@@ -163,9 +172,11 @@ const DEVICES = {
   },
 };
 
-// one optional page or URL, plus flags that each take a value; anything else
-// (a misspelled flag, --flag=value) is an error rather than silently ignored
+// one optional page or URL, plus flags that each take a value and flags that
+// take none; anything else (a misspelled flag, --flag=value) is an error
+// rather than silently ignored
 const FLAGS = ["device", "expect-native", "expect-pdfjs", "expect-pages", "expect-links", "expect-failed", "expect-text", "expect-name", "plant", "alone", "remote"];
+const BOOL_FLAGS = ["missing-pdfs"];
 const TEXT_PLANTS = ["notext", "swap", "visible", "gone"];
 const TREE_PLANTS = ["nolabel", "canvas", "noname"];
 const NAME_PLANTS = ["wrongname", "dupdesc", "notoolbar"];
@@ -179,8 +190,12 @@ for (let i = 0; i < args.length; i++) {
     continue;
   }
   const name = args[i].slice(2);
+  if (BOOL_FLAGS.includes(name)) {
+    flags[name] = true;
+    continue;
+  }
   if (!FLAGS.includes(name) || i + 1 >= args.length) {
-    console.error(`render_check: unexpected argument "${args[i]}" (flags: --${FLAGS.join(", --")}, each with a value)`);
+    console.error(`render_check: unexpected argument "${args[i]}" (flags: --${FLAGS.join(", --")}, each with a value, and --${BOOL_FLAGS.join(", --")})`);
     process.exit(2);
   }
   flags[name] = args[++i];
@@ -197,6 +212,7 @@ const expectLinks = flags["expect-links"] ?? null;
 const expectFailed = flags["expect-failed"] ?? null;
 const alone = flags["alone"] ?? null;
 const remote = flags["remote"] ?? null;
+const missingPdfs = flags["missing-pdfs"] === true;
 const normalize = (s) => s.replace(/\s+/g, " ").trim();
 const phrases = flags["expect-text"] === undefined ? null : flags["expect-text"].split("|").map(normalize);
 const plant = flags["plant"] ?? null;
@@ -239,6 +255,14 @@ if ((remote === "blocked" || remote === "missing") && expectFailed === null) {
   console.error(`render_check: --remote ${remote} needs --expect-failed`);
   process.exit(2);
 }
+if (missingPdfs && (remote || alone || /^https?:/.test(target))) {
+  console.error("render_check: --missing-pdfs needs a page under docs/, without --remote or --alone");
+  process.exit(2);
+}
+if (missingPdfs && !(Number(expectFailed) > 0)) {
+  console.error("render_check: --missing-pdfs needs --expect-failed with a number above 0");
+  process.exit(2);
+}
 if (alone && /^https?:/.test(target)) {
   console.error("render_check: --alone needs a page under docs/, not a URL");
   process.exit(2);
@@ -274,11 +298,26 @@ const cannotServe = (what) => (err) => {
 };
 const remoteServer = remote ? await serveRemote(remote).catch(cannotServe("remote")) : null;
 const remoteBase = remoteServer ? `http://127.0.0.1:${remoteServer.address().port}/` : null;
+// --remote on a page with an embed whose PDF stays off the remote server (such
+// as the inlined PDFs of a self-contained page) would check nothing remote for
+// it, so the run stops here, before the browser opens
+const targetFile = remoteBase ? docsFile(target) : null;
+if (targetFile) {
+  const off = embedSrcsOffRemote(fs.readFileSync(targetFile, "utf8"), remoteBase, target);
+  if (off.length) {
+    console.error(`render_check: --remote: ${target} has embeds whose PDF is not a relative .pdf URL that can move to the remote server (a self-contained page holds its PDFs inline as data: URLs): ${off.join(", ")}`);
+    process.exit(2);
+  }
+}
 const server =
   /^https?:/.test(target) || alone === "file"
     ? null
     : await serveDocs(
-        aloneDir ? { root: aloneDir } : remoteBase ? { transformHtml: (html) => pointPdfsAt(html, remoteBase) } : {}
+        aloneDir
+          ? { root: aloneDir }
+          : remoteBase
+            ? { transformHtml: (html) => pointPdfsAt(html, remoteBase, target) }
+            : { missingPdfs }
       ).catch(cannotServe("docs"));
 const url =
   alone === "file"
@@ -647,7 +686,8 @@ try {
         open.href === expected &&
         open.target === "_blank" &&
         !links.some((a) => a.textContent.trim() === "Download PDF file.");
-      (ok ? failed : malformed).push({ index: i + 1, href: open ? open.href : null, expected, target: open ? open.target : null });
+      // src: data-src as written, which the viewer's "failed to render" line names
+      (ok ? failed : malformed).push({ index: i + 1, src: el.dataset.src || "", href: open ? open.href : null, expected, target: open ? open.target : null });
     });
     // the native objects' bytes, fetched last: every DOM read above is one
     // snapshot, taken before the first await
@@ -700,7 +740,7 @@ try {
         failures: nameReports.flatMap((r) => r.failures),
       }
     : undefined;
-  console.log(JSON.stringify({ device: deviceName || "chrome", alone, remote, ...res, text, names, consoleErrors }, null, 2));
+  console.log(JSON.stringify({ device: deviceName || "chrome", alone, remote, missingPdfs, ...res, text, names, consoleErrors }, null, 2));
   if (names) {
     if (plant && NAME_PLANTS.includes(plant) && !names.planted) {
       console.error(`render_check: --plant ${plant} found nothing to plant in`);
@@ -815,6 +855,22 @@ try {
     );
     if (wrong.length) {
       console.error(`render_check: --remote ${remote}: no "${kind || "failed to render"}" error for ${wrong.map((f) => f.expected).join(", ")}`);
+      ok = false;
+    }
+  }
+  if (missingPdfs) {
+    // each failed embed must name a PDF on the page's own server, and the
+    // viewer must log PDF.js's ResponseException (the 404) for it; the viewer
+    // names the PDF by its data-src as written, one line per embed, so embeds
+    // that share a data-src need as many lines
+    const own = `http://127.0.0.1:${server.address().port}/`;
+    const lines = (src) =>
+      consoleErrors.filter((t) => t.startsWith("embedpdf: failed to render " + src + " ") && t.includes("ResponseException")).length;
+    const wrong = res.failed.filter(
+      (f) => !f.expected.startsWith(own) || lines(f.src) < res.failed.filter((g) => g.src === f.src).length
+    );
+    if (wrong.length) {
+      console.error(`render_check: --missing-pdfs: fewer "ResponseException" errors than failed embeds, or a PDF not on ${own}: ${wrong.map((f) => f.expected).join(", ")}`);
       ok = false;
     }
   }

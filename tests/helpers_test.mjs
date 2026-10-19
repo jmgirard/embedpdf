@@ -1,12 +1,13 @@
 // Unit tests for the helpers the browser checks share: the ink rule
-// (tests/ink.mjs) and the docs/ server (tests/serve_docs.mjs). No browser.
+// (tests/ink.mjs), and in tests/serve_docs.mjs the docs/ server, the remote
+// server, pointPdfsAt, embedSrcsOffRemote, and docsFile. No browser.
 //
 // Usage:  node tests/helpers_test.mjs      # must print "N passed, 0 failed"
 
 import fs from "node:fs";
 import path from "node:path";
 import { inkInPixels } from "./ink.mjs";
-import { serveDocs, DOCS } from "./serve_docs.mjs";
+import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, docsFile, REMOTE_MODES, DOCS } from "./serve_docs.mjs";
 
 let passed = 0;
 let failed = 0;
@@ -40,6 +41,53 @@ check("ink: no pixels is no ink", inkInPixels(new Uint8ClampedArray(0)) === fals
 check("ink: rule runs from its source text", new Function("return " + inkInPixels.toString())()(pixels(10, WHITE, 3, [0, 0, 255, 255])) === true);
 // ios_check pastes the source into an HTML <script>, which "</script" or "<!--" would break
 check("ink: source text is safe inside a <script>", !/<\/script|<!--/i.test(inkInPixels.toString()));
+
+// --- pointPdfsAt ------------------------------------------------------------
+const R = "http://127.0.0.1:9000/";
+const div = (src, pre = "") => `<div ${pre}class="embedpdf" data-src="${src}" data-renderer="auto">`;
+const point = (html, page = "p.html") => pointPdfsAt(html, R, page);
+check("point: root page", point(div("x.pdf")) === div(R + "x.pdf"), point(div("x.pdf")));
+check("point: subfolder page", point(div("x.pdf"), "sub/p.html") === div(R + "sub/x.pdf"), point(div("x.pdf"), "sub/p.html"));
+check("point: ?query kept", point(div("x.pdf?x=1")) === div(R + "x.pdf?x=1"), point(div("x.pdf?x=1")));
+check("point: #fragment kept", point(div("x.pdf#page=2")) === div(R + "x.pdf#page=2"), point(div("x.pdf#page=2")));
+check("point: attribute before class", point(div("x.pdf", 'role="img" ')) === div(R + "x.pdf", 'role="img" '), point(div("x.pdf", 'role="img" ')));
+check("point: other classes", point('<div class="embedpdf myclass" data-src="x.pdf">') === `<div class="embedpdf myclass" data-src="${R}x.pdf">`);
+const fallback = '<a href="x.pdf" download="">Download PDF file.</a>';
+check("point: download link", point(fallback) === `<a href="${R}x.pdf" download="">Download PDF file.</a>`, point(fallback));
+const button = '<a class="embedpdf-btn" href="x.pdf" download>Download PDF</a>';
+check("point: button link", point(button) === `<a class="embedpdf-btn" href="${R}x.pdf" download>Download PDF</a>`, point(button));
+const absolute = div("https://example.org/x.pdf");
+check("point: absolute https: URL unchanged", point(absolute) === absolute, point(absolute));
+const prose = '<a href="x.pdf">a PDF</a>';
+check("point: link with no download unchanged", point(prose) === prose, point(prose));
+const notEmbed = '<div class="other" data-src="x.pdf">';
+check("point: div that is not an embed unchanged", point(notEmbed) === notEmbed, point(notEmbed));
+const word = '<a href="x.pdf" title="download">a PDF</a>';
+check("point: download only in a value unchanged", point(word) === word, point(word));
+const inlined = div("data:application/pdf;base64,JVBERi0=");
+check("point: data: URL unchanged", point(inlined) === inlined, point(inlined));
+
+// the page path is read as a URL path, as the scripts put it in the page URL
+check("point: %20 in the page folder is kept", point(div("x.pdf"), "a%20b/p.html") === div(R + "a%20b/x.pdf"), point(div("x.pdf"), "a%20b/p.html"));
+check("point: a ?query on the page does not move the folder", point(div("x.pdf"), "p.html?q=a/b") === div(R + "x.pdf"), point(div("x.pdf"), "p.html?q=a/b"));
+
+// --- docsFile -------------------------------------------------------------------
+check("docsFile: a page", docsFile("example.html") === path.join(DOCS, "example.html"), String(docsFile("example.html")));
+check("docsFile: ?query and #fragment removed", docsFile("example.html?x=1#y") === path.join(DOCS, "example.html"), String(docsFile("example.html?x=1#y")));
+check("docsFile: %20 decoded", docsFile("files/sample%20copy.pdf") === path.join(DOCS, "files", "sample copy.pdf"), String(docsFile("files/sample%20copy.pdf")));
+check("docsFile: a directory is null", docsFile("files") === null, String(docsFile("files")));
+check("docsFile: outside docs/ is null", docsFile("../README.md") === null, String(docsFile("../README.md")));
+check("docsFile: a missing file is null", docsFile("nope.html") === null, String(docsFile("nope.html")));
+
+// --- embedSrcsOffRemote -------------------------------------------------------
+const read = (f) => fs.readFileSync(path.join(DOCS, f), "utf8");
+const offSelf = embedSrcsOffRemote(read("selfcontained_test.html"), R, "selfcontained_test.html");
+check("off: self-contained page has 3 inlined embeds", offSelf.length === 3, JSON.stringify(offSelf));
+check("off: values are cut to 40 characters", offSelf.every((v) => v.startsWith("data:application/pdf") && v.length === 41 && v.endsWith("…")), JSON.stringify(offSelf));
+const offExample = embedSrcsOffRemote(read("example.html"), R, "example.html");
+check("off: example.html has none left", offExample.length === 0, JSON.stringify(offExample));
+check("off: example.html has embeds to move", (read("example.html").match(/class="embedpdf/g) || []).length > 0);
+check("off: absolute URL is left off", embedSrcsOffRemote(absolute, R).length === 1);
 
 // --- docs/ server -----------------------------------------------------------
 const server = await serveDocs();
@@ -111,6 +159,66 @@ try {
   check("server: a port in use rejects with EADDRINUSE", err && err.code === "EADDRINUSE", String(err));
 } finally {
   server.close();
+}
+
+// --- docs/ server with missingPdfs --------------------------------------------
+{
+  const missing = await serveDocs({ missingPdfs: true });
+  const at = `http://127.0.0.1:${missing.address().port}/`;
+  try {
+    for (const p of ["sample.pdf", "files/sample%20copy.pdf", "sample.pdf?x=1"]) {
+      const r = await fetch(at + p);
+      await r.arrayBuffer();
+      check(`missing: /${p} is 404`, r.status === 404, String(r.status));
+    }
+    // the files exist, so the 404s come from the option
+    check("missing: sample.pdf exists in docs/", fs.existsSync(path.join(DOCS, "sample.pdf")) && fs.existsSync(path.join(DOCS, "files", "sample copy.pdf")));
+    const page = await fetch(at + "example.html");
+    await page.arrayBuffer();
+    check("missing: /example.html is 200", page.status === 200, String(page.status));
+  } finally {
+    missing.close();
+  }
+}
+
+// --- remote server ------------------------------------------------------------
+{
+  const pdf = fs.readFileSync(path.join(DOCS, "sample.pdf"));
+  const size = pdf.length;
+  for (const mode of REMOTE_MODES) {
+    const remote = await serveRemote(mode);
+    const at = `http://127.0.0.1:${remote.address().port}/sample.pdf`;
+    try {
+      const get = async (range) => {
+        const r = await fetch(at, { headers: { Range: range } });
+        return { status: r.status, body: Buffer.from(await r.arrayBuffer()) };
+      };
+      const a = await get("bytes=0-99");
+      const b = await get("bytes=100-");
+      const c = await get(`bytes=${size + 10}-`);
+      const d = await get("bytes=200-100");
+      if (mode === "missing") {
+        check("remote missing: ranges get 404", [a, b, c, d].every((r) => r.status === 404), [a, b, c, d].map((r) => r.status).join(" "));
+      } else {
+        check(`remote ${mode}: a range that ends before it starts gets the whole file`, d.status === 200 && d.body.equals(pdf), String(d.status));
+        check(`remote ${mode}: bytes=0-99 is 206 with those bytes`, a.status === 206 && a.body.equals(pdf.subarray(0, 100)), `${a.status} ${a.body.length}`);
+        check(`remote ${mode}: bytes=100- is 206 to the end`, b.status === 206 && b.body.equals(pdf.subarray(100)), `${b.status} ${b.body.length}`);
+        check(`remote ${mode}: a start past the end is 416`, c.status === 416, String(c.status));
+      }
+      const o = await fetch(at, { method: "OPTIONS", headers: { Origin: "http://127.0.0.1:1", "Access-Control-Request-Headers": "range" } });
+      await o.arrayBuffer();
+      const acNames = [...o.headers.keys()].filter((k) => k.startsWith("access-control-"));
+      check(`remote ${mode}: OPTIONS is 204`, o.status === 204, String(o.status));
+      if (mode === "blocked") {
+        check("remote blocked: OPTIONS has no Access-Control- header", acNames.length === 0, acNames.join(", "));
+      } else {
+        check(`remote ${mode}: OPTIONS allows any origin`, o.headers.get("access-control-allow-origin") === "*", o.headers.get("access-control-allow-origin"));
+        check(`remote ${mode}: OPTIONS allows Range`, /(^|,\s*)range(\s*,|$)/i.test(o.headers.get("access-control-allow-headers") || ""), o.headers.get("access-control-allow-headers"));
+      }
+    } finally {
+      remote.close();
+    }
+  }
 }
 
 console.log(`${passed} passed, ${failed} failed`);
