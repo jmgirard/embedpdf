@@ -141,6 +141,7 @@ no range in 3 of 3 runs. When the server sent the whole-file answer slowly
 - 2026-10-19: added T6 for review return 1 (minor amendment); Coverage AC4 → T2, T6.
 - 2026-10-19: T6 helpers_test default cases for serveDocs and serveRemote cors (large.pdf whole within 1 s; Content-Type, Content-Length, Accept-Ranges, Cache-Control; Access-Control- headers for remote), replacing the docs-only case; 113 passed, 0 failed. Plant: a `slowWhole = true` default in serveRemote failed the remote case (8,437 ms). serve_docs.mjs is unchanged at the end, so no browser line reruns here.
 - 2026-10-19: implement done; status review.
+- 2026-10-19: step-7 approval: m013-large-pdf-range-check approved for merge
 
 ## Decisions
 
