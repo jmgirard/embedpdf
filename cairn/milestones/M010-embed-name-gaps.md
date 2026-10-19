@@ -1,6 +1,6 @@
 # M010: Embed name gaps
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
@@ -90,6 +90,7 @@ A screen reader tells each PDF.js embed apart by a name that never comes from a 
 - 2026-10-19: amendment return: AC1 — "It first drops whitespace before and after the address (as `String.prototype.trim` removes it) and the address's `#fragment`. The query is the text after the first `?`; an address with no `?` has no query. The path is the address before its first `?`, less a leading `scheme://` (a scheme in any letter case) or `//` and the text up to the next `/`; its segments are split on `/`, and each is decoded whole by `decodeURIComponent`, or kept as written when that fails. The name is the last path segment when it ends in `.pdf` in any letter case; else, of the query's values in order (decoded as `URLSearchParams` decodes them), the first whose last `/` segment ends in `.pdf` gives that segment"
 - 2026-10-19: amendment return: AC6 — "every `node tests/` and `pandoc lua` line in its fenced blocks, and each variant its notes name (`--alone http` for each `--alone file` line; `--device mac-safari` and `--device windows-touch` for the desktop `selfcontained_test.html` lines in each `--alone` mode and for the desktop `--remote blocked` and `--missing-pdfs` lines; `--device ipad` for the `selfcontained_test.html` iphone lines in each `--alone` mode), passes, and on each page that such a command checks with `--expect-name`, every PDF.js embed's name is the one AC2's rule gives"
 - 2026-10-19: claim audit: 52 claims read, 5 corrected — tests/render_check.mjs (page-2 rule wording; `namefailed` needs a failed embed; `tallframe` now reports nothing to plant in on a deck, a code guard; indicator box names `clip-path`), README.md (the last part of a query value). The same reader re-read all five as correct.
+- 2026-10-19: amendment done: `quarto render` exit 0; the full verify list with its variants, 62 commands, 0 failed (viewer at e077e44; later commits changed only render_check plant code, comments, and README); `tallframe` exits 2 on revealjs iPhone and fails example.html on the page-2 rule. Status set to review.
 
 ## Decisions
 
