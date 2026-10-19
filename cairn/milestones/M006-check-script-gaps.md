@@ -2,7 +2,7 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M006: Check script gaps
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
@@ -109,7 +109,44 @@ CLAUDE.md and script header updates.
 - 2026-10-18: T5: ios_check `--port` defaults to 0 and the target URL reads `server.address().port`; a bad `--port` value exits 2. With a second process holding 8766: `--port 8766` exits 2 ("port 8766 is in use…"), and the default run on "embedpdf iPhone" exits 0 on port 52578. With the shared ink rule, `--plant blank` reports "embed 1: pages without ink: 2" (exit 1) and `--plant missing` exits 1.
 - 2026-10-18: T6: CLAUDE.md names `node tests/helpers_test.mjs` and the shared ink rule; script headers updated in T3 and T5. `quarto render` exits 0 with no docs/ change. All 29 render_check and ios_check lines in CLAUDE.md exit 0 (Chromium via CHROME_PATH; "embedpdf iPhone" and "embedpdf iPad"), and 11 prose variants (`--alone http`, mac-safari, windows-touch, ipad) exit 0; the ipad variant of the `--alone http` iphone line was not run. The simple-english hook reports 37 style hits in CLAUDE.md that predate this milestone; only the one em dash this milestone added was fixed.
 - 2026-10-18: claim audit: not owed — internal tier.
+- 2026-10-18: amendment routed: AC4 — a holder on `0.0.0.0` or `::` does not stop `serveDocs` binding 127.0.0.1 on macOS, so "a port that another process holds" promises an exit 2 that no bind on 127.0.0.1 can detect (diff-bug #1).
 
 ## Decisions
 
 ## Review
+
+### Pass 1 (2026-10-18, head 7d73d07)
+
+- Sync: main had not moved since the plan commit; Copilot round off (no `# Copilot review:` line).
+- Consistency gate: `cairn_validate.py` exit 0 (all checks passed); no principle changed, so `cairn_impact` skipped; generic profile names no toolchain checks.
+- Evidence run started at 7d73d07 (helpers 32 passed; the six AC1 plant runs exited 1 naming embed 1 and the two clean runs exited 0; AC4 port runs exit 2 and exit 0; the first 10 CLAUDE.md lines exit 0), then stopped, because the fix-now commit and the AC4 amendment below change the code. No box is ticked in this pass; pass 2 gathers all evidence again.
+- spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1: `--port <n>` exits 2 only when the other process holds 127.0.0.1; a holder on `0.0.0.0` or `::` lets `serveDocs` bind 127.0.0.1 (macOS SO_REUSEADDR), and the run goes on — amendment routed (AC4 promises "a port that another process holds", wider than any bind can detect; a holder on another address takes no traffic for 127.0.0.1, and the run then works).
+- diff-bug #2: `pdfjsPages` was read before the native-object fetch awaits but the `pdfjs` count after them — fix now, fixed d16f5c8.
+- diff-bug #3: render_check's ink read had no try/catch, so a `getImageData` throw named no embed — fix now (page status "unreadable (…)"), fixed d16f5c8.
+- diff-bug #4: `serveRemote` (both scripts) and render_check's `serveDocs` start had no catch for the new rejection — fix now (exit 2 with a message), fixed d16f5c8.
+- diff-bug #5: ios_check `--port` accepted "", hex, and exponent forms — fix now (digits only), fixed d16f5c8.
+- diff-bug #6: the non-EADDRINUSE message printed "port 0" on a default run — fix now, fixed d16f5c8.
+- diff-bug #7: helper tests lacked range edge cases and the `</script` hazard of the iOS inline path — fix now (clamped end, end before start, script-safe source), fixed d16f5c8; empty file and HEAD cases rejected, false as gaps: the reviewer's own probe showed both correct and AC3 names `docs/sample.pdf` only.
+- diff-bug #8: ios_check `--plant blank|missing` has no "found nothing to plant in" exit (pre-existing) — follow-up, row "Ink check follow-ups".
+- diff-bug #9: ios_check reports "no canvas" and "no ink" alike (pre-existing) — follow-up, row "Ink check follow-ups".
+- diff-bug #10: render_check read each canvas twice (`withInk` unused) — fix now (removed), fixed d16f5c8.
+- diff-bug #11: one non-white pixel counts as ink — reject, planned change (AC2's rule).
+- diff-bug #12: `new Function` may be blocked by a page CSP on an outside URL — follow-up, row "Ink check follow-ups".
+- diff-bug #13: 416 without Accept-Ranges, header sentence wrap, "canvas" vs "nocanvas" names — header wrap fixed d16f5c8; the other two rejected, style (the HTTP spec allows the 416 form).
+- blame-history #1: small PDFs now take the range path — reject, false: PDF.js 6.1.200 uses ranges only when Content-Length is over 2 × 65536 bytes (`validateRangeRequestCapabilities` in `pdfjs/pdf.min.mjs`), and every docs/ PDF is 21118 bytes or less.
+- blame-history #2: the 250 threshold counts light tints as ink — reject, planned change (AC2).
+- blame-history #3: a page with no canvas now fails every run, a timing risk with fixed waits — reject as a defect, planned change (AC1); the timing risk is a follow-up, row "Ink check follow-ups".
+- blame-history #4: the fixed port 8766 is gone; no reason for it was recorded — reject, planned change (AC4).
+- blame-history #5: full-pixel scan costs more on a phone — reject, planned change (AC2).
+- blame-history #6: unguarded `serveRemote` start in ios_check — fix now (same as diff-bug #4), fixed d16f5c8.
+- blame-history #7: `canvasesWithInk` unused — fix now (same as diff-bug #10), fixed d16f5c8.
+- prior-review #1: no-canvas failure is a timing risk — follow-up (same as blame-history #3), row "Ink check follow-ups".
+- prior-review #2: the threshold was untested below 252 — fix now (gray-249 case), fixed d16f5c8.
+- prior-review #3: ios_check ink plants lack the nothing-to-plant exit — follow-up (same as diff-bug #8).
+- prior-review #4: `serveRemote` still has no Range handling — follow-up, already in row "Remote check gaps".
+- prior-review #5: `listen()` drops its error handler after listening — reject, false as a regression: on main the server had no error handler at all.
+- ripple #1: candidate row "Check script gaps" still lists the four gaps — reject, planned change: post-merge hygiene removes the row this milestone graduates.
+- ripple #2: PROFILE.md `verify` slot had no line for the helper tests — fix now, fixed d16f5c8.
+- ripple #3: row "Large PDF range check" says "after M006" — reject, false: it is accurate once M006 merges.
+- ripple #4: CLAUDE.md said "`--plant` in both scripts" though the lists differ — fix now, fixed d16f5c8.
