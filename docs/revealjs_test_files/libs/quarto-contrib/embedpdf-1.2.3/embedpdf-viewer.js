@@ -119,18 +119,28 @@ function hydrateNative(el, opts) {
 }
 
 // PDF.js could not load the PDF, for example a PDF on another site that sends
-// no Access-Control-Allow-Origin header, or a missing file. Say so, and link to
-// the PDF so the browser can open it in a new tab.
+// no Access-Control-Allow-Origin header, or a missing file, or an inlined PDF
+// did not decode. Say so. A PDF that is not inlined gets a link that opens it
+// in a new tab. An inlined PDF (opts.blob) gets a link that downloads it under
+// its file name, because its blob: URL names no file. An inlined PDF that did
+// not decode (no opts.href) gets no link, because there is no file to give.
 function showFailure(el, opts) {
   const msg = document.createElement("p");
   msg.className = "embedpdf-failed-text";
-  msg.textContent = "This PDF cannot be shown here. ";
-  const link = document.createElement("a");
-  link.href = opts.href;
-  link.target = "_blank";
-  link.rel = "noopener";
-  link.textContent = "Open the PDF";
-  msg.appendChild(link);
+  msg.textContent = "This PDF cannot be shown here.";
+  if (opts.href) {
+    const link = document.createElement("a");
+    link.href = opts.href;
+    if (opts.blob) {
+      link.download = opts.filename;
+      link.textContent = "Download the PDF";
+    } else {
+      link.target = "_blank";
+      link.rel = "noopener";
+      link.textContent = "Open the PDF";
+    }
+    msg.append(" ", link);
+  }
   el.replaceChildren(msg);
   el.classList.add("embedpdf-failed");
   if (opts.width) el.style.width = /^\d+$/.test(opts.width) ? opts.width + "px" : opts.width;
@@ -487,7 +497,16 @@ async function hydrate(el, name) {
     // embed-resources marks an element with an inlined data-src as an image;
     // the hydrated embed holds controls and links, so it is not one
     if (el.getAttribute("role") === "img") el.removeAttribute("role");
-    const pdf = await inlinedPdf(opts.src);
+    let pdf;
+    try {
+      pdf = await inlinedPdf(opts.src);
+    } catch (err) {
+      // the data: address did not decode, so neither renderer has a PDF, and
+      // the download links name a file the page does not ship
+      opts.href = null;
+      showFailure(el, opts);
+      throw err; // the caller logs it
+    }
     opts.blob = pdf.blob;
     opts.href = pdf.url;
     // the Blob holds the PDF now; drop the data: URL text from the page
