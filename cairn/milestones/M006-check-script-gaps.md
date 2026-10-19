@@ -110,6 +110,8 @@ CLAUDE.md and script header updates.
 - 2026-10-18: T6: CLAUDE.md names `node tests/helpers_test.mjs` and the shared ink rule; script headers updated in T3 and T5. `quarto render` exits 0 with no docs/ change. All 29 render_check and ios_check lines in CLAUDE.md exit 0 (Chromium via CHROME_PATH; "embedpdf iPhone" and "embedpdf iPad"), and 11 prose variants (`--alone http`, mac-safari, windows-touch, ipad) exit 0; the ipad variant of the `--alone http` iphone line was not run. The simple-english hook reports 37 style hits in CLAUDE.md that predate this milestone; only the one em dash this milestone added was fixed.
 - 2026-10-18: claim audit: not owed — internal tier.
 - 2026-10-18: amendment routed: AC4 — a holder on `0.0.0.0` or `::` does not stop `serveDocs` binding 127.0.0.1 on macOS, so "a port that another process holds" promises an exit 2 that no bind on 127.0.0.1 can detect (diff-bug #1).
+- 2026-10-18: re-audit: AC4 (reduced) — on the draft "a port that another process holds on 127.0.0.1": "holds" is wider than a TCP bind detects (a UDP socket does not block it), and the exit-0 run is not named; suggested naming a TCP listener on 127.0.0.1 and the command lines.
+- 2026-10-18: re-audit: AC4 (reduced) — on the reader-fixed draft: clause 2 still quantifies over every `<n>` (0, leading zeros, ports below 1024, dual-stack sockets) and every other option, a demonstration family; suggested one concrete run with the EADDRINUSE branch cited. Second re-audit line on AC4: the wording goes to the user.
 
 ## Decisions
 
