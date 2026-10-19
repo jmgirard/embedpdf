@@ -61,7 +61,7 @@ the new lines in CLAUDE.md "Verify before finishing".
       and `node tests/ios_check.mjs --device "embedpdf iPad" --page percent_test.html --alone yes --expect-embeds 2 --expect-name "100%.pdf"`.
       This run exits 1:
       `node tests/render_check.mjs percent_test.html --alone file --expect-native 0 --expect-pdfjs 2 --expect-pages 2 --expect-name "100%.pdf" --plant wrongname`.
-- [ ] AC6: CLAUDE.md "Verify before finishing" gains the exit-0 runs of AC3 and AC5 as command lines. Every literal
+- [x] AC6: CLAUDE.md "Verify before finishing" gains the exit-0 runs of AC3 and AC5 as command lines. Every literal
       `node tests/render_check.mjs` or `node tests/ios_check.mjs` command line in that section that passes
       `--expect-name` or names `revealjs_test.html` exits 0. The header comment of `render_check.mjs` describes
       `duplink`, `norole`, and the `|` list form, and that of `ios_check.mjs` describes `norole`.
@@ -180,3 +180,19 @@ Pass 1, 2026-10-18, at d98b38b (branch level with main at 4658f45). Chromium 155
 - ripple #1: ROADMAP row "Name check gaps" still lists the gaps — reject (planned change: post-merge hygiene
   graduates it).
 - ripple #2: CLAUDE.md "Key files" omits percent_test.qmd (and name_test.qmd, the self-contained pages) — fix now.
+- Fix-now commits of pass 1: diff-bug #1, #3, #7, #10, blame-history #4, prior-review #2, ripple #2, and the
+  rewrapping, fixed f04754f.
+
+Pass 2, 2026-10-18, at 4471ba4 (code as of f04754f; later commits touch `cairn/` only; branch level with main at
+4658f45). Same Chromium 155 and iOS 27.0 simulators.
+
+- AC1 to AC5 (re-run at f04754f): duplink exit 1 (download control line), render_check and ios_check norole exit 1
+  (role line), revealjs desktop and iphone list runs exit 0 and the swapped list exits 1, percent_test `--alone
+  file`, `--alone http`, iphone, and ios_check iPhone and iPad exit 0, `--plant wrongname` exits 1. AC4 also: a
+  temporary page with one never-hydrated `div.embedpdf` exits 1 with "1 embed(s) on the page still not hydrated
+  after 10 s". Boxes stay ticked.
+- AC6: CLAUDE.md now has the AC3 exit-0 runs (the two revealjs lines) and every AC5 exit-0 run as command lines
+  (`--alone file`, `--alone http`, `--alone file --device iphone`, ios_check iPhone and iPad). The sweep of "Verify
+  before finishing" for `node tests/(render|ios)_check.mjs` lines with `--expect-name` or `revealjs_test.html`
+  finds 25 lines, and all 25 exit 0. render_check.mjs's header describes `duplink`, `norole`, and the `|` list;
+  ios_check.mjs's header describes `norole`.
