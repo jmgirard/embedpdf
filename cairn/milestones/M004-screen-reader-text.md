@@ -126,7 +126,7 @@ GitHub release for 1.2.0: the user declares the release window separately.
 - [x] T3: `embedpdf.css`: `.embedpdf-text` visually hidden (1px box, clip,
       overflow hidden, `user-select: none`). Version 1.2.0 in
       `_extension.yml` and the `add_html_dependency` version in `embedpdf.lua`.
-- [ ] T4: `tests/render_check.mjs`: `--expect-text "<p1>|<p2>"` reads each
+- [x] T4: `tests/render_check.mjs`: `--expect-text "<p1>|<p2>"` reads each
       PDF.js page's text and computed style before the scroll loop (waiting
       at most 10 s; on slides, when each slide is shown) and checks AC1;
       after the loop, per-element snapshots (`interestingOnly: false`) check
@@ -165,6 +165,7 @@ GitHub release for 1.2.0: the user declares the release window separately.
 - 2026-10-18: implement started on branch m004-screen-reader-text.
 - 2026-10-18: T1-T3 done: the shared queue is now two lists (renders first, then text tasks), a page render swaps only its canvas, the text block is absolutely placed in a `position: relative` page so layout is unchanged; version 1.2.0. Shortcode tests 40 passed, 0 failed; `quarto render` clean; render_check example.html on iphone (10 PDF.js, 1 native) exits 0. The full verify slot runs at T7.
 - 2026-10-18: implement chose no `page.cleanup()` after text extraction: text reading loads no page images, and cleanup could drop objects a pending render needs.
+- 2026-10-18: T4 done: render_check `--expect-text` and `--plant`; the RevealJS slide loop moved from the browser to Node so text is read per shown slide and the tree checked per slide. Green in Chromium: example.html iphone (10 embeds read before and after the scroll, text there at 0 ms wait), selfcontained_test and selfcontained_slides_test `--alone file` iphone; revealjs_test iphone without the flag. Each of the 7 plants exits 1 with its own message (example.html), and `notext` on the slides page too. An `<canvas>` without `aria-hidden` shows in Chrome's tree as role `none`.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local. -->
