@@ -184,7 +184,7 @@ const DEVICES = {
 // one optional page or URL, plus flags that each take a value and flags that
 // take none; anything else (a misspelled flag, --flag=value) is an error
 // rather than silently ignored
-const FLAGS = ["device", "expect-native", "expect-pdfjs", "expect-pages", "expect-links", "expect-failed", "expect-text", "expect-name", "plant", "alone", "remote"];
+const FLAGS = ["device", "expect-native", "expect-pdfjs", "expect-pages", "expect-links", "expect-failed", "expect-text", "expect-name", "plant", "alone", "remote", "slow-text"];
 const BOOL_FLAGS = ["missing-pdfs"];
 const TEXT_PLANTS = ["notext", "swap", "visible", "gone", "inert", "cvhidden"];
 const TREE_PLANTS = ["nolabel", "canvas", "noname", "detach"];
@@ -228,6 +228,11 @@ const plant = flags["plant"] ?? null;
 const target = positional[0] || "example.html";
 if (phrases && phrases.some((p) => !p)) {
   console.error("render_check: --expect-text needs a non-empty phrase for each page");
+  process.exit(2);
+}
+const slowText = flags["slow-text"] === undefined ? 0 : Number(flags["slow-text"]);
+if (flags["slow-text"] !== undefined && !(phrases && /^\d+$/.test(flags["slow-text"]) && slowText > 0)) {
+  console.error("render_check: --slow-text needs --expect-text and a whole number of milliseconds above 0");
   process.exit(2);
 }
 const expectName = flags["expect-name"] ?? null;
@@ -337,21 +342,58 @@ const url =
       ? `http://127.0.0.1:${server.address().port}/${aloneDir ? path.basename(target) : target}`
       : target;
 
+// --expect-text, once, before any slide is shown or any page scrolls: wait
+// for the whole page until every div.embedpdf is hydrated and every page of
+// every PDF.js embed has text, or 10 s pass with no embed newly hydrated and
+// no page newly with text, or 60 s pass in all. The viewer reads every
+// embed's text at load on one queue, whatever slide is shown. With
+// --slow-text <ms>, the same wait first runs once; then all the text is
+// emptied and put back one page every <ms> ms while the wait runs again.
+function waitForText(page) {
+  return page.evaluate(async (slowMs) => {
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const all = () => document.querySelectorAll("div.embedpdf").length;
+    const unhydrated = () => document.querySelectorAll("div.embedpdf:not(.embedpdf-pdfjs):not(.embedpdf-native):not(.embedpdf-failed)").length;
+    const blocks = () => [...document.querySelectorAll(".embedpdf-pdfjs .embedpdf-page")].map((p) => p.querySelector(".embedpdf-text"));
+    const withText = () => blocks().filter((t) => t && t.textContent.trim()).length;
+    const wait = async () => {
+      const start = Date.now();
+      let seen = -1;
+      let changed = start;
+      while (unhydrated() || !blocks().every((t) => t && t.textContent.trim())) {
+        const progress = all() - unhydrated() + withText();
+        if (progress !== seen) [seen, changed] = [progress, Date.now()];
+        if (Date.now() - changed >= 10000 || Date.now() - start >= 60000) break;
+        await sleep(100);
+      }
+      return Date.now() - start;
+    };
+    let slowPages = 0;
+    if (slowMs) {
+      await wait();
+      const saved = blocks().filter(Boolean).map((t) => [t, t.textContent]);
+      for (const [t] of saved) t.textContent = "";
+      slowPages = saved.length;
+      let k = 0;
+      const timer = setInterval(() => {
+        if (k < saved.length) saved[k][0].textContent = saved[k++][1];
+        else clearInterval(timer);
+      }, slowMs);
+    }
+    const waitedMs = await wait();
+    return { waitedMs, slowPages, unhydrated: unhydrated() };
+  }, slowText);
+}
+
 // --expect-text, before the pages scroll: the hidden text of each page of each
-// PDF.js embed under a root (the document, or RevealJS slide k), read once
-// every page has text or 10 s have passed. A text plant goes into the page's
-// first PDF.js embed, when it is under the root, just before the read.
+// PDF.js embed under a root (the document, or RevealJS slide k), read after
+// waitForText. A text plant goes into the page's first PDF.js embed, when it
+// is under the root, just before the read.
 function measureText(page, slide) {
   return page.evaluate(
     async (slide, plant, textPlants) => {
-      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       const root = slide === null ? document : window.Reveal.getSlides()[slide];
       const embeds = () => [...root.querySelectorAll(".embedpdf-pdfjs")];
-      const blocks = () => embeds().flatMap((el) => [...el.querySelectorAll(".embedpdf-page")].map((p) => p.querySelector(".embedpdf-text")));
-      const unhydrated = () => root.querySelectorAll("div.embedpdf:not(.embedpdf-pdfjs):not(.embedpdf-native):not(.embedpdf-failed)").length;
-      const start = Date.now();
-      while (Date.now() - start < 10000 && (unhydrated() || !blocks().every((t) => t && t.textContent.trim()))) await sleep(100);
-      const waitedMs = Date.now() - start;
       let planted = null;
       const first = document.querySelector(".embedpdf-pdfjs");
       if (textPlants.includes(plant) && first && root.contains(first)) {
@@ -398,7 +440,7 @@ function measureText(page, slide) {
           };
         })
       );
-      return { slide, waitedMs, planted, pages };
+      return { slide, planted, pages };
     },
     slide,
     plant,
@@ -677,6 +719,7 @@ try {
   const textReports = [];
   const treeReports = [];
   const nameReports = [];
+  const textWait = phrases ? await waitForText(page) : null;
   if (slides) {
     for (let k = 0; k < slides; k++) {
       await page.evaluate(async (k) => {
@@ -807,7 +850,7 @@ try {
         phrases,
         plant,
         planted: [...textReports, ...treeReports].map((r) => r.planted).find(Boolean) || null,
-        waitedMs: textReports.map((r) => r.waitedMs),
+        wait: textWait,
         pagesRead: textReports.reduce((n, r) => n + r.pages.flat().length, 0),
         embedsRead: textReports.reduce((n, r) => n + r.pages.length, 0),
         treeEmbeds: treeReports.reduce((n, r) => n + r.embeds, 0),
