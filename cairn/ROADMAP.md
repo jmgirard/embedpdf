@@ -1,16 +1,15 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-18 (M006 done: graduated "Check script gaps", re-pointed three rows to "Ink check follow-ups", pruned the M003 row; validate green)_
+_Last hygiene check: 2026-10-18 (M007 done: graduated "Remote check gaps", added "Remote failure line count", pruned the M004 row; validate green)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M007 | Remote check gaps | review | — | high | milestones/M007-remote-check-gaps.md |
+| M007 | Remote check gaps | done | — | high | milestones/archive/M007-remote-check-gaps.md |
 | M006 | Check script gaps | done | — | high | milestones/archive/M006-check-script-gaps.md |
 | M005 | Screen-reader names | done | — | normal | milestones/archive/M005-screen-reader-names.md |
-| M004 | Screen-reader text | done | — | normal | milestones/archive/M004-screen-reader-text.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
@@ -21,7 +20,6 @@ _Last hygiene check: 2026-10-18 (M006 done: graduated "Check script gaps", re-po
      the opening token is `[high]`/`[low]` or absent (`normal`) — tracking-rules "Candidate priority token";
      open each row with its short title, the words the cairn pane shows, then `: `;
      tracking-rules "Candidate short title" has the whole rule -->
-- [high] Remote check gaps: see "Ink check follow-ups". `pointPdfsAt` (tests/serve_docs.mjs) resolves paths against the remote root (pages in a docs/ subfolder would 404), skips single-quoted or unquoted attributes and `.pdf?`/`#` URLs, and rewrites every `href="*.pdf"`; `serveRemote` has no Range or OPTIONS handling; a same-origin 404 (a missing local PDF) is not exercised; `ios_check --remote` on a self-contained page fails with an unclear message (M003 review) — added 2026-10-18 — started M007
 - [high] Name check gaps: see "Ink check follow-ups". `--plant dupdesc` plants only in the zoom-in button, not the download link, and no plant removes `role="group"`; `revealjs_test.html` (several PDFs) gets no `--expect-name` line; without `--expect-text`, `nameFailures` on a slide runs with no hydration wait (it fails loudly, not silently); file names with a malformed or literal `%` are untested (M005 review) — added 2026-10-18
 - [high] Text check gaps: see "Ink check follow-ups". The `--expect-text` style checks do not cover `inert`, `opacity`, or `content-visibility`, and iOS has no tree check to catch them; a canvas snapshot that is null for any reason counts as hidden; the text wait ends at once on a slide with no embed hydrated or pending (the embed-count check then fails with a less clear message); the 10 s text wait covers the whole shared queue, so a long deck can time out; with `--expect-text` a broken deck can take minutes to fail (M004 review) — added 2026-10-18
 - [high] Embed name gaps: see "Screen-reader text gaps". Two PDF.js embeds of one file get the same "PDF: <file name>" name and the same page groups; a query-style URL (`download.php?file=a.pdf`) or a bare host names the embed by the script or host; on a self-contained page with no download link the name is the made-up "document.pdf", and an inlined `href` would give a base64 name; the toolbar page indicator "1 / 2" has no label; Safari and VoiceOver handling of a `title`-only control name over `aria-hidden` content is not checked (M005 review) — added 2026-10-18
