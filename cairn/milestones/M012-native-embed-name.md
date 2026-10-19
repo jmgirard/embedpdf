@@ -115,7 +115,7 @@ Architecture, and CLAUDE.md "Still unverified" follow. Version 1.2.4, no tag.
       native embeds and show it fail. A 2026-10-19 probe read "PDF:
       sample.pdf (1 of 2)" and role "group" from Safari 27.0.1 for an
       `<object>` with that `aria-label`.
-- [ ] T4: `ios_check.mjs`. Add `--expect-native <n>` (default 0): the run
+- [x] T4: `ios_check.mjs`. Add `--expect-native <n>` (default 0): the run
       fails unless the page has n `renderer=native` embeds, and the name list
       covers them in page order beside the `--expect-embeds` embeds, read
       from each `<object>`'s `aria-label`. Add a native-name plant and show it
@@ -144,6 +144,8 @@ Architecture, and CLAUDE.md "Still unverified" follow. Version 1.2.4, no tag.
 - 2026-10-19: T1 done: `hydrateNative()` sets `aria-label` from the embed's name; `embedNames()` names and numbers every embed with a `data-src`; version 1.2.4; `quarto render` clean; test_shortcode 40 passed, 0 failed.
 - 2026-10-19: T2 done: render_check `--expect-name` covers native embeds in document order (one name stands for `--expect-native` + `--expect-pdfjs`); plants `nativename` and `nativetitle` each exit 1 on example.html and exit 2 (nothing to plant in) on name_test.html; omitting `--expect-native` on example.html exits 1; helpers_test 91 passed, 0 failed; the example.html (5 devices), revealjs_test.html (2), and self-contained name lines pass in Chromium. The safari_check and ios_check lines wait for T3–T5.
 - 2026-10-19: T3 done: safari_check takes `--expect-native` and reads each native `<object>`'s computed label and title; desktop Safari 27.0.1 on example.html gives the 9 native names "(1 of 11)"–"(8 of 11)" and "(10 of 11)", exit 0; plant `nativename` exits 1, `nonumber` exits 1, and `nativename` on name_test.html exits 2; omitting `--expect-native` exits 1.
+- 2026-10-19: T4 done: ios_check takes `--expect-native` (checked when given, and always with `--expect-name`) and reads each native `<object>`'s `aria-label` and title; on the iOS 27.0 iPhone simulator example.html and selfcontained_test.html (`--alone yes`) exit 0; `nativename` exits 1 ("embed 10: <object> aria-label is "PDF: wrong.pdf""), `nativename` on name_test.html exits 2, and omitting `--expect-native` exits 1. The native-count check is skipped for lines with neither flag, so the `--remote` and `--missing-pdfs` lines stay as written.
+- 2026-10-19: user asked whether desktop Safari checks can run without taking screen focus; answered that desktop Safari has no headless mode, and batched the remaining safari_check runs into T5.
 
 ## Decisions
 

@@ -140,13 +140,14 @@ message with no link (M011). Page rendering goes through one queue shared
 by every viewer on the page, and canvas size is capped at 8,000,000 pixels
 with device pixel ratio clamped to 2, for constrained mobile devices. For
 screen readers, a PDF.js embed is a group named "PDF: " and its file name,
-or "PDF" when its address names none (corrected M010). `embedName()` passes
+or "PDF" when its address names none (corrected M010). A native embed's
+`<object>` has the same name as its `aria-label`, with no `title` (M012). `embedName()` passes
 `fileName()` the address in `data-src`, or the download link's when
 `data-src` is a `data:` address (whitespace before it allowed). The name is the last path segment when it
 ends in `.pdf`, else a query value's last segment that ends in `.pdf`, else
 the last non-empty path segment when there is no query. A host alone, `data:`, and `blob:` name no file. Before any embed
-hydrates, `embedNames()` numbers PDF.js embeds that share a name
-"(k of n)" in document order. Each toolbar control is named by its `title`
+hydrates, `embedNames()` numbers embeds that share a name "(k of n)" in
+document order, native and PDF.js embeds together (corrected M012). Each toolbar control is named by its `title`
 alone with its glyph `aria-hidden` (corrected M005). The page indicator
 shows an `aria-hidden` "i / n" beside a hidden "Page i of n" (M010). Each PDF.js page is a group labeled "Page i of n" that holds
 the page's text (PDF.js `getTextContent()`) in a visually hidden, unselectable
