@@ -18,7 +18,10 @@
 // title, which must be "Zoom out", "Zoom in", or "Download PDF" in that
 // order, and each toolbar's page indicator reads "Page 1 of <pages>" with the
 // pages at the top and "Page 2 of <pages>" after they scroll to page 2 (read
-// only where page 1 can scroll above the middle of the frame).
+// only where page 1 can scroll above the middle of the frame; the run fails
+// when no embed of 2 or more pages can). One --expect-name names
+// --expect-pdfjs embeds; a "|" list names each, so a file name that holds
+// "|" cannot be given.
 // Get Computed Label gives a plain span no name, so to read the indicator the
 // check gives it role heading for the read, whose name Safari computes from
 // its content, and then removes the role.
@@ -58,8 +61,16 @@ if (target !== "mac" && !flags.device) {
   console.error(`safari_check: --target ${target} needs --device`);
   process.exit(2);
 }
-if (target !== "page-script" && !(flags["expect-name"] && /^\d+$/.test(flags["expect-pdfjs"] || ""))) {
-  console.error("safari_check: --expect-name and --expect-pdfjs are required");
+if (target === "mac" && flags.device) {
+  console.error("safari_check: --device is for --target simulator or page-script, not mac");
+  process.exit(2);
+}
+if (target !== "page-script" && !(flags["expect-name"] && /^[1-9]\d*$/.test(flags["expect-pdfjs"] || ""))) {
+  console.error("safari_check: --expect-name and --expect-pdfjs (1 or more) are required");
+  process.exit(2);
+}
+if (flags["expect-name"] && flags["expect-name"].split("|").some((n) => !n)) {
+  console.error("safari_check: --expect-name needs a non-empty file name for each embed");
   process.exit(2);
 }
 const page = flags.page || "example.html";
@@ -141,10 +152,14 @@ const freePort = () =>
       s.close(() => resolve(port));
     });
   });
+// the device and the server first, so an exit there leaves no safaridriver
+const dev = target === "simulator" ? simulator(flags.device) : null;
+const server = await startServer();
 const sdPort = await freePort();
 const driver = spawn("safaridriver", ["-p", String(sdPort)], { stdio: "ignore" });
 driver.on("error", (err) => {
   console.error(`safari_check: cannot start safaridriver: ${err.message}`);
+  server.close();
   process.exit(2);
 });
 const base = `http://127.0.0.1:${sdPort}`;
@@ -165,20 +180,22 @@ for (let k = 0; ; k++) {
   } catch {
     if (k > 50) {
       console.error("safari_check: safaridriver did not start");
+      driver.kill();
+      server.close();
       process.exit(2);
     }
     await sleep(100);
   }
 }
 
-const server = await startServer();
 const failures = [];
 let session = null;
 let report = {};
+let page2Tried = 0;
+let page2Read = 0;
 try {
   const caps = { browserName: "safari" };
-  if (target === "simulator") {
-    const dev = simulator(flags.device);
+  if (dev) {
     Object.assign(caps, { platformName: "iOS", "safari:useSimulator": true, "safari:deviceUDID": dev.udid });
     report.device = dev.name;
   }
@@ -282,13 +299,17 @@ try {
       if (pages >= 2) {
         // only where page 1 can scroll above the middle line does the
         // viewer's indicator move to page 2
+        page2Tried++;
         const second = await toPage(2);
         r.indicator.push(second.moved ? second.text : "(page 1 cannot scroll past the middle line; not read)");
+        if (second.moved) page2Read++;
         if (second.moved && second.text !== `Page 2 of ${pages}`) failures.push(`${at}: after a scroll to page 2, Safari reads the indicator as ${JSON.stringify(second.text)}, not "Page 2 of ${pages}"`);
       }
     }
     report.embeds.push(r);
   }
+  // a toolbar embed of 2 or more pages must be read at page 2
+  if (page2Tried && !page2Read) failures.push(`none of the ${page2Tried} embeds of 2 or more pages could scroll page 1 above the middle of its frame, so no indicator was read at page 2`);
 } catch (err) {
   failures.push(err.message);
 } finally {

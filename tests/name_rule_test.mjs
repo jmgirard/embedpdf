@@ -7,6 +7,8 @@
 // Usage:  node tests/name_rule_test.mjs           # must print "N passed, 0 failed"
 //         node tests/name_rule_test.mjs --plant   # swaps one expected name; must fail
 // Set CHROME_PATH to use another Chrome or Chromium binary.
+// Exits 0 when every row passes, 1 when a row fails, 2 on a bad argument or
+// when the server, the browser, or the viewer import fails.
 
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -38,6 +40,8 @@ const ROWS = [
   ["get?id=5&file=a+b.pdf", "a b.pdf"],
   ["https://example.com//a.pdf", "a.pdf"],
   ["//example.com//a.pdf", "a.pdf"],
+  ["  files/sample.pdf ", "sample.pdf"],
+  [" data:application/pdf;base64,JVBERi0x", ""],
 ];
 
 const args = process.argv.slice(2);
@@ -53,12 +57,20 @@ const CHROME =
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"; // macOS default
 const EXT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "_extensions", "embedpdf");
 
+// a setup failure (server, browser, or viewer import) exits 2, not 1
+const setupFailed = (err) => {
+  console.error(`name_rule_test: setup failed: ${err.message}`);
+  process.exit(2);
+};
 const server = await serveDocs({
   root: EXT,
   routes: { "/": (req, res) => res.writeHead(200, { "Content-Type": "text/html" }).end("<!doctype html><title>t</title>") },
-});
+}).catch(setupFailed);
 const base = `http://127.0.0.1:${server.address().port}`;
-const browser = await puppeteer.launch({ executablePath: CHROME, headless: "new", args: ["--no-sandbox"] });
+const browser = await puppeteer.launch({ executablePath: CHROME, headless: "new", args: ["--no-sandbox"] }).catch((err) => {
+  server.close();
+  setupFailed(err);
+});
 let got;
 try {
   const page = await browser.newPage();
@@ -67,10 +79,13 @@ try {
     const { fileName } = await import("/embedpdf-viewer.js");
     return addresses.map((a) => fileName(a));
   }, rows.map((r) => r[0]));
-} finally {
+} catch (err) {
   await browser.close();
   server.close();
+  setupFailed(err);
 }
+await browser.close();
+server.close();
 
 let passed = 0;
 let failed = 0;

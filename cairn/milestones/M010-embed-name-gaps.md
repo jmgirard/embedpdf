@@ -131,3 +131,38 @@ Pass 2 (2026-10-19), on e1b704c. Chromium 155.0.8059.39 via `CHROME_PATH`; iOS 2
 - AC4 evidence: render_check example.html desktop and `--device iphone` exit 0 with `page2Checked` "PDF.js embed 1" (tree "Page 1 of 2", no "1 / 2" text, shown "1 / 2" in view, hidden box 1px, then "Page 2 of 2"); plants `rawindicator`, `staleindicator`, `showindicator` fail; ios_check iPhone and iPad on example.html exit 0 with the DOM indicator check, plants `rawindicator` and `noindicator` fail.
 - AC5 evidence: `safari_check.mjs --target mac --expect-pdfjs 2 --expect-name sample.pdf` exit 0 (names "(1 of 2)"/"(2 of 2)", controls "Zoom out"/"Zoom in"/"Download PDF" equal to titles, indicator "Page 1 of 2" then "Page 2 of 2"); plants `rawindicator` and `nonumber` exit 1. `--target simulator` failed ("Could not find any session hosts that match the requested capabilities") and `--target page-script` found no `computedName`; README.md, CLAUDE.md "Still unverified", and row "Safari names on iOS" each name both probes and results (grep: 1 hit each per file).
 - AC6 evidence: `version: 1.2.2` (`_extension.yml:3`) and `VERSION = "1.2.2"` (`embedpdf.lua:22`); `quarto render` exit 0, no error lines, no file changed; CLAUDE.md lists `node tests/name_rule_test.mjs` (:63), the four name_edge_test lines (:55, :56, :61, :62), and the Safari check (:64); the full CLAUDE.md verify list with its variants, 62 commands, 0 failed (t8 run on f552a30); README gives the rule, numbering, and "Page 1 of 2"; DESIGN.md Architecture gives the rule, `embedNames()` numbering, and the indicator (:140-148); CLAUDE.md "Still unverified" names the indicator (:235).
+
+spawned: diff-bug, blame-history, prior-review, ripple
+
+- diff-bug #1: the page-2 read is optional, so example.html passes with `page2Checked` null if page 1 cannot scroll past the middle line — fix now (render_check and safari_check fail when no embed could be read at page 2 on a page with no slides).
+- diff-bug #2: README "If the address has a query and no query value ends in `.pdf`, the name is "PDF"" is false alone (`a.pdf?download=1` gives "a.pdf") — fix now.
+- diff-bug #3: no check covers AC2's "an embed whose PDF fails to load gets no name" — fix now (render_check fails a named `.embedpdf-failed` embed; plant `namefailed`).
+- diff-bug #4: `moved` is read before a 300 ms wait in which page heights can change — follow-up, row "Embed name follow-ups" (a false failure only, for mixed page ratios).
+- diff-bug #5: the query-style embed downloads as "get", not by the name rule — follow-up, row "Embed name follow-ups".
+- diff-bug #6: `fileName()` trims spaces, which AC1 does not state, and `embedName()`/`hydrate()` test `data:` on the untrimmed value — amendment return (AC1 wording) plus fix now (trim before the `data:` test).
+- diff-bug #7: `https:\\ex.com\a.pdf`, `get?a.pdf`, `view?file=https://o.com/x.pdf?y=1`, `report%3Fx=a.pdf`, `javascript:void(0)` give odd names — follow-up, row "Embed name follow-ups".
+- diff-bug #8: the hidden-box check does not read `clip-path` — fix now.
+- diff-bug #9: ios_check would miss a stray visible text node in the indicator — fix now (only the two spans may be children).
+- diff-bug #10: a docs server that cannot start leaves safaridriver running — fix now (start the server first).
+- diff-bug #11: safari_check passes `--expect-pdfjs 0` with nothing checked — fix now (needs at least 1).
+- diff-bug #12: name_rule_test exits 1 on a setup failure, like a failed row — fix now (exit 2).
+- diff-bug #13: CLAUDE.md "both scripts wait" now follows a paragraph naming four scripts — fix now.
+- diff-bug #14: edited lines run past the file's wrap width — reject, style.
+- diff-bug #15: repeats pass-1 diff-bug #4 — follow-up, row "Embed name follow-ups" (already there).
+- diff-bug #16: repeats pass-1 diff-bug #12 — follow-up, row "Embed name follow-ups" (already there).
+- blame-history #1: a bad `--device` exits inside the try and skips `driver.kill()`; `--device` is ignored with `--target mac` — fix now (resolve the device before the driver starts; refuse `--device` with mac).
+- blame-history #2: AC6 says the CLAUDE.md `--expect-name` values are "updated to the AC2 names", but no value can hold them; the scripts add "PDF: " and the numbers — amendment return (AC6 wording).
+- blame-history #3: a page's position is read twice, by the page group and the indicator — reject, planned change (AC4 and the plan's page-group work-log line).
+- blame-history #4: the numbering rule exists in the viewer and in `expect_names.mjs` — reject, planned change (T3: the check counts from the list, never from the page).
+- blame-history #5: name_rule_test's `--plant` is a bare switch — reject, style.
+- prior-review #1: ios_check now takes a `|` list, which M008 kept to render_check — reject, planned change (T3 work-log line).
+- prior-review #2: safari_check calls `process.exit` right after `console.log` — follow-up, row "Embed name follow-ups" (row "Text check follow-ups" holds findings from two milestones, so it is not extended).
+- prior-review #3: safari_check's header does not say a file name holding `|` cannot be given — fix now.
+- prior-review #4: CLAUDE.md's helper-test rule omits `tests/expect_names.mjs` — fix now.
+- ripple #1: PROFILE.md's verify slot omits `name_rule_test.mjs` and `safari_check.mjs` — fix now.
+- ripple #2: PROFILE.md's helper-test rule omits `expect_names.mjs` — fix now.
+- ripple #3: row "Safari names on iOS" ends "(M010 implement)" — reject, false: that is the row's source, not a status.
+- ripple #4: row "Native embed name" says M005 names embeds "PDF: <file name>" — reject, a record of what M005 did.
+- ripple #5: row "Name plant slide target" does not mention `staleindicator` — reject, false: that plant exits 2 rather than passing, as the row says of name plants.
+- ripple #6: DESIGN.md Known issues does not mention the desktop Safari check — reject, false: that entry is about hidden page text, which `safari_check.mjs` does not read, so it stays true.
+- ripple #7: `tests/expect_names.mjs` header omits safari_check — fix now.

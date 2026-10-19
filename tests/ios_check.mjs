@@ -74,16 +74,18 @@
 //                          render_check (tests/expect_names.mjs). Each
 //                          toolbar's page indicator must hold "Page i of
 //                          <pages>" and a shown "i / <pages>" that is
-//                          aria-hidden; an embed with no indicator fails
-//                          unless data-toolbar="false".
-//   --plant wrongname|norole|nonumber|rawindicator|noindicator
+//                          aria-hidden, and no other node; an embed with no
+//                          indicator fails unless data-toolbar="false".
+//   --plant wrongname|norole|nonumber|rawindicator|noindicator|strayindicator
 //                          with --expect-name: change the first PDF.js
 //                          embed's aria-label to "PDF: wrong.pdf"
 //                          (wrongname), remove its role attribute (norole),
 //                          remove the " (k of n)" from its aria-label
 //                          (nonumber), remove aria-hidden from its shown
-//                          "i / n" (rawindicator), or remove its page
-//                          indicator (noindicator); the check must then fail
+//                          "i / n" (rawindicator), remove its page
+//                          indicator (noindicator), or add a text node to
+//                          the indicator (strayindicator); the check must
+//                          then fail
 //   --alone yes|no         yes: serve a copy of the page from an empty
 //                          temporary directory instead of docs/ (default no)
 //   --remote blocked       serve the PDFs from a second server on another port
@@ -211,7 +213,7 @@ if ("slow-text" in parsed && !(phrases && /^\d+$/.test(slowText) && Number(slowT
   process.exit(2);
 }
 const TEXT_PLANTS = ["notext", "swap", "visible", "inert", "cvhidden"];
-const NAME_PLANTS = ["wrongname", "norole", "nonumber", "rawindicator", "noindicator"];
+const NAME_PLANTS = ["wrongname", "norole", "nonumber", "rawindicator", "noindicator", "strayindicator"];
 // planted before the text wait; needs --expect-text
 const WAIT_PLANTS = ["unhydrated"];
 if (plant && !["blank", "missing", ...NAME_PLANTS, ...TEXT_PLANTS, ...WAIT_PLANTS].includes(plant)) {
@@ -407,6 +409,11 @@ const PROBE = `<script>
     const first = embeds().find((el) => kind(el) === "pdfjs");
     if (first) { first.removeAttribute("role"); namePlanted = plant; }
   }
+  if (plant === "strayindicator") {
+    const first = embeds().find((el) => kind(el) === "pdfjs");
+    const info = first && first.querySelector(".embedpdf-pageinfo");
+    if (info) { info.append(document.createTextNode(" 1 / 2")); namePlanted = plant; }
+  }
   if (plant === "noindicator") {
     const first = embeds().find((el) => kind(el) === "pdfjs");
     const info = first && first.querySelector(".embedpdf-pageinfo");
@@ -492,6 +499,8 @@ const PROBE = `<script>
             spoken: spoken ? spoken.textContent : null,
             shown: shown ? shown.textContent : null,
             shownHidden: !!shown && shown.getAttribute("aria-hidden") === "true",
+            // any other node (a stray text node too) would be shown or read
+            others: [...info.childNodes].filter((n) => n !== spoken && n !== shown).length,
           };
         })(),
         failure,
@@ -640,6 +649,7 @@ try {
         if (!m || Number(m[2]) !== e.pages) failures.push(`embed ${e.index}: indicator text is ${JSON.stringify(ind.spoken)}, not "Page i of ${e.pages}"`);
         else if (ind.shown !== `${m[1]} / ${m[2]}`) failures.push(`embed ${e.index}: indicator shows ${JSON.stringify(ind.shown)}, not "${m[1]} / ${m[2]}"`);
         if (!ind.shownHidden) failures.push(`embed ${e.index}: the shown indicator ${JSON.stringify(ind.shown)} is not aria-hidden`);
+        if (ind.others) failures.push(`embed ${e.index}: the indicator holds ${ind.others} node(s) besides its two spans`);
       }
     }
     // --expect-text: the hidden text, read before the probe scrolled

@@ -423,7 +423,8 @@ export function fileName(address) {
 // download link, which still names the separate file.
 function embedName(el) {
   let address = el.dataset.src || "";
-  if (/^data:/i.test(address)) {
+  // a URL attribute may hold spaces around the address; fileName() drops them too
+  if (/^\s*data:/i.test(address)) {
     const fallback = el.querySelector("a[download]");
     address = fallback ? fallback.getAttribute("href") : "";
   }
@@ -474,7 +475,7 @@ async function hydrate(el, name) {
   opts.href = opts.src;
   opts.filename = "";
   opts.label = opts.src;
-  if (/^data:/i.test(opts.src)) {
+  if (/^\s*data:/i.test(opts.src)) {
     // A self-contained page has the PDF inlined in data-src, but its download
     // links (the fallback link and the button) still name the separate file.
     // Point them at the inlined PDF, under that file's name.
@@ -513,6 +514,6 @@ async function hydrate(el, name) {
 const placeholders = [...document.querySelectorAll("div.embedpdf")];
 const names = embedNames(placeholders);
 placeholders.forEach((el) => {
-  const label = /^data:/i.test(el.dataset.src || "") ? "an inlined PDF" : el.dataset.src;
+  const label = /^\s*data:/i.test(el.dataset.src || "") ? "an inlined PDF" : el.dataset.src;
   hydrate(el, names.get(el)).catch((err) => console.error("embedpdf: failed to render " + label, err));
 });

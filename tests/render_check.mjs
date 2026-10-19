@@ -19,12 +19,14 @@
 //   --expect-pages <n>  fail unless each PDF.js embed has exactly n
 //                       .embedpdf-page elements (each page's canvas is
 //                       checked for ink on every run, with or without this)
-//   --plant blank|nocanvas|nopages
+//   --plant blank|nocanvas|nopages|namefailed
 //                       plant a defect in the first PDF.js embed after the
 //                       scroll, before the ink check; the run must then
 //                       fail: blank paints the last page's canvas white,
 //                       nocanvas removes that canvas, nopages removes every
-//                       page of the embed. Needs no other flag.
+//                       page of the embed. namefailed instead names the
+//                       first embed in the load-failure state (use with
+//                       --expect-failed). Needs no other flag.
 //   --expect-links <n>  fail unless exactly n download links
 //                       (.embedpdf-download, .embedpdf object a[download],
 //                       a.embedpdf-btn) exist, each with a data: or blob: href
@@ -54,9 +56,10 @@
 //   --expect-failed <n> fail unless exactly n embeds show the load-failure
 //                       state: the text "This PDF cannot be shown here.", an
 //                       "Open the PDF" link to the same absolute URL as
-//                       data-src with target _blank, and no "Download PDF
-//                       file." link. Without it, any embed in that state fails
-//                       the run.
+//                       data-src with target _blank, no "Download PDF
+//                       file." link, and no aria-label or group role (a PDF
+//                       that does not load gets no name). Without it, any
+//                       embed in that state fails the run.
 //   --expect-text "<p1>|<p2>|…"
 //                       phrase i is a phrase of page i's text. First, once
 //                       for the whole page (before any slide is shown or
@@ -140,9 +143,10 @@
 //                       1px, overflow-hidden, absolute box. The first embed whose
 //                       pages can scroll page 1 above the middle of their
 //                       frame then scrolls to page 2 and must read "Page 2
-//                       of <pages>"; the report names it as page2Checked
-//                       (null when no embed could).
-//   --plant wrongname|dupdesc|duplink|norole|notoolbar|nonumber|rawindicator|staleindicator|showindicator
+//                       of <pages>"; the report names it as page2Checked.
+//                       On a page with no slides, the run fails when such
+//                       an embed exists and none could be read at page 2.
+//   --plant wrongname|dupdesc|duplink|norole|notoolbar|nonumber|rawindicator|staleindicator|showindicator|tallframe
 //                       with --expect-name, plant a defect in the first
 //                       PDF.js embed; the run must then fail: wrongname
 //                       changes its aria-label to "PDF: wrong.pdf", dupdesc
@@ -156,7 +160,9 @@
 //                       n" text for a "Page 1 of n" copy that the scroll does
 //                       not update (nothing to plant in unless that embed
 //                       is the one scrolled to page 2, see page2Checked),
-//                       showindicator makes its "Page i of n" text visible.
+//                       showindicator makes its "Page i of n" text visible,
+//                       tallframe makes no embed's frame scroll (on a page
+//                       with no slides).
 // Set CHROME_PATH to use another Chrome or Chromium binary.
 //
 // On a RevealJS page the check goes to each slide with Reveal.slide() and
@@ -239,8 +245,8 @@ const FLAGS = ["device", "expect-native", "expect-pdfjs", "expect-pages", "expec
 const BOOL_FLAGS = ["missing-pdfs"];
 const TEXT_PLANTS = ["notext", "swap", "visible", "gone", "inert", "cvhidden"];
 const TREE_PLANTS = ["nolabel", "canvas", "noname", "detach"];
-const NAME_PLANTS = ["wrongname", "dupdesc", "duplink", "norole", "notoolbar", "nonumber", "rawindicator", "staleindicator", "showindicator"];
-const INK_PLANTS = ["blank", "nocanvas", "nopages"];
+const NAME_PLANTS = ["wrongname", "dupdesc", "duplink", "norole", "notoolbar", "nonumber", "rawindicator", "staleindicator", "showindicator", "tallframe"];
+const INK_PLANTS = ["blank", "nocanvas", "nopages", "namefailed"];
 // planted before the text wait (unhydrated) or before the page loads (norender)
 const WAIT_PLANTS = ["unhydrated", "norender"];
 const args = process.argv.slice(2);
@@ -686,6 +692,10 @@ async function nameFailures(page, slide, before) {
         if (!shown) return { planted: null, stuck };
         shown.removeAttribute("aria-hidden");
       }
+      if (plant === "tallframe") {
+        // no frame scrolls, so page 1 stays at the top of each frame
+        document.querySelectorAll(".embedpdf-pdfjs .embedpdf-pages").forEach((p) => (p.style.overflow = "visible"));
+      }
       if (plant === "showindicator") {
         const spoken = first.querySelector(".embedpdf-pageinfo-text");
         if (!spoken) return { planted: null, stuck };
@@ -809,15 +819,16 @@ async function nameFailures(page, slide, before) {
         const s = spoken ? getComputedStyle(spoken) : null;
         return {
           shown: shown ? shown.textContent : null,
-          box: s ? { width: s.width, height: s.height, overflow: s.overflow, position: s.position } : null,
+          box: s ? { width: s.width, height: s.height, overflow: s.overflow, position: s.position, clipPath: s.clipPath } : null,
         };
       });
       if (seen.shown !== `1 / ${pages}`) out.push(`${at}: the indicator shows ${JSON.stringify(seen.shown)}, not "1 / ${pages}"`);
       const b = seen.box;
-      if (!b || b.width !== "1px" || b.height !== "1px" || b.overflow !== "hidden" || b.position !== "absolute") {
+      if (!b || b.width !== "1px" || b.height !== "1px" || b.overflow !== "hidden" || b.position !== "absolute" || b.clipPath !== "inset(50%)") {
         out.push(`${at}: the "Page i of n" text is not in a 1px hidden box: ${JSON.stringify(b)}`);
       }
       if (pages >= 2 && !page2Checked) {
+        page2Tried++;
         const second = await toPage(2);
         if (second.moved) {
           page2Checked = `${at}`;
@@ -845,6 +856,8 @@ async function treeText(page, el) {
 // whether it is the page's first PDF.js embed (where name plants go)
 let page2Checked = null;
 let page2First = false;
+// toolbar embeds of 2 or more pages that the check tried to scroll to page 2
+let page2Tried = 0;
 
 const browser = await puppeteer.launch({
   executablePath: CHROME,
@@ -1001,8 +1014,20 @@ try {
     // that holds the failure text is reported as malformed
     const failed = [];
     const malformed = [];
+    if (plant === "namefailed") {
+      const first = [...document.querySelectorAll("div.embedpdf")].find((el) => el.textContent.includes("This PDF cannot be shown here."));
+      if (first) {
+        first.setAttribute("aria-label", "PDF: planted.pdf");
+        inkPlanted = plant;
+      }
+    }
     document.querySelectorAll("div.embedpdf").forEach((el, i) => {
       if (!el.textContent.includes("This PDF cannot be shown here.")) return;
+      // a PDF that does not load gets no name for screen readers
+      if (el.hasAttribute("aria-label") || el.getAttribute("role") === "group") {
+        malformed.push({ index: i + 1, src: el.dataset.src || "", named: el.getAttribute("aria-label"), role: el.getAttribute("role") });
+        return;
+      }
       const links = [...el.querySelectorAll("a")];
       const open = links.find((a) => a.textContent.trim() === "Open the PDF");
       const expected = new URL(el.dataset.src || "", document.baseURI).href;
@@ -1088,6 +1113,12 @@ try {
     // every PDF.js embed must have been checked
     if (names.embeds !== res.pdfjs || res.pdfjs === 0) {
       console.error(`render_check: --expect-name checked ${names.embeds} embeds, of ${res.pdfjs} PDF.js embeds`);
+      process.exitCode = 1;
+    }
+    // on a page with no slides, a toolbar embed of 2 or more pages must be
+    // read at page 2 (a slide may fit its pages, so a deck may read none)
+    if (!slides && page2Tried && !page2Checked) {
+      console.error(`render_check: none of the ${page2Tried} embeds of 2 or more pages could scroll page 1 above the middle of its frame, so no indicator was read at page 2`);
       process.exitCode = 1;
     }
     // the names given must name every PDF.js embed checked

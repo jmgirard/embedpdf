@@ -95,7 +95,7 @@ embed uses the query-style address `files/get?file=sample.pdf`, and
 `--plant` in each script plants one defect so you can see a
 check fail. render_check, ios_check, safari_check, and name_rule_test take
 `--plant`, and each header says what its `--plant` does.
-With `--expect-text`, both scripts wait once for the page's text, or twice
+With `--expect-text`, render_check and ios_check wait once for the page's text, or twice
 with `--slow-text`. When every
 embed is hydrated and every page has text, the wait ends. While something is
 missing, it ends after 10 s with no change, or after 60 s in all. If an embed
@@ -174,7 +174,8 @@ xcrun simctl create "embedpdf iPhone" "iPhone 17" com.apple.CoreSimulator.SimRun
 xcrun simctl create "embedpdf iPad" "iPad Air 11-inch (M4)" com.apple.CoreSimulator.SimRuntime.iOS-27-0
 ```
 
-**After any change to `tests/ink.mjs` or `tests/serve_docs.mjs`**, run the
+**After any change to `tests/ink.mjs`, `tests/serve_docs.mjs`, or
+`tests/expect_names.mjs`**, run the
 helper tests (Node only, no browser), then the browser checks above:
 
 ```
