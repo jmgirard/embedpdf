@@ -112,11 +112,23 @@ export function serveDocs({ port = 0, transformHtml = null, routes = {}, root = 
 //   mode cors     Access-Control-Allow-Origin: *
 //   mode missing  HTTP 404 for every path, with Access-Control-Allow-Origin: *
 //                 so that the 404 itself, not CORS, is what PDF.js meets
+// A file is sent whole or by a single byte range, as serveDocs sends it. An
+// OPTIONS request (a CORS preflight) gets 204; in modes cors and missing it
+// allows GET and the Range header, and in mode blocked it allows nothing.
 export const REMOTE_MODES = ["blocked", "cors", "missing"];
 export function serveRemote(mode, { port = 0 } = {}) {
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, "http://127.0.0.1");
-    const cors = mode === "blocked" ? {} : { "Access-Control-Allow-Origin": "*" };
+    // Expose-Headers lets a cross-origin reader see the range headers
+    const cors =
+      mode === "blocked"
+        ? {}
+        : { "Access-Control-Allow-Origin": "*", "Access-Control-Expose-Headers": "Accept-Ranges, Content-Range, Content-Length" };
+    if (req.method === "OPTIONS") {
+      const allow = mode === "blocked" ? {} : { "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS", "Access-Control-Allow-Headers": "Range" };
+      res.writeHead(204, { ...cors, ...allow }).end();
+      return;
+    }
     let file = null;
     try {
       file = path.join(DOCS, decodeURIComponent(url.pathname));
@@ -126,8 +138,7 @@ export function serveRemote(mode, { port = 0 } = {}) {
       return;
     }
     const headers = { "Content-Type": TYPES[path.extname(file)] || "application/octet-stream", "Cache-Control": "no-store", ...cors };
-    res.writeHead(200, headers);
-    res.end(fs.readFileSync(file));
+    sendData(req, res, fs.readFileSync(file), headers);
   });
   return listen(server, port);
 }

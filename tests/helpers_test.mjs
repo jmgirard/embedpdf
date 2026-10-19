@@ -6,7 +6,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { inkInPixels } from "./ink.mjs";
-import { serveDocs, pointPdfsAt, embedSrcsOffRemote, DOCS } from "./serve_docs.mjs";
+import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, REMOTE_MODES, DOCS } from "./serve_docs.mjs";
 
 let passed = 0;
 let failed = 0;
@@ -146,6 +146,44 @@ try {
   check("server: a port in use rejects with EADDRINUSE", err && err.code === "EADDRINUSE", String(err));
 } finally {
   server.close();
+}
+
+// --- remote server ------------------------------------------------------------
+{
+  const pdf = fs.readFileSync(path.join(DOCS, "sample.pdf"));
+  const size = pdf.length;
+  for (const mode of REMOTE_MODES) {
+    const remote = await serveRemote(mode);
+    const at = `http://127.0.0.1:${remote.address().port}/sample.pdf`;
+    try {
+      const get = async (range) => {
+        const r = await fetch(at, { headers: { Range: range } });
+        return { status: r.status, body: Buffer.from(await r.arrayBuffer()) };
+      };
+      const a = await get("bytes=0-99");
+      const b = await get("bytes=100-");
+      const c = await get(`bytes=${size + 10}-`);
+      if (mode === "missing") {
+        check("remote missing: ranges get 404", [a, b, c].every((r) => r.status === 404), [a, b, c].map((r) => r.status).join(" "));
+      } else {
+        check(`remote ${mode}: bytes=0-99 is 206 with those bytes`, a.status === 206 && a.body.equals(pdf.subarray(0, 100)), `${a.status} ${a.body.length}`);
+        check(`remote ${mode}: bytes=100- is 206 to the end`, b.status === 206 && b.body.equals(pdf.subarray(100)), `${b.status} ${b.body.length}`);
+        check(`remote ${mode}: a start past the end is 416`, c.status === 416, String(c.status));
+      }
+      const o = await fetch(at, { method: "OPTIONS", headers: { Origin: "http://127.0.0.1:1", "Access-Control-Request-Headers": "range" } });
+      await o.arrayBuffer();
+      const acNames = [...o.headers.keys()].filter((k) => k.startsWith("access-control-"));
+      check(`remote ${mode}: OPTIONS is 204`, o.status === 204, String(o.status));
+      if (mode === "blocked") {
+        check("remote blocked: OPTIONS has no Access-Control- header", acNames.length === 0, acNames.join(", "));
+      } else {
+        check(`remote ${mode}: OPTIONS allows any origin`, o.headers.get("access-control-allow-origin") === "*", o.headers.get("access-control-allow-origin"));
+        check(`remote ${mode}: OPTIONS allows Range`, /(^|,\s*)range(\s*,|$)/i.test(o.headers.get("access-control-allow-headers") || ""), o.headers.get("access-control-allow-headers"));
+      }
+    } finally {
+      remote.close();
+    }
+  }
 }
 
 console.log(`${passed} passed, ${failed} failed`);
