@@ -62,7 +62,7 @@ one PDF in a subfolder, named with a space once and percent-encoded once. Checks
 
 ## Tasks
 
-- [ ] T1: In `hydratePdfjs()`, set `role="group"` and `aria-label="PDF: <name>"` on the embed element, with the
+- [x] T1: In `hydratePdfjs()`, set `role="group"` and `aria-label="PDF: <name>"` on the embed element, with the
       name from `fileName()` of `opts.src`, or `opts.filename` for an inlined PDF. Add `name_test.qmd`: two
       `renderer=pdfjs` embeds of a copy of `sample.pdf` at `files/sample copy.pdf`, one written with the space and
       one with `%20`. Make sure that `quarto render` copies the PDF into `docs/`.
@@ -87,6 +87,7 @@ one PDF in a subfolder, named with a space once and percent-encoded once. Checks
 - 2026-10-18: plan gate chose the file name as the embed name over a new shortcode option (user choice: no new public option to keep stable); falsified by authors whose file names do not say what the PDF is.
 - 2026-10-18: plan chose a `title`-only name with an `aria-hidden` glyph over dropping `title` (which loses the mouse tooltip); Chromium probe gave name "Zoom in" and no description for that form; falsified by a screen reader that reads the glyph or skips the title.
 - 2026-10-18: version 1.2.1 (patch): no option or default changes.
+- 2026-10-18: T1 done: `hydratePdfjs()` sets `role="group"` and `aria-label` ("PDF" alone when no file name is found); `name_test.qmd` lists `files/sample copy.pdf` under `resources`, and `quarto render name_test.qmd` copied it to `docs/files/`. Checked by T2's checks.
 
 ## Decisions
 
