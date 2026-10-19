@@ -58,33 +58,57 @@
 //                       file." link. Without it, any embed in that state fails
 //                       the run.
 //   --expect-text "<p1>|<p2>|…"
-//                       phrase i is a phrase of page i's text. Before the
-//                       pages are scrolled (on a RevealJS page, when each
-//                       slide is shown), wait at most 10 s for every PDF.js
-//                       page to have text, then fail unless each page's
-//                       .embedpdf-text block contains its own phrase and no
-//                       other page's, and is hidden but readable: computed
-//                       width and height 1px, overflow hidden, user-select
-//                       none, display not none, visibility visible, no
-//                       aria-hidden on it or an ancestor. After the pages
-//                       are scrolled and each has a canvas, also fail unless
-//                       Chrome's accessibility tree (puppeteer
-//                       accessibility.snapshot, interestingOnly false) gives
-//                       each page role group, the name "Page i of n", and its
-//                       phrase, gives no page canvas a node, and names the
-//                       toolbar controls "Zoom out", "Zoom in", and "Download
-//                       PDF". Whitespace is collapsed before phrases are
+//                       phrase i is a phrase of page i's text. First, once
+//                       for the whole page (before any slide is shown or
+//                       any page scrolls), wait until every embed is
+//                       hydrated and every PDF.js page has text, or 10 s
+//                       pass with no embed newly hydrated and no page newly
+//                       with text, or 60 s pass in all. If an embed is still
+//                       not hydrated then, print how many and exit 1 at
+//                       once. Before the pages are scrolled (on a RevealJS
+//                       page, when each slide is shown), fail unless each
+//                       page's .embedpdf-text block contains its own phrase
+//                       and no other page's, and is hidden but readable:
+//                       computed width and height 1px, overflow hidden,
+//                       user-select none, display not none, visibility
+//                       visible, no aria-hidden on it or an ancestor, and no
+//                       inert attribute or computed content-visibility
+//                       hidden on it or an element that contains it. After
+//                       the pages are scrolled and each has a canvas (a wait
+//                       of at most 10 s per embed), also fail unless Chrome's
+//                       accessibility tree (puppeteer accessibility.snapshot,
+//                       interestingOnly false) gives each page role group,
+//                       the name "Page i of n", and its phrase, gives no page
+//                       canvas a node, and names the toolbar controls "Zoom
+//                       out", "Zoom in", and "Download PDF". A null canvas
+//                       snapshot counts as hidden only for a canvas still in
+//                       the page; for one that left it, the page's current
+//                       canvas is read once instead. On a RevealJS page, a
+//                       slide whose canvas wait runs out stops the run with
+//                       exit 1. Whitespace is collapsed before phrases are
 //                       compared.
-//   --plant notext|swap|visible|gone|nolabel|canvas|noname
+//   --slow-text <ms>    test aid, with --expect-text: after the whole-page
+//                       wait above, empty every PDF.js page's text and put
+//                       it back one page every <ms> ms while that wait runs
+//                       again; the run must still pass when <ms> is under
+//                       10000.
+//   --plant notext|swap|visible|gone|inert|cvhidden|nolabel|canvas|noname|detach|unhydrated|norender
 //                       plant a defect in the first PDF.js embed before the
 //                       --expect-text checks measure it; the run must then
 //                       fail: notext empties the last page's text, swap
 //                       swaps the first two pages' text, visible sets the
 //                       last text block's overflow to visible, gone sets its
-//                       display to none, nolabel removes the last page's
-//                       aria-label, canvas removes the last canvas's
-//                       aria-hidden, noname removes the zoom-out button's
-//                       title. Needs --expect-text.
+//                       display to none, inert sets inert on its page,
+//                       cvhidden sets its content-visibility to hidden,
+//                       nolabel removes the last page's aria-label, canvas
+//                       removes the last canvas's aria-hidden, noname
+//                       removes the zoom-out button's title, detach removes
+//                       the last canvas just before its snapshot. Two plants
+//                       act on the whole page: unhydrated adds a div.embedpdf
+//                       with no data-src before the text wait, and norender
+//                       makes every canvas's getContext return null from
+//                       load on, so no page gets a canvas. Needs
+//                       --expect-text.
 //   --expect-name "<file name>" | "<name 1>|<name 2>|..."
 //                       after the pages are scrolled, fail unless each PDF.js
 //                       embed has role="group" and aria-label "PDF: <file
@@ -111,9 +135,9 @@
 //
 // On a RevealJS page the check goes to each slide with Reveal.slide() and
 // scrolls each embed's pages into view before it measures. On each slide (or
-// on the whole page when it has no slides), the --expect-text text read and
-// the --expect-name check first wait at most 10 s for the embeds to be
-// hydrated; the name check fails when that wait runs out.
+// on the whole page when it has no slides), the --expect-name check first
+// waits at most 10 s for the embeds to be hydrated, and fails when that wait
+// runs out. The --expect-text wait comes once, before the first slide.
 //
 // Ink: a canvas has ink by the rule in tests/ink.mjs (some pixel neither
 // transparent nor white, read over every pixel and channel).

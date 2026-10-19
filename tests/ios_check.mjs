@@ -25,25 +25,39 @@
 //   --screenshot <file>    save a simulator screenshot, taken with the first
 //                          renderer=native embed scrolled into view
 //   --shot-embed <n>       scroll embed n (1-based) into view for the screenshot
-//   --plant blank|missing|notext|swap|visible
+//   --plant blank|missing|notext|swap|visible|inert|cvhidden|unhydrated
 //                          plant a defect in the first PDF.js embed before
 //                          measuring (blank its last page canvas, remove
 //                          that page's container, empty that page's hidden
-//                          text, swap the first two pages' text, or set the
-//                          last text block's overflow to visible); the check
-//                          must then fail. The last three need --expect-text.
+//                          text, swap the first two pages' text, set the
+//                          last text block's overflow to visible, set inert
+//                          on the last page, or set the last text block's
+//                          content-visibility to hidden), or (unhydrated)
+//                          add a div.embedpdf with no data-src to the page
+//                          before the text wait; the check must then fail.
+//                          All but blank and missing need --expect-text.
 //   --expect-text "<p1>|<p2>|…"
 //                          phrase i is a phrase of page i's text. Before the
-//                          probe scrolls, it waits at most 10 s for every
-//                          embed to hydrate and every PDF.js page to have
-//                          text. Fail unless each page's .embedpdf-text block
-//                          contains its own phrase and no other page's, and
-//                          is hidden but readable: computed width and height
-//                          1px, overflow hidden, user-select none, display
-//                          not none, visibility visible, no aria-hidden on it
-//                          or an ancestor. Whitespace is collapsed first.
+//                          probe scrolls, it waits until every embed is
+//                          hydrated and every PDF.js page has text, or 10 s
+//                          pass with no embed newly hydrated and no page
+//                          newly with text, or 60 s pass in all. If an embed
+//                          is still not hydrated then, the probe reports at
+//                          once and that is the one failure. Fail unless each
+//                          page's .embedpdf-text block contains its own
+//                          phrase and no other page's, and is hidden but
+//                          readable: computed width and height 1px, overflow
+//                          hidden, user-select none, display not none,
+//                          visibility visible, no aria-hidden on it or an
+//                          ancestor, and no inert attribute or computed
+//                          content-visibility hidden on it or an element that
+//                          contains it. Whitespace is collapsed first.
 //                          Checks only embeds not set to renderer=native;
 //                          cannot be combined with --remote or --missing-pdfs.
+//   --slow-text <ms>       test aid, with --expect-text: after the wait above,
+//                          empty every PDF.js page's text and put it back one
+//                          page every <ms> ms while that wait runs again; the
+//                          run must still pass when <ms> is under 10000.
 //   --expect-name "<file name>"
 //                          fail unless each PDF.js embed has role="group" and
 //                          aria-label "PDF: <file name>" in the DOM (Safari's
