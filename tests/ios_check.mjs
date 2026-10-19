@@ -91,7 +91,7 @@ import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, docsFile, DOCS
 import { inkInPixels } from "./ink.mjs";
 
 const args = process.argv.slice(2);
-const FLAGS = ["device", "page", "expect-embeds", "expect-pages", "expect-text", "expect-name", "port", "timeout", "screenshot", "shot-embed", "plant", "alone", "remote"];
+const FLAGS = ["device", "page", "expect-embeds", "expect-pages", "expect-text", "expect-name", "port", "timeout", "screenshot", "shot-embed", "plant", "alone", "remote", "slow-text"];
 // flags that take no value
 const BOOL_FLAGS = ["missing-pdfs"];
 // parsed flags: a value flag's value is taken as it is, even when it starts
@@ -163,6 +163,11 @@ if (phrases && phrases.some((p) => !p)) {
 }
 if (phrases && (remote || missingPdfs)) {
   console.error("ios_check: --expect-text cannot be combined with --remote or --missing-pdfs (no embed shows a PDF there)");
+  process.exit(2);
+}
+const slowText = opt("slow-text", "");
+if (slowText && !(phrases && /^\d+$/.test(slowText) && Number(slowText) > 0)) {
+  console.error("ios_check: --slow-text needs --expect-text and a whole number of milliseconds above 0");
   process.exit(2);
 }
 const TEXT_PLANTS = ["notext", "swap", "visible", "inert", "cvhidden"];
@@ -250,15 +255,41 @@ const PROBE = `<script>
     }
   };
   // --expect-text: the hidden text of each page, read before anything
-  // scrolls; wait at most 10 s for every embed to hydrate and every PDF.js
-  // page to have text
+  // scrolls. Wait until every embed is hydrated and every PDF.js page has
+  // text, or 10 s pass with no embed newly hydrated and no page newly with
+  // text, or 60 s pass in all. With slow=<ms>, the same wait first runs once;
+  // then all the text is emptied and put back one page every <ms> ms while
+  // the wait runs again.
   const wantText = params.get("text") === "1";
+  const slowMs = Number(params.get("slow") || 0);
   const blocks = () => embeds().filter((el) => kind(el) === "pdfjs")
     .flatMap((el) => [...el.querySelectorAll(".embedpdf-page")].map((p) => p.querySelector(".embedpdf-text")));
-  const tText = Date.now();
-  while (wantText && Date.now() - tText < 10000 &&
-    (embeds().some((el) => kind(el) === "none") || !blocks().every((t) => t && t.textContent.trim()))) await sleep(100);
-  const textWaitedMs = Date.now() - tText;
+  const unhydrated = () => embeds().filter((el) => kind(el) === "none").length;
+  const withText = () => blocks().filter((t) => t && t.textContent.trim()).length;
+  const waitText = async () => {
+    const start = Date.now();
+    let seen = -1, changed = start;
+    while (unhydrated() || !blocks().every((t) => t && t.textContent.trim())) {
+      const progress = embeds().length - unhydrated() + withText();
+      if (progress !== seen) { seen = progress; changed = Date.now(); }
+      if (Date.now() - changed >= 10000 || Date.now() - start >= 60000) break;
+      await sleep(100);
+    }
+    return Date.now() - start;
+  };
+  let slowPages = 0;
+  if (wantText && slowMs) {
+    await waitText();
+    const saved = blocks().filter(Boolean).map((t) => [t, t.textContent]);
+    for (const [t] of saved) t.textContent = "";
+    slowPages = saved.length;
+    let k = 0;
+    const timer = setInterval(() => {
+      if (k < saved.length) saved[k][0].textContent = saved[k++][1];
+      else clearInterval(timer);
+    }, slowMs);
+  }
+  const textWaitedMs = wantText ? await waitText() : 0;
   let textPlanted = "";
   if (["notext", "swap", "visible", "inert", "cvhidden"].includes(plant)) {
     const first = embeds().find((el) => kind(el) === "pdfjs");
@@ -345,6 +376,7 @@ const PROBE = `<script>
     textPlanted,
     namePlanted,
     textWaitedMs,
+    slowPages,
     embeds: embeds().map((el, i) => {
       const pages = [...el.querySelectorAll(".embedpdf-page")];
       // the load-failure state, read from the text and links, not the class
@@ -459,7 +491,7 @@ const server = await serveDocs({
 let exitCode = 1;
 try {
   simctl("bootstatus", dev.udid, "-b");
-  const target = `http://127.0.0.1:${server.address().port}/${servedPath}?run=${runId}${plant ? "&plant=" + plant : ""}${phrases ? "&text=1" : ""}${shotEmbed ? "&shot=" + shotEmbed : ""}`;
+  const target = `http://127.0.0.1:${server.address().port}/${servedPath}?run=${runId}${plant ? "&plant=" + plant : ""}${phrases ? "&text=1" : ""}${slowText ? "&slow=" + slowText : ""}${shotEmbed ? "&shot=" + shotEmbed : ""}`;
   simctl("openurl", dev.udid, target);
 
   const timer = new Promise((_, rej) =>
