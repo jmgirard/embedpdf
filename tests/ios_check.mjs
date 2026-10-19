@@ -69,6 +69,7 @@ import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { serveDocs, serveRemote, pointPdfsAt, DOCS } from "./serve_docs.mjs";
+import { inkInPixels } from "./ink.mjs";
 
 const args = process.argv.slice(2);
 const FLAGS = ["device", "page", "expect-embeds", "expect-pages", "expect-text", "expect-name", "port", "timeout", "screenshot", "shot-embed", "plant", "alone", "remote"];
@@ -262,10 +263,11 @@ const PROBE = `<script>
     }
   }
 
+  // the ink rule of tests/ink.mjs, inlined from its source text
+  const inkInPixels = ${inkInPixels.toString()};
   const hasInk = (c) => {
     try {
-      const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data;
-      for (let i = 0; i < d.length; i += 400) if (d[i] < 128 && d[i + 3] > 0) return true;
+      return inkInPixels(c.getContext("2d").getImageData(0, 0, c.width, c.height).data);
     } catch (e) { errors.push("ink: " + e); }
     return false;
   };

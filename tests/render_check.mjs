@@ -101,6 +101,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import puppeteer from "puppeteer-core";
 import { serveDocs, serveRemote, pointPdfsAt, REMOTE_MODES, DOCS } from "./serve_docs.mjs";
+import { inkInPixels } from "./ink.mjs";
 
 // For iphone and ipad, userAgent, maxTouchPoints, and pdfViewerEnabled are what
 // Safari reported in iOS 27.0 simulators (iPhone 17, iPad Air 11-inch M4) via
@@ -560,12 +561,10 @@ try {
   if (phrases && !slides) treeReports.push(await treeFailures(page, null));
   if (expectName && !slides) nameReports.push(await nameFailures(page, null));
 
-  const res = await page.evaluate(async () => {
-    const hasInk = (c) => {
-      const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data;
-      for (let i = 0; i < d.length; i += 400) if (d[i] < 128 && d[i + 3] > 0) return true;
-      return false;
-    };
+  const res = await page.evaluate(async (inkSource) => {
+    // the ink rule of tests/ink.mjs, rebuilt from its source text
+    const inkInPixels = new Function("return " + inkSource)();
+    const hasInk = (c) => inkInPixels(c.getContext("2d").getImageData(0, 0, c.width, c.height).data);
     const canvases = [...document.querySelectorAll(".embedpdf-page canvas")];
     const withInk = canvases.filter(hasInk).length;
     // per PDF.js embed: one entry per .embedpdf-page, true when its canvas has ink
@@ -626,7 +625,7 @@ try {
       malformed,
       srcs,
     };
-  });
+  }, inkInPixels.toString());
 
   const text = phrases
     ? {

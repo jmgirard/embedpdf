@@ -73,7 +73,7 @@ CLAUDE.md and script header updates.
 - [x] T1: Add `tests/helpers_test.mjs` (prints `N passed, 0 failed`, exits 1 on any failure) with the AC2 ink cases
       first, then `tests/ink.mjs` exporting the rule. The function must run both by import in Node and as injected
       source in a page (render_check `page.evaluate`, the ios_check probe string), so it uses no outer names.
-- [ ] T2: Replace the `hasInk` copies at `tests/render_check.mjs:564` and `tests/ios_check.mjs:265` with the shared
+- [x] T2: Replace the `hasInk` copies at `tests/render_check.mjs:564` and `tests/ios_check.mjs:265` with the shared
       rule; keep each script's own error handling around `getImageData`.
 - [ ] T3: In `render_check.mjs`, replace the all-canvases check (`:686`) with a per-embed, per-page check that runs
       after the scroll or slide walk (LESSONS M002: slides must be visited first) and names the embed and page. Add
@@ -103,6 +103,7 @@ CLAUDE.md and script header updates.
 - 2026-10-18: plan gate chose server-only range support over adding a PDF over 128 KB because no current PDF makes PDF.js load by ranges; falsified by a range-path failure seen with a large PDF on GitHub Pages.
 - 2026-10-18: plan chose one shared ink rule in `tests/ink.mjs` over fixing each script's copy because one rule tested in Node then covers both scripts; falsified by the shared function failing to run as injected source in iOS Safari.
 - 2026-10-18: T1: `tests/ink.mjs` exports `inkInPixels(data)`; `tests/helpers_test.mjs` prints 8 passed, 0 failed, and the same cases with the old every-100th-pixel red rule give 5 passed, 3 failed (red pixel, last pixel, blue pixel).
+- 2026-10-18: T2: render_check rebuilds the rule with `new Function` from `inkInPixels.toString()` passed to `page.evaluate`, and ios_check inlines the same source into its probe; `grep -n getImageData` finds one call per script, each passed to the rule. Chromium example.html line exits 0 (4 of 4 canvases inked). Google Chrome is not installed; runs use `CHROME_PATH=/Applications/Chromium.app/Contents/MacOS/Chromium`, as M001 did.
 
 ## Decisions
 
