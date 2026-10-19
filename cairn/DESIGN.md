@@ -136,7 +136,10 @@ another site that sends no `Access-Control-Allow-Origin` header ends there
 (D-004; corrected M003). Page rendering goes through one queue shared
 by every viewer on the page, and canvas size is capped at 8,000,000 pixels
 with device pixel ratio clamped to 2, for constrained mobile devices. For
-screen readers, each PDF.js page is a group labeled "Page i of n" that holds
+screen readers, a PDF.js embed is a group named "PDF: " and its file name
+(`fileName()` of `data-src`, or of the download link on a self-contained
+page), each toolbar control is named by its `title` alone with its glyph
+`aria-hidden` (corrected M005), and each PDF.js page is a group labeled "Page i of n" that holds
 the page's text (PDF.js `getTextContent()`) in a visually hidden, unselectable
 block, and the canvas is `aria-hidden`. The text of every page is read at
 load on the same queue, and a text task runs only when no page render waits

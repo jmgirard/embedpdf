@@ -19,7 +19,7 @@ local function str(v)
   return pandoc.utils.stringify(v)
 end
 
-local VERSION = "1.2.0"
+local VERSION = "1.2.1"
 local dependency_injected = false
 local pdfjs_injected = false
 

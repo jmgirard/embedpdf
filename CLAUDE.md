@@ -40,20 +40,29 @@ gotcha). From the repo root:
 ```
 quarto render
 npm install puppeteer-core            # once, if missing (gitignored)
-node tests/render_check.mjs example.html --expect-native 9 --expect-pdfjs 2 --expect-text "On the Origin of Coastlines|Why It Matters"
-node tests/render_check.mjs example.html --device mac-safari --expect-native 9 --expect-pdfjs 2 --expect-text "On the Origin of Coastlines|Why It Matters"
-node tests/render_check.mjs example.html --device windows-touch --expect-native 9 --expect-pdfjs 2 --expect-text "On the Origin of Coastlines|Why It Matters"
-node tests/render_check.mjs example.html --device iphone --expect-native 1 --expect-pdfjs 10 --expect-text "On the Origin of Coastlines|Why It Matters"
-node tests/render_check.mjs example.html --device ipad --expect-native 1 --expect-pdfjs 10 --expect-text "On the Origin of Coastlines|Why It Matters"
-node tests/ios_check.mjs --device "embedpdf iPhone" --expect-text "On the Origin of Coastlines|Why It Matters"
-node tests/ios_check.mjs --device "embedpdf iPad" --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/render_check.mjs example.html --expect-native 9 --expect-pdfjs 2 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/render_check.mjs example.html --device mac-safari --expect-native 9 --expect-pdfjs 2 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/render_check.mjs example.html --device windows-touch --expect-native 9 --expect-pdfjs 2 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/render_check.mjs example.html --device iphone --expect-native 1 --expect-pdfjs 10 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/render_check.mjs example.html --device ipad --expect-native 1 --expect-pdfjs 10 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/render_check.mjs name_test.html --expect-native 0 --expect-pdfjs 2 --expect-name "sample copy.pdf"
+node tests/render_check.mjs name_test.html --device iphone --expect-native 0 --expect-pdfjs 2 --expect-name "sample copy.pdf"
+node tests/ios_check.mjs --device "embedpdf iPhone" --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/ios_check.mjs --device "embedpdf iPad" --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/ios_check.mjs --device "embedpdf iPhone" --page name_test.html --expect-embeds 2 --expect-name "sample copy.pdf"
+node tests/ios_check.mjs --device "embedpdf iPad" --page name_test.html --expect-embeds 2 --expect-name "sample copy.pdf"
 ```
 
 `--expect-text` checks the hidden page text that screen readers read. The
 phrases come from `pdftotext sample.pdf`: phrase 1 is on page 1, phrase 2 on
 page 2. In render_check it also checks Chrome's accessibility tree.
-`revealjs_test.html` uses other PDFs and gets no text check. `--plant` in both
-scripts plants one defect so you can see a check fail.
+`revealjs_test.html` uses other PDFs and gets no text check. `--expect-name`
+checks that each PDF.js embed is a group named "PDF: <file name>", and in
+render_check that each toolbar control's name is its tooltip and is not
+repeated as its description.
+`name_test.html` shows `files/sample copy.pdf` by a path with a space and by
+one with `%20`. `--plant` in both scripts plants one defect so you can see a
+check fail.
 
 Self-contained pages (`embed-resources: true`): `--alone http|file` (render_check)
 and `--alone yes` (ios_check) load a copy of the page with no other file beside it.
@@ -63,14 +72,14 @@ Run each `--alone file` line again with `--alone http`. Run the
 counts). `revealjs_test.html` is a normal slide deck:
 
 ```
-node tests/render_check.mjs selfcontained_test.html --alone file --expect-native 2 --expect-pdfjs 1 --expect-pages 2 --expect-links 4 --expect-text "On the Origin of Coastlines|Why It Matters"
-node tests/render_check.mjs selfcontained_test.html --alone file --device iphone --expect-native 1 --expect-pdfjs 2 --expect-pages 2 --expect-links 4 --expect-text "On the Origin of Coastlines|Why It Matters"
-node tests/render_check.mjs selfcontained_slides_test.html --alone file --expect-native 2 --expect-pdfjs 1 --expect-pages 2 --expect-links 4 --expect-text "On the Origin of Coastlines|Why It Matters"
-node tests/render_check.mjs selfcontained_slides_test.html --alone file --device iphone --expect-native 1 --expect-pdfjs 2 --expect-pages 2 --expect-links 4 --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/render_check.mjs selfcontained_test.html --alone file --expect-native 2 --expect-pdfjs 1 --expect-pages 2 --expect-links 4 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/render_check.mjs selfcontained_test.html --alone file --device iphone --expect-native 1 --expect-pdfjs 2 --expect-pages 2 --expect-links 4 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/render_check.mjs selfcontained_slides_test.html --alone file --expect-native 2 --expect-pdfjs 1 --expect-pages 2 --expect-links 4 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/render_check.mjs selfcontained_slides_test.html --alone file --device iphone --expect-native 1 --expect-pdfjs 2 --expect-pages 2 --expect-links 4 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/render_check.mjs revealjs_test.html --expect-native 2 --expect-pdfjs 1
 node tests/render_check.mjs revealjs_test.html --device iphone --expect-native 1 --expect-pdfjs 2
-node tests/ios_check.mjs --device "embedpdf iPhone" --page selfcontained_test.html --alone yes --expect-embeds 2 --expect-text "On the Origin of Coastlines|Why It Matters"
-node tests/ios_check.mjs --device "embedpdf iPad" --page selfcontained_test.html --alone yes --expect-embeds 2 --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/ios_check.mjs --device "embedpdf iPhone" --page selfcontained_test.html --alone yes --expect-embeds 2 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/ios_check.mjs --device "embedpdf iPad" --page selfcontained_test.html --alone yes --expect-embeds 2 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
 ```
 
 PDFs on another site: `--remote blocked|cors|missing` serves the PDFs from a
@@ -156,8 +165,10 @@ errors.
   `Access-Control-Allow-Origin`. Safari is checked only with no header, in the
   iOS 27.0 simulators.
 - A real screen reader (VoiceOver, TalkBack) reading a PDF.js embed's hidden
-  page text. Checked only in Chromium's accessibility tree and in Safari's page
-  DOM in the iOS simulators.
+  page text, its "PDF: <file name>" group name, and its toolbar controls'
+  `title`-only names. Checked only in Chromium's accessibility tree and in
+  Safari's page DOM in the iOS simulators. Safari's names for the toolbar
+  controls were not checked.
 - The cost of reading every page's text at load on a constrained phone: memory
   and first-paint delay for a long PDF were not measured.
 

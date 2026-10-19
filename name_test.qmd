@@ -1,0 +1,18 @@
+---
+title: "embedpdf names for screen readers"
+resources:
+  - "files/sample copy.pdf"
+---
+
+Both embeds show `files/sample copy.pdf`, a copy of `sample.pdf` in a
+subfolder. The first gives the path with a space, and the second gives it with
+`%20`. The viewer names each one "PDF: sample copy.pdf" for screen readers.
+The checks in `tests/` read that name.
+
+## Path with a space
+
+{{< pdf "files/sample copy.pdf" renderer=pdfjs >}}
+
+## Path with %20
+
+{{< pdf files/sample%20copy.pdf renderer=pdfjs >}}

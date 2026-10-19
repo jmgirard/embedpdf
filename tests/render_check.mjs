@@ -68,7 +68,23 @@
 //                       display to none, nolabel removes the last page's
 //                       aria-label, canvas removes the last canvas's
 //                       aria-hidden, noname removes the zoom-out button's
-//                       aria-label. Needs --expect-text.
+//                       title. Needs --expect-text.
+//   --expect-name "<file name>"
+//                       after the pages are scrolled, fail unless each PDF.js
+//                       embed has role="group" and aria-label "PDF: <file
+//                       name>" in the DOM, and Chrome's accessibility tree
+//                       gives it role group and that name. Also fail unless
+//                       each toolbar control (zoom out, zoom in, download)
+//                       has a non-empty tree name, no tree description equal
+//                       to that name, and a title equal to that name, and
+//                       unless each embed without a toolbar has
+//                       data-toolbar="false".
+//   --plant wrongname|dupdesc|notoolbar
+//                       with --expect-name, plant a defect in the first
+//                       PDF.js embed; the run must then fail: wrongname
+//                       changes its aria-label to "PDF: wrong.pdf", dupdesc
+//                       gives its zoom-in button an aria-label equal to its
+//                       title, notoolbar removes its toolbar.
 // Set CHROME_PATH to use another Chrome or Chromium binary.
 //
 // On a RevealJS page the check goes to each slide with Reveal.slide() and
@@ -137,9 +153,10 @@ const DEVICES = {
 
 // one optional page or URL, plus flags that each take a value; anything else
 // (a misspelled flag, --flag=value) is an error rather than silently ignored
-const FLAGS = ["device", "expect-native", "expect-pdfjs", "expect-pages", "expect-links", "expect-failed", "expect-text", "plant", "alone", "remote"];
+const FLAGS = ["device", "expect-native", "expect-pdfjs", "expect-pages", "expect-links", "expect-failed", "expect-text", "expect-name", "plant", "alone", "remote"];
 const TEXT_PLANTS = ["notext", "swap", "visible", "gone"];
 const TREE_PLANTS = ["nolabel", "canvas", "noname"];
+const NAME_PLANTS = ["wrongname", "dupdesc", "notoolbar"];
 const args = process.argv.slice(2);
 const flags = {};
 const positional = [];
@@ -175,8 +192,18 @@ if (phrases && phrases.some((p) => !p)) {
   console.error("render_check: --expect-text needs a non-empty phrase for each page");
   process.exit(2);
 }
-if (plant && (!phrases || ![...TEXT_PLANTS, ...TREE_PLANTS].includes(plant))) {
-  console.error(`render_check: --plant must be ${[...TEXT_PLANTS, ...TREE_PLANTS].join(", ")}, with --expect-text`);
+const expectName = flags["expect-name"] ?? null;
+if (expectName === "") {
+  console.error("render_check: --expect-name needs a file name");
+  process.exit(2);
+}
+if (
+  plant &&
+  !((phrases && [...TEXT_PLANTS, ...TREE_PLANTS].includes(plant)) || (expectName && NAME_PLANTS.includes(plant)))
+) {
+  console.error(
+    `render_check: --plant must be ${[...TEXT_PLANTS, ...TREE_PLANTS].join(", ")} with --expect-text, or ${NAME_PLANTS.join(", ")} with --expect-name`
+  );
   process.exit(2);
 }
 if (alone && alone !== "http" && alone !== "file") {
@@ -339,7 +366,7 @@ async function treeFailures(page, slide) {
       const target =
         plant === "nolabel" ? last : plant === "canvas" ? last && last.querySelector("canvas") : first.querySelector(".embedpdf-toolbar button");
       if (!target) return null;
-      target.removeAttribute(plant === "canvas" ? "aria-hidden" : "aria-label");
+      target.removeAttribute(plant === "canvas" ? "aria-hidden" : plant === "noname" ? "title" : "aria-label");
       return plant;
     },
     slide,
@@ -379,6 +406,80 @@ async function treeFailures(page, slide) {
       for (const [el, name] of controls) {
         const node = el ? await snap(el) : null;
         if (!node || node.name !== name) out.push(`${at}: toolbar control named "${node ? node.name : "(missing)"}", not "${name}"`);
+      }
+    }
+  }
+  return { planted, failures: out, embeds: embeds.length };
+}
+
+// --expect-name, after the pages scroll: each PDF.js embed under a root is a
+// group named "PDF: <file name>", in the DOM and in Chrome's accessibility
+// tree. A name plant goes into the page's first PDF.js embed, when it is under
+// the root.
+async function nameFailures(page, slide) {
+  const where = slide === null ? "" : ` on slide ${slide + 1}`;
+  const root = slide === null ? page : (await page.evaluateHandle((k) => window.Reveal.getSlides()[k], slide)).asElement();
+  const planted = await page.evaluate(
+    (slide, plant, namePlants) => {
+      const root = slide === null ? document : window.Reveal.getSlides()[slide];
+      const first = document.querySelector(".embedpdf-pdfjs");
+      if (!namePlants.includes(plant) || !first || !root.contains(first)) return null;
+      if (plant === "wrongname") first.setAttribute("aria-label", "PDF: wrong.pdf");
+      if (plant === "dupdesc") {
+        const zoomIn = first.querySelectorAll(".embedpdf-toolbar button")[1];
+        if (!zoomIn) return null;
+        zoomIn.setAttribute("aria-label", zoomIn.title);
+      }
+      if (plant === "notoolbar") {
+        const toolbar = first.querySelector(".embedpdf-toolbar");
+        if (!toolbar) return null;
+        toolbar.remove();
+      }
+      return plant;
+    },
+    slide,
+    plant,
+    NAME_PLANTS
+  );
+  const name = "PDF: " + expectName;
+  const embeds = await root.$$(".embedpdf-pdfjs");
+  const out = [];
+  for (const [i, embed] of embeds.entries()) {
+    const at = `PDF.js embed ${i + 1}${where}`;
+    const attrs = await embed.evaluate((el) => ({ role: el.getAttribute("role"), label: el.getAttribute("aria-label") }));
+    if (attrs.role !== "group") out.push(`${at}: role attribute is ${attrs.role}, not group`);
+    if (attrs.label !== name) out.push(`${at}: aria-label is "${attrs.label}", not "${name}"`);
+    const node = await page.accessibility.snapshot({ root: embed, interestingOnly: false });
+    if (!node) out.push(`${at}: not in the accessibility tree`);
+    else {
+      if (node.role !== "group") out.push(`${at}: tree role is ${node.role}, not group`);
+      if (node.name !== name) out.push(`${at}: tree name is "${node.name}", not "${name}"`);
+    }
+    // toolbar controls: one name (the title), not repeated as a description
+    // an embed lacks a toolbar only when its shortcode set toolbar=false
+    const toolbar = await embed.$(".embedpdf-toolbar");
+    const toolbarOff = await embed.evaluate((el) => el.dataset.toolbar === "false");
+    if (!toolbar && !toolbarOff) out.push(`${at}: no toolbar, and toolbar=false is not set`);
+    if (toolbar) {
+      const buttons = await toolbar.$$("button");
+      const controls = [
+        ["zoom out", buttons[0]],
+        ["zoom in", buttons[1]],
+        ["download", await toolbar.$("a.embedpdf-download")],
+      ];
+      for (const [what, el] of controls) {
+        const c = `${at}, ${what} control`;
+        if (!el) {
+          out.push(`${c}: missing`);
+          continue;
+        }
+        const title = await el.evaluate((e) => e.getAttribute("title"));
+        const node = await page.accessibility.snapshot({ root: el, interestingOnly: false });
+        if (!node || !node.name) out.push(`${c}: no name in the accessibility tree`);
+        else {
+          if (node.description === node.name) out.push(`${c}: description repeats the name "${node.name}"`);
+          if (title !== node.name) out.push(`${c}: title "${title}" is not the name "${node.name}"`);
+        }
       }
     }
   }
@@ -431,6 +532,7 @@ try {
     }, slide);
   const textReports = [];
   const treeReports = [];
+  const nameReports = [];
   if (slides) {
     for (let k = 0; k < slides; k++) {
       await page.evaluate(async (k) => {
@@ -441,6 +543,7 @@ try {
       if (phrases) textReports.push(await measureText(page, k));
       await scrollPages(k);
       if (phrases) treeReports.push(await treeFailures(page, k));
+      if (expectName) nameReports.push(await nameFailures(page, k));
     }
   } else {
     if (phrases) textReports.push(await measureText(page, null));
@@ -455,6 +558,7 @@ try {
   }
   await new Promise((r) => setTimeout(r, 4000));
   if (phrases && !slides) treeReports.push(await treeFailures(page, null));
+  if (expectName && !slides) nameReports.push(await nameFailures(page, null));
 
   const res = await page.evaluate(async () => {
     const hasInk = (c) => {
@@ -536,9 +640,34 @@ try {
         failures: [...textReports.flatMap(textFailures), ...treeReports.flatMap((r) => r.failures)],
       }
     : undefined;
-  console.log(JSON.stringify({ device: deviceName || "chrome", alone, remote, ...res, text, consoleErrors }, null, 2));
+  const names = expectName
+    ? {
+        expectName,
+        plant,
+        planted: nameReports.map((r) => r.planted).find(Boolean) || null,
+        embeds: nameReports.reduce((n, r) => n + r.embeds, 0),
+        failures: nameReports.flatMap((r) => r.failures),
+      }
+    : undefined;
+  console.log(JSON.stringify({ device: deviceName || "chrome", alone, remote, ...res, text, names, consoleErrors }, null, 2));
+  if (names) {
+    if (plant && NAME_PLANTS.includes(plant) && !names.planted) {
+      console.error(`render_check: --plant ${plant} found nothing to plant in`);
+      await browser.close();
+      server?.close();
+      remoteServer?.close();
+      process.exit(2);
+    }
+    // every PDF.js embed must have been checked
+    if (names.embeds !== res.pdfjs || res.pdfjs === 0) {
+      console.error(`render_check: --expect-name checked ${names.embeds} embeds, of ${res.pdfjs} PDF.js embeds`);
+      process.exitCode = 1;
+    }
+    for (const f of names.failures) console.error("render_check: " + f);
+    if (names.failures.length) process.exitCode = 1;
+  }
   if (text) {
-    if (plant && !text.planted) {
+    if (plant && !NAME_PLANTS.includes(plant) && !text.planted) {
       console.error(`render_check: --plant ${plant} found nothing to plant in`);
       await browser.close();
       server?.close();
