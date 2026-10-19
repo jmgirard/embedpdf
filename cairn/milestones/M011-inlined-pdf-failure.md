@@ -84,29 +84,30 @@ Pass 1, 2026-10-19, at `24277b9` (Chromium 155.0.8059.39; "embedpdf iPhone" and 
 - spawned: diff-bug, blame-history, prior-review, ripple
 - diff-bug #1: nothing checks why the decoded inlined embed failed, so a broken PDF.js import passes the new page — follow-up, row "Inlined failure check gaps"
 - diff-bug #2: an undecodable inlined PDF loses its no-JS fallback link (a reader who also has the separate file loses that link) — reject, planned change (plan work log; DESIGN Known issues)
-- diff-bug #3: the new CLAUDE.md block lists only `--alone file` lines, while AC1 and AC2 need `--alone http` too — fix now (CLAUDE.md note)
+- diff-bug #3: the new CLAUDE.md block lists only `--alone file` lines, while AC1 and AC2 need `--alone http` too — fix now, fixed c1b3337 (CLAUDE.md note)
 - diff-bug #4: no plant on the decoded / not-decoded axis — follow-up, row "Inlined failure check gaps"
 - diff-bug #5: render_check reads the link's attributes and clicks the link in two separate reads — follow-up, row "Inlined failure check gaps"
-- diff-bug #6: the CDP download setting stays set after its folder is removed — fix now (reset to default in `finally`)
+- diff-bug #6: the CDP download setting stays set after its folder is removed — fix now, fixed c1b3337 (reset to default in `finally`)
 - diff-bug #7: dlnoname and dlhref plants navigate the page, so the reported reason can be a crash — follow-up, row "Inlined failure check gaps" (both plants were seen to exit 1 naming their defect)
 - diff-bug #8: the line count is compared with a count read from the page — reject, false as a silent pass: the `--expect-download` length is pinned to that count, and without the flag the count must be 0
 - diff-bug #9: the "document.pdf" name of a failed inlined embed is not checked — follow-up, row "Inlined failure check gaps"
-- diff-bug #10: one unwrapped long comment line in ios_check — fix now (rewrapped)
+- diff-bug #10: one unwrapped long comment line in ios_check — fix now, fixed c1b3337 (rewrapped)
 - blame-history #1: an inlined failure no longer opens a new tab, as M003 had it — reject, planned change (the user chose the download link at the plan question set); Safari's real download is in CLAUDE.md "Still unverified"
 - blame-history #2: the `button` link still names the separate file after a decode failure — follow-up, row "Decode failure button link" (already filed by the plan)
 - blame-history #3: no D-entry records that IP2 is not met for an undecodable inlined PDF — follow-up, row "Decode failure button link" extended: the annotation is the user's decision
 - blame-history #4: `--expect-failed` now also counts passing inlined embeds — reject, false as a defect: no existing line holds an inlined failure, and CLAUDE.md states the count
-- prior-review #1: a plain ios_check run passed a page whose `renderer=native` embed shows the inlined failure state — fix now (ios_check fails any inlined failure without `--expect-download`)
-- prior-review #2: render_check's download-plant "found nothing" exit ran before the inlined failures were printed — fix now (moved after them)
-- prior-review #3: render_check's exit paragraph omitted the `--expect-download` failures and the line count — fix now
+- prior-review #1: a plain ios_check run passed a page whose `renderer=native` embed shows the inlined failure state — fix now, fixed c1b3337 (ios_check fails any inlined failure without `--expect-download`)
+- prior-review #2: render_check's download-plant "found nothing" exit ran before the inlined failures were printed — fix now, fixed c1b3337 (moved after them)
+- prior-review #3: render_check's exit paragraph omitted the `--expect-download` failures and the line count — fix now, fixed c1b3337
 - prior-review #4: the failure link can download as "document.pdf" — follow-up, row "Inlined failure check gaps" (the name rule itself is in row "Embed name follow-ups")
 - prior-review #5: the page-wide line count lets one missing and one extra line pass — follow-up, row "Inlined failure check gaps"
 - prior-review #6: fixed waits (300 ms for extralog, 500 ms for a second file) — follow-up, row "Inlined failure check gaps"
 - prior-review #7: `process.exit` right after console output, with a larger JSON — follow-up, already in rows "Text check follow-ups" and "Embed name follow-ups"
 - prior-review #8: an undecodable PDF's `data-src` text stays in the DOM — reject, false as a regression: a decode failure kept it before this branch too
-- ripple #1: row "Embed name follow-ups" said a U+00A0 `data-src` on a `file://` page keeps the no-JS fallback — fix now (row corrected)
+- ripple #1: row "Embed name follow-ups" said a U+00A0 `data-src` on a `file://` page keeps the no-JS fallback — fix now, fixed c1b3337 (row corrected)
 - ripple #2: row "Inlined PDF failure link" describes the old behavior — reject, planned: step 9 hygiene graduates the row
-- ripple #3: render_check's `--expect-failed` header did not say it counts passing inlined embeds — fix now
+- ripple #3: render_check's `--expect-failed` header did not say it counts passing inlined embeds — fix now, fixed c1b3337
 - ripple #4: IP2's text does not mention the new Known issues exception — follow-up, row "Decode failure button link" (same as blame-history #3)
 - ripple #5: CLAUDE.md's remote paragraph describes `--expect-failed` by the "Open the PDF" link only — reject, true for the runs that paragraph lists; the new paragraph states the inlined count
 - After the fixes: the four render_check lines on `selfcontained_failed_test.html` exit 0; plants dlbytes and extralog exit 1 naming their defect; dltarget on `selfcontained_test.html` exits 2 after printing the entry-count failure; a plain ios_check run on the new page exits 1 naming embeds 1, 2, 3 (embed 3 is `renderer=native`); ios_check on the new page with `--expect-download`, `selfcontained_test.html`, and `percent_test.html` exits 0 on both simulators, `name_edge_test.html` on iPhone.
+- At `c1b3337`, the T6 runner again ran every CLAUDE.md check line with its variants: 68 runs, 0 failed.
