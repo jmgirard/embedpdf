@@ -141,7 +141,7 @@ by every viewer on the page, and canvas size is capped at 8,000,000 pixels
 with device pixel ratio clamped to 2, for constrained mobile devices. For
 screen readers, a PDF.js embed is a group named "PDF: " and its file name,
 or "PDF" when its address names none (corrected M010). A native embed's
-`<object>` has the same name as its `aria-label`, with no `title` (M012). `embedName()` passes
+`<object>` has the same name, set as its `aria-label`, with no `title` (M012). `embedName()` passes
 `fileName()` the address in `data-src`, or the download link's when
 `data-src` is a `data:` address (whitespace before it allowed). The name is the last path segment when it
 ends in `.pdf`, else a query value's last segment that ends in `.pdf`, else
