@@ -129,7 +129,10 @@
 // exactly --expect-pages page containers, and every page canvas has ink, and
 // the number of such embeds equals --expect-embeds. With --expect-download,
 // every embed must show the inlined failure state that flag describes instead
-// of using PDF.js with ink (the --expect-embeds count still applies). With --remote blocked or --missing-pdfs, each such embed must instead show the load-failure state:
+// of using PDF.js with ink (the --expect-embeds count still applies); without
+// it, any embed (renderer=native too) with an inlined PDF in the load-failure
+// state fails the run. With --remote blocked or --missing-pdfs, each such
+// embed must instead show the load-failure state:
 // the text "This PDF cannot be shown here.", an "Open the PDF" link to the
 // same absolute URL as data-src with target _blank, and no "Download PDF
 // file." link. With --remote blocked its data-src must be on the remote
@@ -799,6 +802,12 @@ try {
     // the viewer logs one "failed to render an inlined PDF" line per such embed
     const lines = report.errors.filter((t) => t.startsWith("embedpdf: failed to render an inlined PDF")).length;
     if (lines !== inl.length) failures.push(`${lines} "failed to render an inlined PDF" errors for ${inl.length} failed embeds with an inlined PDF`);
+  }
+  // without --expect-download, an embed with an inlined PDF in the
+  // load-failure state fails the run, renderer=native included
+  if (!expectDownloads && !report.stuck) {
+    const inl = report.embeds.filter((e) => e.failure.text && e.inlined);
+    if (inl.length) failures.push(`${inl.length} embeds with an inlined PDF are in the load-failure state (embeds ${inl.map((e) => e.index).join(", ")}); pass --expect-download`);
   }
   // the full text is long; the report keeps its length
   for (const e of report.embeds) for (const b of e.text) if (b) b.text = `${normalize(b.text).length} characters`;

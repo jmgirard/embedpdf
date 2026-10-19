@@ -140,7 +140,8 @@ file name. In render_check, a click on it must save that file in Chromium. `-`
 means an address that did not decode and no link. Both scripts also count one
 "embedpdf: failed to render an inlined PDF" error per such embed. In
 render_check, `--expect-failed` also counts the inlined embeds that pass
-`--expect-download`:
+`--expect-download`. Run each `--alone file` line below again with `--alone
+http`:
 
 ```
 node tests/render_check.mjs selfcontained_failed_test.html --alone file --expect-native 0 --expect-pdfjs 0 --expect-failed 3 --expect-download "files/broken.pdf|-|-"

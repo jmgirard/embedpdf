@@ -64,7 +64,8 @@
 //                       embed in that state fails the run. An embed whose
 //                       PDF was inlined (no data-src left, or a data-src
 //                       that is still a data: address) is held to
-//                       --expect-download instead of the link rule here.
+//                       --expect-download instead of the link rule here,
+//                       and n also counts each such embed that passes it.
 //   --expect-download "<path>|-|…"
 //                       one entry per embed in the load-failure state whose
 //                       PDF was inlined, in page order. A path (from the
@@ -217,8 +218,11 @@
 //
 // Exits non-zero if the page does not load or no embed is hydrated, if a
 // PDF.js embed has no pages or has a page whose canvas is missing, has no
-// ink, or cannot be read, if an expected count does not match, or if an
-// --expect-text or --expect-name check fails. Exits 2 on a bad argument,
+// ink, or cannot be read, if an expected count does not match, if an
+// --expect-text, --expect-name, or --expect-download check fails, if an
+// embed with an inlined PDF is in the load-failure state without
+// --expect-download, or if the "failed to render an inlined PDF" lines do not
+// number one per such embed. Exits 2 on a bad argument,
 // when a server cannot start, or when --plant finds nothing to plant in.
 
 import fs from "node:fs";
@@ -1295,13 +1299,6 @@ try {
     remoteServer?.close();
     process.exit(2);
   }
-  if (DOWNLOAD_PLANTS.includes(plant) && !res.inkPlanted) {
-    console.error(`render_check: --plant ${plant} found nothing to plant in`);
-    await browser.close();
-    server?.close();
-    remoteServer?.close();
-    process.exit(2);
-  }
   // Each failed embed whose PDF was inlined, against its --expect-download
   // entry. "-": the data: address did not decode, and the embed holds no
   // link. A path: the PDF decoded, and the embed holds one "Download the PDF"
@@ -1326,6 +1323,8 @@ try {
       }
       return { error: "the click saved no file within 10 s" };
     } finally {
+      // no later download goes to the folder removed here
+      await cdp.send("Browser.setDownloadBehavior", { behavior: "default" }).catch(() => {});
       fs.rmSync(dir, { recursive: true, force: true });
     }
   };
@@ -1374,6 +1373,15 @@ try {
   if (inlinedLines !== res.inlinedFailed.length) {
     console.error(`render_check: ${inlinedLines} "failed to render an inlined PDF" errors for ${res.inlinedFailed.length} failed embeds with an inlined PDF`);
     ok = false;
+  }
+  // after the inlined failures are printed, so a real defect that left
+  // nothing to plant in is still named
+  if (DOWNLOAD_PLANTS.includes(plant) && !res.inkPlanted) {
+    console.error(`render_check: --plant ${plant} found nothing to plant in`);
+    await browser.close();
+    server?.close();
+    remoteServer?.close();
+    process.exit(2);
   }
   if (res.native + res.pdfjs + res.failed.length + res.inlinedFailed.length === 0) {
     // a wrong page, or viewer JS that never loaded, must not pass as "no PDF.js blocks"
