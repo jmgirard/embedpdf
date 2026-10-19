@@ -183,8 +183,8 @@ try {
 // Read a whole-file answer for 500 ms, then drop it: a slow answer has given
 // part of the file by then (about 3 pieces of 4096 bytes; the check allows
 // less than half the file, so a late timer does not fail it).
-async function bytesIn500ms(url) {
-  const r = await fetch(url);
+async function bytesIn500ms(url, headers = {}) {
+  const r = await fetch(url, { headers });
   const reader = r.body.getReader();
   let got = 0;
   const until = Date.now() + 500;
@@ -211,8 +211,13 @@ for (const kind of ["docs", "remote cors"]) {
   const slow = await start({ slowWhole: true });
   const at = `http://127.0.0.1:${slow.address().port}/`;
   try {
-    const part = await bytesIn500ms(at + "files/large.pdf");
+    // the remote server slows only a read with an Origin header (a CORS read)
+    const corsRead = { Origin: "http://127.0.0.1:1" };
+    const part = await bytesIn500ms(at + "files/large.pdf", corsRead);
     check(`${kind} slowWhole: large.pdf is sent in pieces`, part.status === 200 && part.length === String(LARGE.length) && part.got > 0 && part.got < LARGE.length / 2, `${part.status}, ${part.got} of ${part.length} bytes in 500 ms`);
+    const bare = await bytesIn500ms(at + "files/large.pdf");
+    if (kind === "docs") check("docs slowWhole: large.pdf is sent in pieces with no Origin header too", bare.status === 200 && bare.got > 0 && bare.got < LARGE.length / 2, `${bare.got} of ${bare.length} bytes in 500 ms`);
+    else check(`${kind} slowWhole: large.pdf comes whole within 500 ms with no Origin header (a native viewer's read)`, bare.status === 200 && bare.got === LARGE.length, `${bare.got} of ${bare.length} bytes in 500 ms`);
     const t0 = Date.now();
     const small = await fetch(at + "sample.pdf");
     const smallBody = Buffer.from(await small.arrayBuffer());
@@ -313,6 +318,18 @@ for (const kind of ["docs", "remote cors"]) {
       } else {
         check(`remote ${mode}: OPTIONS allows any origin`, o.headers.get("access-control-allow-origin") === "*", o.headers.get("access-control-allow-origin"));
         check(`remote ${mode}: OPTIONS allows Range`, /(^|,\s*)range(\s*,|$)/i.test(o.headers.get("access-control-allow-headers") || ""), o.headers.get("access-control-allow-headers"));
+      }
+      // the request log: one entry per file answer, in order; no entry for
+      // OPTIONS or a 404
+      if (mode === "missing") {
+        check("remote missing: requests logs no 404 or OPTIONS answer", remote.requests.length === 0, JSON.stringify(remote.requests));
+      } else {
+        const q = await fetch(at + "?x=1", { headers: { Origin: "http://127.0.0.1:1", Range: "bytes=0-9" } });
+        await q.arrayBuffer();
+        const log = remote.requests;
+        check(`remote ${mode}: requests logs the five file answers and not OPTIONS`, same(log.map((r) => r.status), [206, 206, 416, 200, 206]), JSON.stringify(log.map((r) => r.status)));
+        check(`remote ${mode}: a request with no Origin header logs origin null`, log[0] && log[0].origin === null && log[0].range === "bytes=0-99" && log[0].search === "", JSON.stringify(log[0]));
+        check(`remote ${mode}: a request logs its Origin, Range, path, and query`, same(log[4], { method: "GET", path: "/sample.pdf", search: "?x=1", origin: "http://127.0.0.1:1", range: "bytes=0-9", status: 206 }), JSON.stringify(log[4]));
       }
     } finally {
       remote.close();

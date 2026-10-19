@@ -56,7 +56,7 @@
 //                          content-visibility hidden on it or an element that
 //                          contains it. Whitespace is collapsed first.
 //                          Checks only embeds not set to renderer=native;
-//                          cannot be combined with --remote or --missing-pdfs.
+//                          cannot be combined with --remote blocked or --missing-pdfs.
 //   --slow-text <ms>       test aid, with --expect-text: after the wait above,
 //                          empty the text of every PDF.js page the viewer
 //                          filled and put it back one page every <ms> ms
@@ -70,7 +70,7 @@
 //                          its expected aria-label ("PDF: <file name>",
 //                          numbered or "PDF" as below) in the DOM (Safari's
 //                          accessibility tree is not read); cannot be
-//                          combined with --remote or --missing-pdfs. Also fail
+//                          combined with --remote blocked or --missing-pdfs. Also fail
 //                          unless each renderer=native embed shows the native
 //                          viewer and its <object> has that aria-label and no
 //                          title. One name stands for the --expect-native plus
@@ -118,12 +118,23 @@
 //                          check must then fail
 //   --alone yes|no         yes: serve a copy of the page from an empty
 //                          temporary directory instead of docs/ (default no)
-//   --remote blocked       serve the PDFs from a second server on another port
-//                          (another origin) that sends no
-//                          Access-Control-Allow-Origin header, and point each
-//                          embed's data-src and links at it. A page whose
-//                          embeds hold their PDF inline (self-contained)
-//                          exits 2 before the simulator opens.
+//   --remote blocked|cors  serve the PDFs from a second server on another port
+//                          (another origin), and point each embed's data-src
+//                          and links at it. blocked: the server sends no
+//                          Access-Control-Allow-Origin header, and each embed
+//                          not set to renderer=native must show the
+//                          load-failure state (below). cors: it sends
+//                          Access-Control-Allow-Origin: *, every check of a
+//                          run without --remote applies, each embed's
+//                          data-src must be on that server, and each
+//                          renderer=native embed must show the native viewer
+//                          with an <object> address on that server, for which
+//                          the server answered a GET with no Origin header.
+//                          A page whose embeds hold their PDF inline
+//                          (self-contained) exits 2 before the simulator
+//                          opens. Not with --alone yes or --expect-download;
+//                          blocked not with --plant, --expect-text,
+//                          --expect-name, or --expect-ranges.
 //   --missing-pdfs         takes no value: the page's own server answers HTTP
 //                          404 for every path that ends in .pdf. Each embed
 //                          not set to renderer=native must then show the
@@ -133,19 +144,27 @@
 //                          ResponseException, one line per embed. Needs
 //                          --expect-embeds above 0. Not with --remote,
 //                          --alone yes, --plant, --expect-text, --expect-name.
-//   --expect-ranges        takes no value: the docs server sends each
-//                          whole-file answer for a .pdf file over SLOW_ABOVE
-//                          bytes (tests/serve_docs.mjs) slowly, so PDF.js
-//                          loads it by byte ranges. Fail unless the server
-//                          answered at least one byte-range request (HTTP
-//                          206) for each PDF.js embed's address; the report's
-//                          "ranges" gives the count per path. Answers are
-//                          counted per address, so the run exits 2 when a
-//                          PDF.js embed's address is also another embed's,
-//                          or when its PDF under docs/ is not over
-//                          SLOW_ABOVE bytes (PDF.js then asks for no range).
-//                          Not with --remote, --missing-pdfs, or --alone yes.
-//   --plant noranges       with --expect-ranges: the server ignores every
+//   --expect-ranges        takes no value: the server that serves the PDFs
+//                          (the docs server, or the remote one with --remote
+//                          cors, only to requests with an Origin header)
+//                          sends each whole-file answer for a .pdf file over
+//                          SLOW_ABOVE bytes (tests/serve_docs.mjs) slowly, so
+//                          PDF.js loads it by byte ranges. Fail
+//                          unless that server answered at least one
+//                          byte-range request (HTTP 206) for each PDF.js
+//                          embed's address; the report's "ranges" gives the
+//                          count per path that the check reads. Answers are
+//                          counted per address
+//                          path, so the run exits 2 when a PDF.js embed's
+//                          address is also another embed's. With --remote
+//                          cors only answers to requests with an Origin
+//                          header count (a native viewer's requests have
+//                          none), so there it exits 2 only when the address
+//                          is also another PDF.js embed's. It also exits 2
+//                          when its PDF under docs/ is not over SLOW_ABOVE
+//                          bytes (PDF.js then asks for no range). Not with
+//                          --remote blocked, --missing-pdfs, or --alone yes.
+//   --plant noranges       with --expect-ranges: that server ignores every
 //                          Range header and sends the whole file (HTTP 200),
 //                          so the check must fail and name each PDF.js
 //                          embed's address; with no PDF.js embed it exits 2
@@ -234,14 +253,18 @@ if (alone !== "yes" && alone !== "no") {
   process.exit(2);
 }
 const remote = opt("remote", "");
-// no cors mode: on example.html the renderer=native embed loads the same URL,
-// and Safari then fails the PDF.js fetch of it even with the header
-if (remote && remote !== "blocked") {
-  console.error("ios_check: --remote must be blocked");
+if (remote && remote !== "blocked" && remote !== "cors") {
+  console.error("ios_check: --remote must be blocked or cors");
   process.exit(2);
 }
-if (remote && (alone === "yes" || plant)) {
-  console.error("ios_check: --remote cannot be combined with --alone yes or --plant");
+// blocked: no embed shows a PDF, so no check that reads one applies
+const blocked = remote === "blocked";
+if (remote && alone === "yes") {
+  console.error("ios_check: --remote cannot be combined with --alone yes");
+  process.exit(2);
+}
+if (blocked && plant) {
+  console.error("ios_check: --remote blocked cannot be combined with --plant");
   process.exit(2);
 }
 if (missingPdfs && (remote || alone === "yes" || plant)) {
@@ -262,8 +285,8 @@ if (phrases && phrases.some((p) => !p)) {
   console.error("ios_check: --expect-text needs a non-empty phrase for each page");
   process.exit(2);
 }
-if (phrases && (remote || missingPdfs)) {
-  console.error("ios_check: --expect-text cannot be combined with --remote or --missing-pdfs (no embed shows a PDF there)");
+if (phrases && (blocked || missingPdfs)) {
+  console.error("ios_check: --expect-text cannot be combined with --remote blocked or --missing-pdfs (no embed shows a PDF there)");
   process.exit(2);
 }
 const slowText = opt("slow-text", "");
@@ -287,8 +310,8 @@ if (RANGE_PLANTS.includes(plant) && !expectRanges) {
   console.error(`ios_check: --plant ${plant} needs --expect-ranges`);
   process.exit(2);
 }
-if (expectRanges && (remote || missingPdfs || alone === "yes")) {
-  console.error("ios_check: --expect-ranges cannot be combined with --remote, --missing-pdfs, or --alone yes");
+if (expectRanges && (blocked || missingPdfs || alone === "yes")) {
+  console.error("ios_check: --expect-ranges cannot be combined with --remote blocked, --missing-pdfs, or --alone yes");
   process.exit(2);
 }
 // one entry per embed on the page, in page order, each in the load-failure
@@ -317,8 +340,8 @@ if (expectName !== null && expectName.split("|").some((n) => !n)) {
 // per embed in page order; one name stands for the --expect-native plus
 // --expect-embeds embeds
 const expectLabels = expectName === null ? null : expectedNames(expectName.split("|"), expectNative + expectEmbeds);
-if (expectName && (remote || missingPdfs)) {
-  console.error("ios_check: --expect-name cannot be combined with --remote or --missing-pdfs (no embed shows a PDF there)");
+if (expectName && (blocked || missingPdfs)) {
+  console.error("ios_check: --expect-name cannot be combined with --remote blocked or --missing-pdfs (no embed shows a PDF there)");
   process.exit(2);
 }
 if (NAME_PLANTS.includes(plant) && !expectName) {
@@ -618,7 +641,7 @@ const PROBE = `<script>
         // a native embed's name is on its <object>
         object: (() => {
           const o = el.querySelector("object");
-          return o ? { label: o.getAttribute("aria-label"), title: o.getAttribute("title") } : null;
+          return o ? { label: o.getAttribute("aria-label"), title: o.getAttribute("title"), data: o.data } : null;
         })(),
         toolbarOff: el.dataset.toolbar === "false",
         indicator: (() => {
@@ -686,7 +709,7 @@ if (alone === "yes") {
 }
 
 const remoteServer = remote
-  ? await serveRemote(remote).catch((err) => {
+  ? await serveRemote(remote, { slowWhole: expectRanges, noRanges: plant === "noranges" }).catch((err) => {
       console.error(`ios_check: cannot start the remote server: ${err.message}`);
       process.exit(2);
     })
@@ -778,8 +801,24 @@ try {
       if (e.object.title !== null) failures.push(`embed ${e.index}: <object> has a title, "${e.object.title}"`);
     }
   }
+  // --remote cors: each renderer=native embed shows the native viewer with the
+  // PDF from the remote server, and that server answered a request for it with
+  // no Origin header (a CORS read, such as PDF.js's, sends one)
+  for (const e of remote === "cors" && !report.stuck ? natives : []) {
+    if (e.renderer !== "native") failures.push(`embed ${e.index}: renderer ${e.renderer}, expected native`);
+    else if (!e.object || !e.object.data.startsWith(remoteBase)) failures.push(`embed ${e.index}: <object> address ${JSON.stringify(e.object && e.object.data)} is not on ${remoteBase}`);
+    else {
+      const p = new URL(e.object.data).pathname;
+      if (!remoteServer.requests.some((r) => r.path === p && r.method === "GET" && r.origin === null)) {
+        failures.push(`embed ${e.index}: the remote server answered no request for ${p} without an Origin header, so the native viewer did not load it`);
+      }
+    }
+  }
   for (const [i, e] of (report.stuck ? [] : checked).entries()) {
-    if (remote) {
+    if (remote === "cors" && !e.failure.expected.startsWith(remoteBase)) {
+      failures.push(`embed ${e.index}: ${e.failure.expected} is not on ${remoteBase}`);
+    }
+    if (blocked) {
       // Safari names no cause beyond "Load failed"; it must be the fetch of
       // this embed's remote PDF that failed, not the PDF.js import
       const logged = report.errors.some((t) => t.includes("embedpdf: failed to render " + e.failure.expected) && t.includes("Load failed"));
@@ -802,7 +841,7 @@ try {
     else if (e.pages !== expectPages) failures.push(`embed ${e.index}: ${e.pages} page containers, expected ${expectPages}`);
     else if (!e.ink.every(Boolean)) failures.push(`embed ${e.index}: pages without ink: ${e.ink.map((v, i) => (v ? null : i + 1)).filter(Boolean).join(", ")}`);
     // --expect-name: the embed's role and name, read from the DOM
-    if (expectLabels && !remote && e.renderer === "pdfjs") {
+    if (expectLabels && !blocked && e.renderer === "pdfjs") {
       const name = expectLabels[e.index - 1];
       if (e.role !== "group") failures.push(`embed ${e.index}: role attribute is ${e.role}, not group`);
       if (e.label !== name) failures.push(`embed ${e.index}: aria-label is "${e.label}", not "${name}"`);
@@ -819,7 +858,7 @@ try {
       }
     }
     // --expect-text: the hidden text, read before the probe scrolled
-    if (phrases && !remote && e.renderer === "pdfjs") {
+    if (phrases && !blocked && e.renderer === "pdfjs") {
       if (e.text.length !== phrases.length) failures.push(`embed ${e.index}: ${e.text.length} pages read for text, --expect-text gives ${phrases.length} phrases`);
       e.text.forEach((b, j) => {
         const at = `embed ${e.index}, page ${j + 1}`;
@@ -884,26 +923,40 @@ try {
     if (inl.length) failures.push(`${inl.length} embeds with an inlined PDF are in the load-failure state (embeds ${inl.map((e) => e.index).join(", ")}); pass --expect-download`);
   }
   // --expect-ranges: each PDF.js embed's PDF must have had at least one 206
-  // answer from the docs server (counted per address, so embeds that share
-  // an address share the count)
-  const ranges = expectRanges ? Object.fromEntries(server.rangeCounts) : undefined;
+  // answer from the server that serves the PDFs (the remote one with --remote
+  // cors), counted per address path, so embeds that share an address share
+  // the count. With --remote cors only answers to requests with an Origin
+  // header count: PDF.js reads that server by CORS, which sends one, and a
+  // native viewer's request sends none, so a native embed of the same address
+  // is counted apart.
+  const pdfServer = remoteServer || server;
+  const byOrigin = remote === "cors";
+  // the report's counts are the ones the check reads
+  const counted = new Map();
+  for (const r of pdfServer.requests) if (r.status === 206 && r.origin !== null) counted.set(r.path, (counted.get(r.path) || 0) + 1);
+  const ranges = expectRanges ? Object.fromEntries(byOrigin ? counted : pdfServer.rangeCounts) : undefined;
   // a page on which the check cannot tell PDF.js loaded by ranges is a bad
   // argument (exit 2): a PDF too small for PDF.js to ask for ranges, or an
-  // address that another embed also loads
+  // address that another embed (with --remote cors, another PDF.js embed)
+  // also loads
   const misuse = [];
   if (expectRanges && !report.stuck) {
-    const origin = `http://127.0.0.1:${server.address().port}`;
+    const origin = `http://127.0.0.1:${pdfServer.address().port}`;
     const pdfjsEmbeds = report.embeds.filter((e) => e.renderer === "pdfjs");
     if (plant === "noranges" && !pdfjsEmbeds.length) misuse.push("--plant noranges found nothing to plant in: no embed uses PDF.js");
     for (const e of pdfjsEmbeds) {
-      if (report.embeds.filter((o) => o.failure.expected === e.failure.expected).length > 1) misuse.push(`embed ${e.index}: ${e.failure.expected} is the address of more than one embed, so its count would be shared`);
+      const sharing = byOrigin ? pdfjsEmbeds : report.embeds;
+      if (sharing.filter((o) => o.failure.expected === e.failure.expected).length > 1) misuse.push(`embed ${e.index}: ${e.failure.expected} is the address of more than one ${byOrigin ? "PDF.js embed" : "embed"}, so its count would be shared`);
       const file = docsFile(new URL(e.failure.expected).pathname.slice(1));
       if (file && fs.statSync(file).size <= SLOW_ABOVE) misuse.push(`embed ${e.index}: ${e.failure.expected} is ${fs.statSync(file).size} bytes, not over ${SLOW_ABOVE}, so PDF.js does not ask for ranges`);
     }
     if (!pdfjsEmbeds.length) failures.push("--expect-ranges given, but no embed uses PDF.js");
     for (const e of pdfjsEmbeds) {
       const u = new URL(e.failure.expected);
-      if (u.origin !== origin || !server.rangeCounts.get(u.pathname)) {
+      const count = byOrigin
+        ? pdfServer.requests.filter((r) => r.path === u.pathname && r.status === 206 && r.origin !== null).length
+        : pdfServer.rangeCounts.get(u.pathname);
+      if (u.origin !== origin || !count) {
         failures.push(`embed ${e.index}: no byte-range request (HTTP 206) answered for ${e.failure.expected}`);
       }
     }
@@ -917,6 +970,8 @@ try {
     missingPdfs,
     ...report,
     ranges,
+    // the PDF requests the remote server answered
+    remoteRequests: remoteServer ? remoteServer.requests.filter((r) => /\.pdf$/i.test(r.path)) : undefined,
     pass: failures.length === 0,
     failures,
   };

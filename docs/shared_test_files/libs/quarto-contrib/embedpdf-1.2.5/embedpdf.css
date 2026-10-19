@@ -1,0 +1,141 @@
+/* embedpdf extension styles */
+
+.embedpdf {
+  margin: 1rem 0;
+}
+
+.embedpdf.embedpdf-pdfjs {
+  border: 1px solid rgba(128, 128, 128, 0.35);
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgba(128, 128, 128, 0.08);
+}
+
+/* PDF.js could not load the PDF: a message and a link that opens it */
+.embedpdf.embedpdf-failed {
+  border: 1px solid rgba(128, 128, 128, 0.35);
+  border-radius: 4px;
+  background: rgba(128, 128, 128, 0.08);
+  padding: 0.75rem 1rem;
+}
+
+.embedpdf-failed-text {
+  margin: 0;
+}
+
+.embedpdf-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.35);
+  background: rgba(128, 128, 128, 0.12);
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.embedpdf-toolbar button {
+  appearance: none;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  width: 1.7rem;
+  height: 1.7rem;
+  cursor: pointer;
+}
+
+.embedpdf-toolbar button:hover {
+  background: rgba(128, 128, 128, 0.2);
+}
+
+.embedpdf-pageinfo {
+  position: relative;
+  margin-left: 0.25rem;
+  opacity: 0.8;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* the indicator's words for screen readers ("Page 1 of 2"), not shown; the
+   shown "1 / 2" is hidden from screen readers */
+.embedpdf-pageinfo-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.embedpdf-download {
+  margin-left: auto;
+  text-decoration: none;
+  font-size: 1.1rem;
+  color: inherit;
+}
+
+.embedpdf-pages {
+  overflow: auto;
+  height: 60vh;
+  padding: 0.5rem;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+}
+
+.embedpdf-page {
+  position: relative;
+  width: 100%;
+  margin: 0 auto 0.5rem auto;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.embedpdf-page canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* a page's text: read by screen readers, not shown and not selectable */
+.embedpdf-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  /* keep the PDF's line breaks, but do not wrap each word in the 1px box */
+  white-space: pre;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* download button (button= kwarg) */
+.embedpdf-btn {
+  display: inline-block;
+  padding: 10px 18px;
+  background-color: #007acc;
+  color: white !important;
+  font-size: 15px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+.embedpdf-btn:hover {
+  background-color: #005fa3;
+  color: white;
+}

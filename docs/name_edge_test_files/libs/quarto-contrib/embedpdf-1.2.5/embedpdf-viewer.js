@@ -149,6 +149,26 @@ function showFailure(el, opts) {
   if (opts.width) el.style.width = /^\d+$/.test(opts.width) ? opts.width + "px" : opts.width;
 }
 
+// The address PDF.js loads a (not inlined) PDF from. Safari refuses a page's
+// cross-origin read (PDF.js's fetch) of an address that a native <object> on
+// the page loaded, before it sends a request ("Load failed"), even when the
+// other site sends Access-Control-Allow-Origin (desktop Safari 27.0.1, iOS
+// 27.0); a read of the same address with an added query works (desktop Safari
+// 27.0.1, and PDF.js in iOS 27.0). So for a PDF on
+// another site that a native embed on the page also shows, PDF.js adds
+// "embedpdf=pdfjs" to the query, in every browser, and still loads the PDF by
+// byte ranges.
+function pdfjsAddress(src) {
+  const url = new URL(src, document.baseURI);
+  const href = url.href;
+  url.hash = "";
+  // both origins from URL, since a file: page's location.origin can differ
+  // from its URL origin ("null") in some browsers
+  if (url.origin === new URL(location.href).origin || !nativeAddresses.has(url.href)) return href;
+  const sep = !url.search ? (url.href.endsWith("?") ? "" : "?") : url.href.endsWith("&") ? "" : "&";
+  return url.href + sep + "embedpdf=pdfjs";
+}
+
 async function hydratePdfjs(el, opts) {
   let doc, page1;
   try {
@@ -157,7 +177,7 @@ async function hydratePdfjs(el, opts) {
     // holds its bytes as an array
     const source = opts.blob
       ? { data: new Uint8Array(await opts.blob.arrayBuffer()) }
-      : { url: new URL(opts.src, document.baseURI).href };
+      : { url: pdfjsAddress(opts.src) };
     doc = await pdfjs.getDocument(source).promise;
     page1 = await doc.getPage(1);
   } catch (err) {
@@ -536,6 +556,22 @@ async function hydrate(el, name) {
 // one failure never stops the others
 const placeholders = [...document.querySelectorAll("div.embedpdf")];
 const names = embedNames(placeholders);
+// the addresses (no #fragment) that native embeds on the page load
+// (pdfjsAddress); an inlined PDF gets a blob: URL instead
+const nativeAddresses = new Set(
+  placeholders
+    .filter((el) => el.dataset.src && !/^\s*data:/i.test(el.dataset.src) && !usesPdfjs(el))
+    .map((el) => {
+      // an address that is no URL fails in its own embed, not here
+      try {
+        const url = new URL(el.dataset.src, document.baseURI);
+        url.hash = "";
+        return url.href;
+      } catch {
+        return null;
+      }
+    })
+);
 placeholders.forEach((el) => {
   const label = /^\s*data:/i.test(el.dataset.src || "") ? "an inlined PDF" : el.dataset.src;
   hydrate(el, names.get(el)).catch((err) => console.error("embedpdf: failed to render " + label, err));

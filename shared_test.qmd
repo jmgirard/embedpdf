@@ -1,0 +1,19 @@
+---
+title: "embedpdf with one PDF in a native and a PDF.js embed"
+resources:
+  - "files/large.pdf"
+---
+
+Both embeds show `files/large.pdf`, the PDF of 14 pages and over 128 KB that
+`large_test.qmd` also shows. The native embed comes first and the PDF.js
+embed second. The checks in `tests/` serve this PDF from another site
+(`--remote cors`), to check that the PDF.js embed loads it by byte ranges
+while the native embed on the same page shows the same PDF.
+
+## Native
+
+{{< pdf files/large.pdf renderer=native >}}
+
+## PDF.js
+
+{{< pdf files/large.pdf renderer=pdfjs >}}

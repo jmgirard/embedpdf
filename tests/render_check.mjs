@@ -215,14 +215,20 @@
 //                       to plant in unless that embed is the one scrolled
 //                       to page 2).
 //   --expect-ranges     takes no value: the server that serves the PDFs (the
-//                       page's server, or the remote one with --remote cors)
+//                       page's server, or the remote one with --remote cors,
+//                       which slows only requests with an Origin header)
 //                       sends each whole-file answer for a .pdf file over
 //                       SLOW_ABOVE bytes (tests/serve_docs.mjs) slowly, so
 //                       PDF.js loads it by byte ranges. Fail unless that
 //                       server answered at least one byte-range request
 //                       (HTTP 206) for each PDF.js embed's address. Answers
-//                       are counted per address, so the run exits 2 when a
-//                       PDF.js embed's address is also another embed's, or
+//                       are counted per address path (any ?query counts),
+//                       so the run exits 2 when a PDF.js embed's address is
+//                       also another embed's. With --remote cors only
+//                       answers to requests with an Origin header count, as
+//                       a native viewer's requests have none, so there the
+//                       run exits 2 only when the address is also another
+//                       PDF.js embed's. It also exits 2
 //                       when its PDF under docs/ is not over SLOW_ABOVE
 //                       bytes (PDF.js then asks for no range). Not with
 //                       --alone, --missing-pdfs, a URL, or --remote
@@ -469,7 +475,8 @@ const cannotServe = (what) => (err) => {
   process.exit(2);
 };
 // --expect-ranges: the server that serves the PDFs sends a whole large file
-// slowly, so PDF.js loads it by ranges; --plant noranges makes it ignore
+// slowly (the remote one only to requests with an Origin header), so PDF.js
+// loads it by ranges; --plant noranges makes it ignore
 // every Range header
 const rangeOpts = { slowWhole: expectRanges, noRanges: plant === "noranges" };
 const remoteServer = remote ? await serveRemote(remote, rangeOpts).catch(cannotServe("remote")) : null;
@@ -1547,14 +1554,22 @@ try {
     // server that serves the PDFs (the remote one with --remote cors)
     const pdfServer = remoteServer || server;
     const origin = `http://127.0.0.1:${pdfServer.address().port}`;
+    // With --remote cors, PDF.js reads the remote server by CORS, which sends
+    // an Origin header, and a native viewer's request sends none, so only 206
+    // answers to requests with an Origin header count: a native embed of the
+    // same address is counted apart. (This script's own read of a native
+    // embed's PDF sends an Origin header too, but asks for the whole file, so
+    // it gets a 200, sent slowly for a large PDF.)
+    // Two PDF.js embeds of one address still share a count.
+    const byOrigin = remote === "cors";
     // a page on which the check cannot tell PDF.js loaded by ranges is a bad
     // argument (exit 2): a PDF too small for PDF.js to ask for ranges, or an
-    // address that another embed (such as a native one, whose viewer can ask
-    // for ranges too) also loads
+    // address that another embed (without --remote cors, a native one too,
+    // whose viewer can ask for ranges) also loads
     const misuse = [];
     if (plant === "noranges" && res.pdfjsSrcs.length === 0) misuse.push("--plant noranges found nothing to plant in: no embed uses PDF.js");
     for (const src of res.pdfjsSrcs) {
-      if (res.embedSrcs.filter((s) => s === src).length > 1) misuse.push(`${src} is the address of more than one embed, so its count would be shared`);
+      if ((byOrigin ? res.pdfjsSrcs : res.embedSrcs).filter((s) => s === src).length > 1) misuse.push(`${src} is the address of more than one ${byOrigin ? "PDF.js embed" : "embed"}, so its count would be shared`);
       const file = docsFile(new URL(src).pathname.slice(1));
       if (file && fs.statSync(file).size <= SLOW_ABOVE) misuse.push(`${src} is ${fs.statSync(file).size} bytes, not over ${SLOW_ABOVE}, so PDF.js does not ask for ranges`);
     }
@@ -1571,7 +1586,10 @@ try {
     }
     for (const src of res.pdfjsSrcs) {
       const u = new URL(src);
-      const count = u.origin === origin ? pdfServer.rangeCounts.get(u.pathname) || 0 : 0;
+      const count =
+        u.origin !== origin ? 0
+        : byOrigin ? pdfServer.requests.filter((r) => r.path === u.pathname && r.status === 206 && r.origin !== null).length
+        : pdfServer.rangeCounts.get(u.pathname) || 0;
       if (count === 0) {
         console.error(`render_check: --expect-ranges: no byte-range request (HTTP 206) answered for ${src}${u.origin === origin ? "" : ` (not on ${origin})`}`);
         ok = false;
