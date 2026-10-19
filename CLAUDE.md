@@ -81,8 +81,8 @@ checks that each toolbar control's name is its tooltip and is not
 repeated as its description. `--expect-name "a.pdf|b.pdf"`
 gives one name per PDF.js embed in page order, as on `revealjs_test.html`. The
 list must name every PDF.js embed, and it cannot hold a file name with `|`.
-One name stands for the `--expect-pdfjs` (render_check) or `--expect-embeds`
-(ios_check) embeds. A name the list holds n > 1 times is expected as
+One name stands for the `--expect-pdfjs` (render_check, safari_check) or
+`--expect-embeds` (ios_check) embeds. A name the list holds n > 1 times is expected as
 "PDF: <file name> (k of n)". The viewer numbers embeds that share a name in
 the same way. `-` stands for an embed named "PDF" alone.
 `name_test.html` shows `files/sample copy.pdf` by a path with a space and by

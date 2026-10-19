@@ -184,3 +184,37 @@ Pass 3 (2026-10-19), on 8a5097e, after the AC1 and AC6 amendment (user's choice 
 - AC1 evidence (amended wording): `node tests/name_rule_test.mjs` → "32 passed, 0 failed"; all 23 rows AC1 lists are in the table with their names; `--plant` exits 1; the second re-audit reader found `fileName()` and a separate implementation of AC1's wording agreeing on 79 hostile addresses.
 - AC2–AC5 evidence re-confirmed after the pass-2 fixes: the full verify list on e077e44 (62 commands, 0 failed) holds every AC2, AC3, and AC4 command named in pass 2, plus `safari_check.mjs --target mac` (exit 0 again on 8a5097e); render_check example.html desktop and iphone read page 2 on embed 1; plants `tallframe` (fails on the page-2 rule; exit 2 on a deck), `namefailed`, `showindicator`, and ios_check `strayindicator` fail.
 - AC6 evidence (amended wording): `version: 1.2.2` and `VERSION = "1.2.2"`; `quarto render` exit 0 with no file changed; CLAUDE.md lists name_rule_test (:63), the name_edge_test lines (:55, :56, :61, :62), and the Safari check (:64); the runner ran every `node tests/` and `pandoc lua` fenced line plus exactly the variants the clause names (`--alone http` per `--alone file`; mac-safari and windows-touch for desktop selfcontained_test in both `--alone` modes and for the desktop `--remote blocked` and `--missing-pdfs` lines; ipad for selfcontained_test iphone in both modes): 62 commands, 0 failed; each `--expect-name` command passed with the names AC2's rule gives (`tests/expect_names.mjs` numbering, count from `--expect-pdfjs` or `--expect-embeds`); README, DESIGN.md Architecture, and CLAUDE.md "Still unverified" as in pass 2.
+
+spawned: diff-bug, blame-history, prior-review, ripple
+
+- diff-bug #1: no check covers AC2's counting of a failed embed in n — follow-up, row "Embed name follow-ups" (AC2's named pages have no failed embed; the code counts it, `embedNames()` before any load).
+- diff-bug #2: after the scroll to page 2 only the tree text is read, not the shown "2 / n" — fix now (plant `staleshown` fails).
+- diff-bug #3: a missing `puppeteer-core` exits name_rule_test 1 — fix now (dynamic import, exit 2).
+- diff-bug #4: `tallframe` counts as planted on a page with no toolbar embed of 2 or more pages — fix now (nothing to plant in).
+- diff-bug #5: safari_check always fails on a slide deck — fix now (exit 2: decks are not read).
+- diff-bug #6: safari_check ignores `--expect-pdfjs` with a `|` list — fix now (lengths must match, exit 2).
+- diff-bug #7: a zero-size frame counts as scrolled — follow-up, row "Embed name follow-ups" (a false failure only).
+- diff-bug #8: repeats pass-2 diff-bug #4 — follow-up (already in the row).
+- diff-bug #9: repeats pass-1 diff-bug #4 — follow-up (already in the row).
+- diff-bug #10: a `data-src` starting with U+00A0 now takes the inlined path and keeps the no-JS fallback — follow-up, row "Embed name follow-ups".
+- diff-bug #11: a broken UTF-8 escape is kept in a path segment but becomes U+FFFD in a query value — follow-up, row "Embed name follow-ups" (both follow AC1's wording).
+- diff-bug #12: `hydrate()` re-reads the renderer after an await — reject, false: nothing changes `data-renderer` between the two reads.
+- diff-bug #13: safari_check exits 1 with a stack trace when `xcrun` fails — fix now (exit 2).
+- diff-bug #14: a refused safaridriver session exits 1 — fix now (exit 2).
+- diff-bug #15: render_check does not check that the shown "i / n" is visible — fix now (plant `hideshown` fails).
+- diff-bug #16: ios_check does not check that a failed embed has no name — follow-up, row "Embed name follow-ups" (AC2 names render_check).
+- diff-bug #17: name_rule_test's comment "shapes beside the AC1 rows" now precedes AC1 rows — fix now.
+- diff-bug #18: README does not say the first query value that ends in `.pdf` wins — fix now.
+- diff-bug #19: `showPage()` rewrites both spans on every scroll event — reject, not a defect: the text written is the same, as before the branch.
+- blame-history #1: same as diff-bug #4 — fix now.
+- blame-history #2: same as diff-bug #13 and #14, plus the page-script `simctl` calls — fix now (exit 2, server closed).
+- blame-history #3: `papers/` names "PDF: papers" — reject, planned change (AC1, as pass-1 prior-review #1).
+- blame-history #4: ios_check and render_check exit 1 when the browser or simulator cannot start (on main too) — follow-up, row "Embed name follow-ups".
+- blame-history #5: repeats pass-2 prior-review #2 — follow-up (already in the row).
+- blame-history #6: repeats pass-2 diff-bug #4 — follow-up (already in the row).
+- prior-review #1: a name plant with nothing to plant in prints only the "not hydrated" lines, hiding other name failures (M006's ink-path lesson) — fix now (every name failure is printed first).
+- prior-review #2: repeats pass-2 prior-review #2 — follow-up (already in the row).
+- ripple #1: ios_check's `--expect-name` header still says "PDF: <file name>" only — fix now.
+- ripple #2: CLAUDE.md's one-name rule omits safari_check — fix now.
+- ripple #3: row "Native embed name" quotes M005's form — reject, a record of what M005 did (as pass-2 ripple #4).
+- ripple #4: DESIGN.md does not say whitespace before `data:` is allowed — fix now.

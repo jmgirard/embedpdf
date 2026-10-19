@@ -65,7 +65,8 @@
 //                          10 s and 60 s limits.
 //   --expect-name "<file name>" | "<name 1>|<name 2>|..."
 //                          fail unless each PDF.js embed has role="group" and
-//                          aria-label "PDF: <file name>" in the DOM (Safari's
+//                          its expected aria-label ("PDF: <file name>",
+//                          numbered or "PDF" as below) in the DOM (Safari's
 //                          accessibility tree is not read); cannot be
 //                          combined with --remote or --missing-pdfs. One name
 //                          stands for the --expect-embeds embeds; a "|" list

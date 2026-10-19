@@ -139,7 +139,7 @@ with device pixel ratio clamped to 2, for constrained mobile devices. For
 screen readers, a PDF.js embed is a group named "PDF: " and its file name,
 or "PDF" when its address names none (corrected M010). `embedName()` passes
 `fileName()` the address in `data-src`, or the download link's when
-`data-src` is a `data:` address. The name is the last path segment when it
+`data-src` is a `data:` address (whitespace before it allowed). The name is the last path segment when it
 ends in `.pdf`, else a query value's last segment that ends in `.pdf`, else
 the last non-empty path segment when there is no query. A host alone, `data:`, and `blob:` name no file. Before any embed
 hydrates, `embedNames()` numbers PDF.js embeds that share a name

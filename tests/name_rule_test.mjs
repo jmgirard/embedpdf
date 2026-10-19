@@ -8,11 +8,10 @@
 //         node tests/name_rule_test.mjs --plant   # swaps one expected name; must fail
 // Set CHROME_PATH to use another Chrome or Chromium binary.
 // Exits 0 when every row passes, 1 when a row fails, 2 on a bad argument or
-// when the server, the browser, or the viewer import fails.
+// when puppeteer-core, the server, the browser, or the viewer import fails.
 
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import puppeteer from "puppeteer-core";
 import { serveDocs } from "./serve_docs.mjs";
 
 const ROWS = [
@@ -32,7 +31,7 @@ const ROWS = [
   ["//example.com", ""],
   ["data:application/pdf;base64,JVBERi0x", ""],
   ["blob:https://example.com/1234", ""],
-  // shapes beside the AC1 rows
+  // more shapes (some of them are also AC1 rows)
   ["https://example.com/docs/a.pdf?download=1", "a.pdf"],
   ["https://example.com/get?file=a.pdf", "a.pdf"],
   ["files/report/", "report"],
@@ -64,11 +63,12 @@ const CHROME =
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"; // macOS default
 const EXT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "_extensions", "embedpdf");
 
-// a setup failure (server, browser, or viewer import) exits 2, not 1
+// a setup failure (puppeteer-core, server, browser, or viewer import) exits 2, not 1
 const setupFailed = (err) => {
   console.error(`name_rule_test: setup failed: ${err.message}`);
   process.exit(2);
 };
+const puppeteer = (await import("puppeteer-core").catch(setupFailed)).default;
 const server = await serveDocs({
   root: EXT,
   routes: { "/": (req, res) => res.writeHead(200, { "Content-Type": "text/html" }).end("<!doctype html><title>t</title>") },

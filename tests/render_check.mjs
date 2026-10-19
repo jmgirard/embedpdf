@@ -141,7 +141,8 @@
 //                       data-toolbar="false". Each toolbar's text in the
 //                       tree must read "Page 1 of <pages>" with the pages at
 //                       the top, and no "i / n" text; on the page it must
-//                       show "1 / <pages>" and keep "Page 1 of <pages>" in a
+//                       show a visible "1 / <pages>" ("2 / <pages>" after
+//                       the scroll to page 2) and keep "Page 1 of <pages>" in a
 //                       1px, overflow-hidden, absolute box clipped by
 //                       clip-path: inset(50%). The first embed whose
 //                       pages can scroll page 1 above the middle of their
@@ -150,7 +151,7 @@
 //                       On a page with no slides, the run fails when an
 //                       embed with a toolbar and 2 or more pages exists and
 //                       none could be read at page 2.
-//   --plant wrongname|dupdesc|duplink|norole|notoolbar|nonumber|rawindicator|staleindicator|showindicator|tallframe
+//   --plant wrongname|dupdesc|duplink|norole|notoolbar|nonumber|rawindicator|staleindicator|showindicator|tallframe|hideshown|staleshown
 //                       with --expect-name, plant a defect in the first
 //                       PDF.js embed; the run must then fail: wrongname
 //                       changes its aria-label to "PDF: wrong.pdf", dupdesc
@@ -167,7 +168,12 @@
 //                       showindicator makes its "Page i of n" text visible,
 //                       tallframe makes no embed's frame scroll, so the
 //                       page-2 rule fails (nothing to plant in on a deck,
-//                       where that rule does not apply).
+//                       where that rule does not apply, or on a page with
+//                       no toolbar embed of 2 or more pages), hideshown
+//                       hides its shown "i / n", staleshown swaps that for
+//                       a "1 / n" copy the scroll does not update (nothing
+//                       to plant in unless that embed is the one scrolled
+//                       to page 2).
 // Set CHROME_PATH to use another Chrome or Chromium binary.
 //
 // On a RevealJS page the check goes to each slide with Reveal.slide() and
@@ -250,7 +256,7 @@ const FLAGS = ["device", "expect-native", "expect-pdfjs", "expect-pages", "expec
 const BOOL_FLAGS = ["missing-pdfs"];
 const TEXT_PLANTS = ["notext", "swap", "visible", "gone", "inert", "cvhidden"];
 const TREE_PLANTS = ["nolabel", "canvas", "noname", "detach"];
-const NAME_PLANTS = ["wrongname", "dupdesc", "duplink", "norole", "notoolbar", "nonumber", "rawindicator", "staleindicator", "showindicator", "tallframe"];
+const NAME_PLANTS = ["wrongname", "dupdesc", "duplink", "norole", "notoolbar", "nonumber", "rawindicator", "staleindicator", "showindicator", "tallframe", "hideshown", "staleshown"];
 const INK_PLANTS = ["blank", "nocanvas", "nopages", "namefailed"];
 // planted before the text wait (unhydrated) or before the page loads (norender)
 const WAIT_PLANTS = ["unhydrated", "norender"];
@@ -697,6 +703,17 @@ async function nameFailures(page, slide, before) {
         if (!shown) return { planted: null, stuck };
         shown.removeAttribute("aria-hidden");
       }
+      if (plant === "hideshown" || plant === "staleshown") {
+        const shown = first.querySelector(".embedpdf-pageinfo [aria-hidden]");
+        if (!shown) return { planted: null, stuck };
+        if (plant === "hideshown") shown.style.visibility = "hidden";
+        else {
+          // a "1 / n" copy the scroll does not update
+          const stale = shown.cloneNode(true);
+          stale.textContent = shown.textContent.replace(/^\d+/, "1");
+          shown.replaceWith(stale);
+        }
+      }
       if (plant === "tallframe") {
         // no frame scrolls, so page 1 stays at the top of each frame
         document.querySelectorAll(".embedpdf-pdfjs .embedpdf-pages").forEach((p) => (p.style.overflow = "visible"));
@@ -822,12 +839,17 @@ async function nameFailures(page, slide, before) {
         const spoken = t.querySelector(".embedpdf-pageinfo-text");
         const shown = t.querySelector(".embedpdf-pageinfo [aria-hidden]");
         const s = spoken ? getComputedStyle(spoken) : null;
+        const v = shown ? getComputedStyle(shown) : null;
+        const r = shown ? shown.getBoundingClientRect() : null;
         return {
           shown: shown ? shown.textContent : null,
+          // the shown "i / n" takes space and is drawn
+          shownVisible: !!v && v.display !== "none" && v.visibility === "visible" && Number(v.opacity) > 0 && r.width > 0 && r.height > 0,
           box: s ? { width: s.width, height: s.height, overflow: s.overflow, position: s.position, clipPath: s.clipPath } : null,
         };
       });
       if (seen.shown !== `1 / ${pages}`) out.push(`${at}: the indicator shows ${JSON.stringify(seen.shown)}, not "1 / ${pages}"`);
+      if (!seen.shownVisible) out.push(`${at}: the shown "i / n" is not visible`);
       const b = seen.box;
       if (!b || b.width !== "1px" || b.height !== "1px" || b.overflow !== "hidden" || b.position !== "absolute" || b.clipPath !== "inset(50%)") {
         out.push(`${at}: the "Page i of n" text is not in a 1px hidden box: ${JSON.stringify(b)}`);
@@ -839,6 +861,8 @@ async function nameFailures(page, slide, before) {
           page2Checked = `${at}`;
           page2First = await embed.evaluate((el) => el === document.querySelector(".embedpdf-pdfjs"));
           if (!second.text.includes(`Page 2 of ${pages}`)) out.push(`${at}: after a scroll to page 2, toolbar text is ${JSON.stringify(second.text)}, without "Page 2 of ${pages}"`);
+          const shown2 = await toolbar.evaluate((t) => (t.querySelector(".embedpdf-pageinfo [aria-hidden]") || {}).textContent);
+          if (shown2 !== `2 / ${pages}`) out.push(`${at}: after a scroll to page 2, the indicator shows ${JSON.stringify(shown2)}, not "2 / ${pages}"`);
         }
       }
     }
@@ -1097,9 +1121,10 @@ try {
         plant,
         // staleindicator shows only on the embed scrolled to page 2, so it
         // counts as planted only when that embed is the one it went into;
-        // tallframe fails only the page-2 rule, which a deck skips
+        // tallframe fails only the page-2 rule, which a deck skips and which
+        // needs a toolbar embed of 2 or more pages
         planted:
-          (plant === "staleindicator" && !page2First) || (plant === "tallframe" && slides)
+          ((plant === "staleindicator" || plant === "staleshown") && !page2First) || (plant === "tallframe" && (slides || !page2Tried))
             ? null
             : nameReports.map((r) => r.planted).find(Boolean) || null,
         embeds: nameReports.reduce((n, r) => n + r.embeds, 0),
@@ -1110,8 +1135,10 @@ try {
   console.log(JSON.stringify({ device: deviceName || "chrome", alone, remote, missingPdfs, ...res, text, names, consoleErrors }, null, 2));
   if (names) {
     if (plant && NAME_PLANTS.includes(plant) && !names.planted) {
-      // an embed that never hydrated is the likely cause, so name it first
-      for (const f of names.failures.filter((f) => f.endsWith("still not hydrated after 10 s"))) console.error("render_check: " + f);
+      // print every name failure first, so a real defect is still named; an
+      // embed that never hydrated is the likely cause, so it comes first
+      const stuckLines = names.failures.filter((f) => f.endsWith("still not hydrated after 10 s"));
+      for (const f of [...stuckLines, ...names.failures.filter((f) => !stuckLines.includes(f))]) console.error("render_check: " + f);
       console.error(`render_check: --plant ${plant} found nothing to plant in`);
       await browser.close();
       server?.close();

@@ -34,8 +34,10 @@
 // computed name (Element.prototype.computedName). It fails when it cannot.
 //
 // Exits 0 on a pass, 1 on a failed check or a probe that cannot read names,
-// 2 on a bad argument, when --plant finds nothing to plant in, or when
-// safaridriver or the server cannot start.
+// 2 on a bad argument, when --plant finds nothing to plant in, when the
+// server, safaridriver, a safaridriver session, or simctl cannot start, or
+// when --page is a RevealJS slide deck (the check does not move between
+// slides).
 
 import { spawn, execFileSync } from "node:child_process";
 import net from "node:net";
@@ -73,6 +75,11 @@ if (flags["expect-name"] && flags["expect-name"].split("|").some((n) => !n)) {
   console.error("safari_check: --expect-name needs a non-empty file name for each embed");
   process.exit(2);
 }
+const nameList = flags["expect-name"] ? flags["expect-name"].split("|") : [];
+if (nameList.length > 1 && nameList.length !== Number(flags["expect-pdfjs"])) {
+  console.error(`safari_check: --expect-name gives ${nameList.length} names, --expect-pdfjs ${flags["expect-pdfjs"]}`);
+  process.exit(2);
+}
 const page = flags.page || "example.html";
 const plant = flags.plant || null;
 if (plant && (target === "page-script" || !["rawindicator", "nonumber"].includes(plant))) {
@@ -89,7 +96,13 @@ const startServer = (opts) =>
 const simctl = (...a) => execFileSync("xcrun", ["simctl", ...a], { encoding: "utf8" });
 
 function simulator(key) {
-  const list = JSON.parse(simctl("list", "devices", "available", "-j")).devices;
+  let list;
+  try {
+    list = JSON.parse(simctl("list", "devices", "available", "-j")).devices;
+  } catch (err) {
+    console.error(`safari_check: cannot list the simulators: ${err.message}`);
+    process.exit(2);
+  }
   const found = Object.values(list).flat().filter((d) => d.udid === key || d.name === key);
   if (found.length !== 1) {
     console.error(`safari_check: ${found.length} available simulators match "${key}"`);
@@ -128,8 +141,14 @@ fetch("/__probe", { method: "POST", body: JSON.stringify(r) });
   } catch {
     // already booted
   }
-  simctl("bootstatus", dev.udid, "-b");
-  simctl("openurl", dev.udid, `http://127.0.0.1:${server.address().port}/__safari_probe.html?t=${Date.now()}`);
+  try {
+    simctl("bootstatus", dev.udid, "-b");
+    simctl("openurl", dev.udid, `http://127.0.0.1:${server.address().port}/__safari_probe.html?t=${Date.now()}`);
+  } catch (err) {
+    console.error(`safari_check: cannot open the probe in the simulator: ${err.message}`);
+    server.close();
+    process.exit(2);
+  }
   const report = await Promise.race([reported, sleep(60000).then(() => null)]);
   server.close();
   console.log(JSON.stringify({ target, device: dev.name, report }, null, 2));
@@ -193,18 +212,31 @@ let session = null;
 let report = {};
 let page2Tried = 0;
 let page2Read = 0;
+// set when the run cannot start a session or the page is a slide deck: exit 2
+let setupError = null;
 try {
   const caps = { browserName: "safari" };
   if (dev) {
     Object.assign(caps, { platformName: "iOS", "safari:useSimulator": true, "safari:deviceUDID": dev.udid });
     report.device = dev.name;
   }
-  session = (await wd("POST", "/session", { capabilities: { alwaysMatch: caps } })).sessionId;
+  try {
+    session = (await wd("POST", "/session", { capabilities: { alwaysMatch: caps } })).sessionId;
+  } catch (err) {
+    // no session (remote automation off, or no simulator host) is a setup failure
+    setupError = err.message;
+    throw err;
+  }
   const s = `/session/${session}`;
   const run = (script, ...a) => wd("POST", `${s}/execute/sync`, { script, args: a });
   const find = async (css) => (await wd("POST", `${s}/elements`, { using: "css selector", value: css })).map((e) => Object.values(e)[0]);
   const label = (id) => wd("GET", `${s}/element/${id}/computedlabel`);
   await wd("POST", `${s}/url`, { url: `http://127.0.0.1:${server.address().port}/${page}` });
+  // the check reads one page at a time and does not move between slides
+  if (await run(`return !!document.querySelector(".reveal .slides");`)) {
+    setupError = `${page} is a slide deck, which safari_check does not read`;
+    throw new Error(setupError);
+  }
 
   // wait at most 30 s for every embed to hydrate
   const unhydrated = () =>
@@ -319,4 +351,4 @@ try {
 }
 console.log(JSON.stringify({ target, page, ...report, failures }, null, 2));
 for (const f of failures) console.error("safari_check: " + f);
-process.exit(process.exitCode === 2 ? 2 : failures.length ? 1 : 0);
+process.exit(process.exitCode === 2 || setupError ? 2 : failures.length ? 1 : 0);
