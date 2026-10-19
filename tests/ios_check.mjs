@@ -26,19 +26,26 @@
 //                          that page's container); the check must then fail
 //   --alone yes|no         yes: serve a copy of the page from an empty
 //                          temporary directory instead of docs/ (default no)
+//   --remote blocked       serve the PDFs from a second server on another port
+//                          (another origin) that sends no
+//                          Access-Control-Allow-Origin header, and point each
+//                          embed's data-src and links at it
 //
 // Exits 0 only when every embed not set to renderer=native used PDF.js, has
 // exactly --expect-pages page containers, and every page canvas has ink, and
-// the number of such embeds equals --expect-embeds.
+// the number of such embeds equals --expect-embeds. With --remote blocked,
+// each such embed must instead show the load-failure state: the text "This
+// PDF cannot be shown here.", an "Open the PDF" link to the same absolute URL
+// as data-src with target _blank, and no "Download PDF file." link.
 
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { serveDocs, DOCS } from "./serve_docs.mjs";
+import { serveDocs, serveRemote, pointPdfsAt, DOCS } from "./serve_docs.mjs";
 
 const args = process.argv.slice(2);
-const FLAGS = ["device", "page", "expect-embeds", "expect-pages", "port", "timeout", "screenshot", "shot-embed", "plant", "alone"];
+const FLAGS = ["device", "page", "expect-embeds", "expect-pages", "port", "timeout", "screenshot", "shot-embed", "plant", "alone", "remote"];
 for (let i = 0; i < args.length; i += 2) {
   if (!FLAGS.includes(args[i].replace(/^--/, "")) || !args[i].startsWith("--") || i + 1 >= args.length) {
     console.error(`ios_check: unexpected argument "${args[i]}" (flags: --${FLAGS.join(", --")}, each with a value)`);
@@ -61,6 +68,17 @@ const shotEmbed = opt("shot-embed", "");
 const alone = opt("alone", "no");
 if (alone !== "yes" && alone !== "no") {
   console.error("ios_check: --alone must be yes or no");
+  process.exit(2);
+}
+const remote = opt("remote", "");
+// no cors mode: on example.html the renderer=native embed loads the same URL,
+// and Safari then fails the PDF.js fetch of it even with the header
+if (remote && remote !== "blocked") {
+  console.error("ios_check: --remote must be blocked");
+  process.exit(2);
+}
+if (remote && (alone === "yes" || plant)) {
+  console.error("ios_check: --remote cannot be combined with --alone yes or --plant");
   process.exit(2);
 }
 if (!device) {
@@ -114,9 +132,10 @@ const PROBE = `<script>
   const embeds = () => [...document.querySelectorAll("div.embedpdf")];
   const kind = (el) =>
     el.classList.contains("embedpdf-pdfjs") ? "pdfjs" :
-    el.classList.contains("embedpdf-native") ? "native" : "none";
+    el.classList.contains("embedpdf-native") ? "native" :
+    el.classList.contains("embedpdf-failed") ? "failed" : "none";
   const settled = () => embeds().every((el) => {
-    if (kind(el) === "native") return true;
+    if (kind(el) === "native" || kind(el) === "failed") return true;
     if (kind(el) === "none") return false;
     const pages = [...el.querySelectorAll(".embedpdf-page")];
     return pages.length > 0 && pages.every((p) => p.querySelector("canvas"));
@@ -168,12 +187,24 @@ const PROBE = `<script>
     plant,
     embeds: embeds().map((el, i) => {
       const pages = [...el.querySelectorAll(".embedpdf-page")];
+      // the load-failure state, read from the text and links, not the class
+      const links = [...el.querySelectorAll("a")];
+      const open = links.find((a) => a.textContent.trim() === "Open the PDF");
+      const failure = {
+        text: el.textContent.includes("This PDF cannot be shown here."),
+        href: open ? open.href : null,
+        expected: new URL(el.dataset.src || "", document.baseURI).href,
+        target: open ? open.target : null,
+        downloadLink: links.some((a) => a.textContent.trim() === "Download PDF file."),
+      };
+      failure.ok = failure.text && failure.href === failure.expected && failure.target === "_blank" && !failure.downloadLink;
       return {
         index: i + 1,
         requested: el.dataset.renderer || "auto",
         renderer: kind(el),
         pages: pages.length,
         ink: pages.map((p) => { const c = p.querySelector("canvas"); return !!c && hasInk(c); }),
+        failure,
       };
     }),
     errors,
@@ -209,12 +240,16 @@ if (alone === "yes") {
   fs.copyFileSync(source, path.join(aloneDir, servedPath));
 }
 
+const remoteServer = remote ? await serveRemote(remote) : null;
+const remoteBase = remoteServer ? `http://127.0.0.1:${remoteServer.address().port}/` : null;
+
 const server = await serveDocs({
   port,
   ...(aloneDir ? { root: aloneDir } : {}),
   // before the last </body>: a self-contained page can hold the text "</body>"
   // inside an inlined script
   transformHtml: (html) => {
+    if (remoteBase) html = pointPdfsAt(html, remoteBase);
     const i = html.lastIndexOf("</body>");
     return i < 0 ? html + PROBE : html.slice(0, i) + PROBE + html.slice(i);
   },
@@ -251,13 +286,16 @@ try {
     failures.push(`expected ${expectEmbeds} embeds not set to renderer=native, found ${checked.length}`);
   }
   for (const e of checked) {
-    if (e.renderer !== "pdfjs") failures.push(`embed ${e.index}: renderer ${e.renderer}, expected pdfjs`);
+    if (remote) {
+      if (!e.failure.ok) failures.push(`embed ${e.index}: not in the load-failure state: ${JSON.stringify(e.failure)}`);
+    } else if (e.renderer !== "pdfjs") failures.push(`embed ${e.index}: renderer ${e.renderer}, expected pdfjs`);
     else if (e.pages !== expectPages) failures.push(`embed ${e.index}: ${e.pages} page containers, expected ${expectPages}`);
     else if (!e.ink.every(Boolean)) failures.push(`embed ${e.index}: pages without ink: ${e.ink.map((v, i) => (v ? null : i + 1)).filter(Boolean).join(", ")}`);
   }
   const out = {
     device: { name: dev.name, udid: dev.udid, type: deviceType, runtime: runtimeName },
     url: target,
+    remote: remote || null,
     ...report,
     pass: failures.length === 0,
     failures,
@@ -268,5 +306,6 @@ try {
   console.error("ios_check: " + err.message);
 } finally {
   server.close();
+  remoteServer?.close();
   process.exit(exitCode);
 }

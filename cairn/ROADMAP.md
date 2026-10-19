@@ -20,6 +20,7 @@ _Last hygiene check: 2026-10-18 (M002 done and archived; "Self-contained embeds"
      the opening token is `[high]`/`[low]` or absent (`normal`) — tracking-rules "Candidate priority token";
      open each row with its short title, the words the cairn pane shows, then `: `;
      tracking-rules "Candidate short title" has the whole rule -->
+- Safari shared remote URL: in Safari (seen in an iOS 27.0 iPhone simulator), a PDF.js embed fails ("Load failed") when an `<object>` on the same page, such as a `renderer=native` embed, shows the same PDF from another site, even when that site sends `Access-Control-Allow-Origin: *`. A fix might fetch the PDF with its own request (M003 implement) — added 2026-10-18
 - Self-contained no-JS link: with JavaScript disabled, the fallback link and the `button` link in a self-contained page point at the separate PDF file, which is not shipped, because Quarto inlines `data-src` but not `<a href>` (M002 plan) — added 2026-10-18
 - Self-contained native checks: in a self-contained page the native `<object>` gets a `blob:` PDF, but only its bytes are checked (fetch in Chromium). Its display in desktop Safari and Firefox, `#page=` on a `blob:` URL, and the file name that the native viewer's own save button uses are not checked (M002 review) — added 2026-10-18
 - Self-contained slides on iOS: check self-contained RevealJS slides in Safari on iPhone and iPad with `tests/ios_check.mjs`; M002 checks them only in Chrome or Chromium (M002 plan) — added 2026-10-18
