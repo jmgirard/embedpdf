@@ -48,7 +48,8 @@
 //                          fail unless each PDF.js embed has role="group" and
 //                          aria-label "PDF: <file name>" in the DOM (Safari's
 //                          accessibility tree is not read); cannot be
-//                          combined with --remote or --missing-pdfs
+//                          combined with --remote or --missing-pdfs. One name
+//                          for every embed: the "|" list is render_check's
 //   --plant wrongname|norole
 //                          with --expect-name: change the first PDF.js
 //                          embed's aria-label to "PDF: wrong.pdf"

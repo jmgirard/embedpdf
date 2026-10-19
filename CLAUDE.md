@@ -14,6 +14,9 @@ Key files:
 - `example.qmd` (guide), `native.qmd`, `revealjs_test.qmd` → rendered into `docs/`
   (GitHub Pages). `dummy*.pdf` are blank test files; `sample.pdf` is the realistic
   example used by `example.qmd`.
+- `name_test.qmd`, `percent_test.qmd`, `selfcontained_test.qmd`, and
+  `selfcontained_slides_test.qmd` are test pages, also rendered into `docs/`.
+  `files/` holds copies of `sample.pdf` under the names they test.
 
 ## Verify before finishing — you are the test runner (no CI)
 
@@ -60,10 +63,12 @@ page 2. In render_check it also checks Chrome's accessibility tree.
 checks that each PDF.js embed is a group named "PDF: <file name>", and in
 render_check that each toolbar control's name is its tooltip and is not
 repeated as its description. In render_check, `--expect-name "a.pdf|b.pdf"`
-gives one name per PDF.js embed in page order, as on `revealjs_test.html`.
+gives one name per PDF.js embed in page order, as on `revealjs_test.html`, and
+it must name every PDF.js embed.
 `name_test.html` shows `files/sample copy.pdf` by a path with a space and by
-one with `%20`. `percent_test.html` is self-contained and shows
-`files/100%.pdf` by `files/100%25.pdf` and by a bare `%`. `--plant` in each script plants one defect so you can see a
+one with `%20`. `percent_test.html` is self-contained. It shows
+`files/100%.pdf` by `files/100%25.pdf` and by a bare `%`.
+`--plant` in each script plants one defect so you can see a
 check fail. The two scripts have different plant lists (see each header).
 
 Self-contained pages (`embed-resources: true`): `--alone http|file` (render_check)
@@ -81,6 +86,7 @@ node tests/render_check.mjs selfcontained_slides_test.html --alone file --device
 node tests/render_check.mjs revealjs_test.html --expect-native 2 --expect-pdfjs 1 --expect-name dummy2.pdf
 node tests/render_check.mjs revealjs_test.html --device iphone --expect-native 1 --expect-pdfjs 2 --expect-name "dummy2.pdf|dummy.pdf"
 node tests/render_check.mjs percent_test.html --alone file --expect-native 0 --expect-pdfjs 2 --expect-pages 2 --expect-name "100%.pdf"
+node tests/render_check.mjs percent_test.html --alone http --expect-native 0 --expect-pdfjs 2 --expect-pages 2 --expect-name "100%.pdf"
 node tests/render_check.mjs percent_test.html --alone file --device iphone --expect-native 0 --expect-pdfjs 2 --expect-pages 2 --expect-name "100%.pdf"
 node tests/ios_check.mjs --device "embedpdf iPhone" --page percent_test.html --alone yes --expect-embeds 2 --expect-name "100%.pdf"
 node tests/ios_check.mjs --device "embedpdf iPad" --page percent_test.html --alone yes --expect-embeds 2 --expect-name "100%.pdf"

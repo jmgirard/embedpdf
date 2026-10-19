@@ -92,7 +92,8 @@
 //                       gives it role group and that name. One name applies
 //                       to every PDF.js embed. A "|" list gives one name per
 //                       PDF.js embed, in page order (slide order on a
-//                       RevealJS page), and must name all of them. Also fail unless
+//                       RevealJS page), and must name all of them, so a file
+//                       name that holds "|" cannot be given. Also fail unless
 //                       each toolbar control (zoom out, zoom in, download)
 //                       has a non-empty tree name, no tree description equal
 //                       to that name, and a title equal to that name, and
@@ -109,7 +110,9 @@
 // Set CHROME_PATH to use another Chrome or Chromium binary.
 //
 // On a RevealJS page the check goes to each slide with Reveal.slide() and
-// scrolls each embed's pages into view before it measures.
+// scrolls each embed's pages into view before it measures. The --expect-text
+// and --expect-name checks of a slide first wait at most 10 s for its embeds
+// to be hydrated; the name check fails when that wait runs out.
 //
 // Ink: a canvas has ink by the rule in tests/ink.mjs (some pixel neither
 // transparent nor white, read over every pixel and channel).
@@ -489,32 +492,33 @@ async function treeFailures(page, slide) {
 async function nameFailures(page, slide, before) {
   const where = slide === null ? "" : ` on slide ${slide + 1}`;
   const root = slide === null ? page : (await page.evaluateHandle((k) => window.Reveal.getSlides()[k], slide)).asElement();
-  const planted = await page.evaluate(
+  const { planted, stuck } = await page.evaluate(
     async (slide, plant, namePlants) => {
       const root = slide === null ? document : window.Reveal.getSlides()[slide];
       const unhydrated = () => root.querySelectorAll("div.embedpdf:not(.embedpdf-pdfjs):not(.embedpdf-native):not(.embedpdf-failed)").length;
       const start = Date.now();
       while (Date.now() - start < 10000 && unhydrated()) await new Promise((r) => setTimeout(r, 100));
+      const stuck = unhydrated();
       const first = document.querySelector(".embedpdf-pdfjs");
-      if (!namePlants.includes(plant) || !first || !root.contains(first)) return null;
+      if (!namePlants.includes(plant) || !first || !root.contains(first)) return { planted: null, stuck };
       if (plant === "wrongname") first.setAttribute("aria-label", "PDF: wrong.pdf");
       if (plant === "dupdesc") {
         const zoomIn = first.querySelectorAll(".embedpdf-toolbar button")[1];
-        if (!zoomIn) return null;
+        if (!zoomIn) return { planted: null, stuck };
         zoomIn.setAttribute("aria-label", zoomIn.title);
       }
       if (plant === "duplink") {
         const link = first.querySelector(".embedpdf-toolbar a.embedpdf-download");
-        if (!link) return null;
+        if (!link) return { planted: null, stuck };
         link.setAttribute("aria-label", link.title);
       }
       if (plant === "norole") first.removeAttribute("role");
       if (plant === "notoolbar") {
         const toolbar = first.querySelector(".embedpdf-toolbar");
-        if (!toolbar) return null;
+        if (!toolbar) return { planted: null, stuck };
         toolbar.remove();
       }
-      return plant;
+      return { planted: plant, stuck };
     },
     slide,
     plant,
@@ -522,6 +526,8 @@ async function nameFailures(page, slide, before) {
   );
   const embeds = await root.$$(".embedpdf-pdfjs");
   const out = [];
+  // a late embed is missing from this count, and later "|" names then shift
+  if (stuck) out.push(`${stuck} embed(s)${where || " on the page"} still not hydrated after 10 s`);
   for (const [i, embed] of embeds.entries()) {
     const at = `PDF.js embed ${i + 1}${where}`;
     const expected = expectNames.length === 1 ? expectNames[0] : expectNames[before + i];

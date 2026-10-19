@@ -73,7 +73,7 @@ the new lines in CLAUDE.md "Verify before finishing".
 - AC3 → T2
 - AC4 → T3
 - AC5 → T4
-- AC6 → T1, T2, T5
+- AC6 → T1, T2, T5, T6
 
 ## Tasks
 
@@ -91,6 +91,9 @@ the new lines in CLAUDE.md "Verify before finishing".
       which is expected and not an error. Run the AC5 lines.
 - [x] T5: CLAUDE.md. Add the AC3 and AC5 exit-0 lines, and a line in its notes on `percent_test.html`. Run every
       CLAUDE.md line that passes `--expect-name` or names `revealjs_test.html`.
+- [ ] T6: Review return 1. Add the AC5 `percent_test.html --alone http` line to CLAUDE.md. Fix-now items: a
+      failure line when the name-check wait times out, the header's RevealJS paragraph and `|` limits, ios_check's
+      one-name note, the CLAUDE.md list note and Key files, line wrapping. Re-run the AC6 sweep.
 
 ## Work log
 
@@ -115,6 +118,7 @@ the new lines in CLAUDE.md "Verify before finishing".
 - 2026-10-18: T5 done: CLAUDE.md's two revealjs_test.html lines gain the AC3 `--expect-name` arguments (in place, not as new lines), four percent_test lines are added, and the notes describe the `|` list and percent_test. A sweep of "Verify before finishing" for `node tests/(render|ios)_check.mjs` lines with `--expect-name` or `revealjs_test.html` found 24 lines, and all 24 exit 0 (Chromium 155, iOS 27.0 simulators). The simple-english hook reports 37 style hits across all of CLAUDE.md; the two added sentences carry none of them, and the older text stays as it is (out of scope).
 - 2026-10-18: claim audit: not owed — internal tier.
 - 2026-10-18: review return 1: AC6 fails — CLAUDE.md has no literal `node tests/render_check.mjs percent_test.html --alone http --expect-native 0 --expect-pdfjs 2 --expect-pages 2 --expect-name "100%.pdf"` line. Fix-now items ride the same task: a failure line when the name-check wait times out, the header's RevealJS paragraph and `|` limits, ios_check's one-name note, the CLAUDE.md list note and Key files, and line wrapping.
+- 2026-10-18: T6 in progress (checkpoint): fixes written (CLAUDE.md `--alone http` percent line, list note, Key files; render_check timeout failure line and header notes; ios_check one-name note); the AC6 sweep and plant re-runs are running, and the timeout-line probe is not yet run.
 
 ## Decisions
 
