@@ -33,7 +33,7 @@ blocks cross-site reads.
 
 ## Acceptance criteria
 
-- [ ] AC1: When PDF.js `getDocument` rejects for a cross-origin PDF whose server sends no
+- [x] AC1: When PDF.js `getDocument` rejects for a cross-origin PDF whose server sends no
       `Access-Control-Allow-Origin` header, or for an HTTP 404, the embed shows the text "This PDF cannot be shown
       here." and a link with the text "Open the PDF" whose `href` resolves to the same absolute URL as the embed's
       `data-src` and whose `target` is `_blank`, and it holds no "Download PDF file." link. Shown by
@@ -41,24 +41,24 @@ blocks cross-site reads.
       and the same line with `--remote missing`, each with `--device iphone` and with `--device android`, and by
       `node tests/render_check.mjs revealjs_test.html --remote blocked --device iphone --expect-native 1 --expect-pdfjs 0 --expect-failed 2`,
       each exiting 0. `--expect-failed` counts embeds in exactly that state.
-- [ ] AC2: A cross-origin PDF whose server sends `Access-Control-Allow-Origin: *` renders in the PDF.js viewer:
+- [x] AC2: A cross-origin PDF whose server sends `Access-Control-Allow-Origin: *` renders in the PDF.js viewer:
       `node tests/render_check.mjs example.html --remote cors --expect-native 1 --expect-pdfjs 10 --expect-pages 2 --expect-failed 0`
       exits 0 with `--device iphone` and with `--device android`.
-- [ ] AC3: On desktop, `renderer=auto` still picks the native viewer for a cross-origin PDF:
+- [x] AC3: On desktop, `renderer=auto` still picks the native viewer for a cross-origin PDF:
       `node tests/render_check.mjs example.html --remote blocked --expect-native 9 --expect-pdfjs 0 --expect-failed 2`
       exits 0 with no `--device`, with `--device mac-safari`, and with `--device windows-touch`.
-- [ ] AC4: Safari in the iOS simulators shows AC1's state for a cross-origin PDF whose server sends no
+- [x] AC4: Safari in the iOS simulators shows AC1's state for a cross-origin PDF whose server sends no
       `Access-Control-Allow-Origin` header: `node tests/ios_check.mjs --device "embedpdf iPhone" --remote blocked`
       and the same with `--device "embedpdf iPad"` exit 0 only when each of the 10 embeds of `example.html` not set
       to `renderer=native` shows AC1's message and link and holds no "Download PDF file." link.
-- [ ] AC5: README "Known limitations" and a new `example.qmd` section say that on a page that is not
+- [x] AC5: README "Known limitations" and a new `example.qmd` section say that on a page that is not
       self-contained, an embed that uses PDF.js (iPhone, iPad, Android, or `renderer=pdfjs`) needs the other site
       to allow the read with an `Access-Control-Allow-Origin` header, that the checks used only the value `*`,
       that without the header the reader sees AC1's message and link, and that putting the PDF in the Quarto
       project avoids this. They say that Android was checked by emulation in Chromium, not on a device. Each claim
       about a named site's headers names the URL probed, the header value seen, and the date of the `curl -I` run.
       `quarto render` completes with no errors.
-- [ ] AC6: The version is 1.1.1 in `_extension.yml` and in the `add_html_dependency` call in `embedpdf.lua`,
+- [x] AC6: The version is 1.1.1 in `_extension.yml` and in the `add_html_dependency` call in `embedpdf.lua`,
       `pandoc lua tests/test_shortcode.lua` prints `0 failed`, and every `node tests/render_check.mjs` and
       `node tests/ios_check.mjs` line in CLAUDE.md "Verify before finishing" at commit `a093bb9` exits 0.
 
@@ -121,3 +121,38 @@ blocks cross-site reads.
 ## Decisions
 
 ## Review
+
+Evidence run 2026-10-18 on 0f06321 (main 9081883 unchanged since the cut), Chromium 155.0.8059.39 via `CHROME_PATH`, iOS 27.0 simulators "embedpdf iPhone" (iPhone 17) and "embedpdf iPad" (iPad Air 11-inch M4). `quarto render` exit 0, no diff.
+
+- AC1: the 5 render_check lines (example.html blocked and missing, each with iphone and android, `--expect-native 1 --expect-pdfjs 0 --expect-failed 10`; revealjs_test.html blocked iphone `--expect-failed 2`) each exit 0. Each now also requires every data-src and button link on the remote server and each failure's PDF.js error (UnknownErrorException for blocked, ResponseException for missing); a planted broken PDF.js import makes the blocked and missing lines exit 1.
+- AC2: example.html `--remote cors --expect-native 1 --expect-pdfjs 10 --expect-pages 2 --expect-failed 0` exits 0 with iphone and with android.
+- AC3: example.html `--remote blocked --expect-native 9 --expect-pdfjs 0 --expect-failed 2` exits 0 with no device, mac-safari, and windows-touch.
+- AC4: `ios_check --remote blocked` exits 0 on iPhone and iPad (failures 0; each of the 10 embeds in the state, on the remote server, with a "failed to render <url> … Load failed" error); a planted broken import makes the iPhone line exit 1.
+- AC5: README "Known limitations" and example.qmd "PDFs on Another Site" each state: not self-contained; PDF.js on iPhone, iPad, browsers with no built-in viewer such as Chrome on Android, and `renderer=pdfjs`; the `Access-Control-Allow-Origin` header; checks used only `*`; "This PDF cannot be shown here." and "Open the PDF"; put the PDF in the project; Android by emulation in Chromium, not on a device; `curl -I` URLs, values, and date 2026-10-18 (`*` for jmgirard.github.io/embedpdf/sample.pdf, none for the nbviewer.org URL). `quarto render` exit 0.
+- AC6: version 1.1.1 in `_extension.yml` and `embedpdf.lua`; `pandoc lua tests/test_shortcode.lua` 40 passed, 0 failed; the 21 render_check lines and 4 ios_check lines of CLAUDE.md at a093bb9 each exit 0.
+- Consistency gate: `cairn_validate.py` all checks passed; no principle text changed (cairn_impact skipped); generic profile has no toolchain checks.
+- spawned: diff-bug, blame-history, prior-review
+- diff-bug #1: remote checks match the failure UI, not its cause — fix now, fixed 0f06321 (per-embed PDF.js error kind in render_check, "Load failed" for the embed's URL in ios_check)
+- diff-bug #2: pointPdfsAt resolves against the remote root, so subfolder pages would 404 — follow-up, "Remote check gaps"
+- diff-bug #3: pointPdfsAt regex misses quote styles, `?`/`#`, rewrites every `*.pdf` href; links unchecked — fix now for button links (checked on the remote server, 0f06321); rest follow-up, "Remote check gaps"
+- diff-bug #4: on a self-contained page the failure link is a nameless `blob:` URL — follow-up, "Inlined PDF failure link"
+- diff-bug #5: `inlinedPdf()` failure is outside the failure path — follow-up, "Inlined PDF failure link"
+- diff-bug #6: `doc` not destroyed when page 1 fails — fix now, fixed 0f06321
+- diff-bug #7: `javascript:` data-src becomes a clickable link — reject (false as a new risk): the no-JS fallback link and the native `<object>` already take the same author value, and Lua escapes it (IP3)
+- diff-bug #8: failed state ignores `width` — fix now, fixed 0f06321
+- diff-bug #9: CLAUDE.md "run again" instructions ambiguous — fix now, fixed 0f06321 (lines listed one by one)
+- diff-bug #10: "such as Chrome on Android" stated as fact — reject (false as a new claim): README line 13 and example.qmd already state it, and both docs disclose emulation only
+- diff-bug #11: "checks below" points nowhere; "(GitHub Pages)" widens one URL to a host — fix now, fixed 0f06321
+- diff-bug #12: same-origin 404 not exercised — follow-up, "Remote check gaps"
+- diff-bug #13: `ios_check --remote` on a self-contained page fails with an unclear message — follow-up, "Remote check gaps"
+- diff-bug #14: CLAUDE.md "Still unverified" lacks remote PDFs — fix now, fixed 0f06321
+- diff-bug #15: `rel="noopener"` without `noreferrer` — reject (style): the fallback link and native `<object>` send the same referrer
+- blame-history #1: without `--expect-failed`, failed embeds count as hydrated and pass — fix now, fixed 0f06321 (any failed embed fails a run without the flag)
+- blame-history #2: a PDF.js import failure shows the same message — reject (planned change: Scope Out names the import on the same path)
+- blame-history #3: failure removes the no-JS fallback link — reject (planned change: AC1)
+- blame-history #4: iOS could fall back to the native viewer — reject (planned change: plan gate chose message and link)
+- prior-review #1: `--remote` without `--expect-failed` passes when embeds render — fix now, fixed 0f06321 (blocked and missing require the flag)
+- prior-review #2: failure cause not gated — fix now, fixed 0f06321 (same as diff-bug #1)
+- prior-review #3: `loadPdfjs` failure hidden behind the same message — reject (planned change, as blame-history #2)
+- prior-review #4: regex skips `?`/`#`; links unchecked — fix now for button links, fixed 0f06321; rest follow-up, "Remote check gaps"
+- prior-review #5: serveRemote has no Range or OPTIONS handling — follow-up, "Remote check gaps"
