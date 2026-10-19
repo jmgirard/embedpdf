@@ -47,9 +47,9 @@ async function inlinedPdf(src) {
 // a single PDF.js worker, and firing many render() calls at once can overwhelm
 // it — on some browsers the render promises then never resolve. Running one
 // task at a time keeps things reliable (and is easier on constrained
-// devices) at no real cost, since only on-screen pages are ever rendered.
-// Reading a page's text (for screen readers) runs only when no page render
-// waits, so it never delays what is on screen.
+// devices) at no real cost, since only pages on or near the screen are ever
+// rendered. Reading a page's text (for screen readers) starts only when no
+// page render waits, so it delays a render by at most one page's text read.
 const renderTasks = [];
 const textTasks = [];
 let queueBusy = false;

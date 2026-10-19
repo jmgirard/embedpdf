@@ -7,7 +7,7 @@ _Last hygiene check: 2026-10-18 (M003 done and archived; rows "Safari shared rem
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M004 | Screen-reader text | in-progress | — | normal | milestones/M004-screen-reader-text.md |
+| M004 | Screen-reader text | review | — | normal | milestones/M004-screen-reader-text.md |
 | M003 | Remote PDFs on phones | done | — | normal | milestones/archive/M003-remote-pdfs-on-phones.md |
 | M002 | Self-contained embeds | done | — | high | milestones/archive/M002-self-contained-embeds.md |
 | M001 | iOS Safari check | done | — | high | milestones/archive/M001-ios-safari-check.md |

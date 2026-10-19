@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M004: Screen-reader text
 
-- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** review   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate; M<xx>, M<yy> or — -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate; RR<NN> whose Binding criteria bind this milestone's ACs (binding-criteria check), or — -->
@@ -143,7 +143,7 @@ GitHub release for 1.2.0: the user declares the release window separately.
       no-selection-or-search line), CLAUDE.md "Still unverified" (a real
       screen reader) and the AC1-AC3 lines under "Verify before finishing",
       DESIGN Architecture and Known issues. `quarto render`.
-- [ ] T7: Run the whole `verify` slot (`cairn/PROFILE.md`), every line.
+- [x] T7: Run the whole `verify` slot (`cairn/PROFILE.md`), every line.
 
 ## Work log
 <!-- owner: any skill · append-only; one line per entry; absolute dates. -->
@@ -169,6 +169,7 @@ GitHub release for 1.2.0: the user declares the release window separately.
 - 2026-10-18: T5 done: ios_check `--expect-text` reads the text before the probe scrolls (waits at most 10 s). Green on "embedpdf iPhone" (iOS 27.0, text there after 607 ms) and "embedpdf iPad"; the `notext`, `swap`, and `visible` plants each exit 1 with their own message on the iPhone.
 - 2026-10-18: T6 done: README limitation line added (selection-and-search line kept), CLAUDE.md "Still unverified" entry and a paragraph on `--expect-text`; `--expect-text` added to every sample.pdf line in "Verify before finishing" (example.html, selfcontained_test, selfcontained_slides_test, ios_check), not to revealjs_test or `--remote` lines. DESIGN Architecture and Known issues corrected. `quarto render` clean. The simple-english hook reports 10 README and 36 CLAUDE.md style hits, all in older text (the added lines lint at 0); left alone as outside this milestone.
 - 2026-10-18: claim audit: 65 claims read, 4 corrected — embedpdf-viewer.js (queue comment: a text task can delay a render by one page's read; near-screen pages render too), README.md (the label is on the page group), tests/render_check.mjs (canvas wait is per embed); tests/ios_check.mjs header now says the text check skips native embeds and `--remote`.
+- 2026-10-18: T7 done: every command line in CLAUDE.md "Verify before finishing" plus the prose reruns (`--alone http`, selfcontained_test on mac-safari, windows-touch, ipad), 36 runs, 0 failed (Chromium via CHROME_PATH; iOS 27.0 simulators). After the claim-audit comment fix, `quarto render` updated only the docs/ viewer copies (byte-identical to source); the self-contained pages inline the viewer through esbuild, which drops comments, so they did not change. iphone example.html recheck exits 0. Status set to review.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local. -->
