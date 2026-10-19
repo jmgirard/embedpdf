@@ -164,12 +164,7 @@ try {
   // r1, r2, and r4 got 206; r3 (416), r5 and r6 (200), and full (200) do not count
   check("server: rangeCounts counts the three 206 answers", same([...server.rangeCounts], [["/sample.pdf", 3]]), JSON.stringify([...server.rangeCounts]));
 
-  // without slowWhole, a file over SLOW_ABOVE comes whole at once
-  const t0 = Date.now();
-  const big = await fetch(base + "files/large.pdf");
-  const bigBody = Buffer.from(await big.arrayBuffer());
   check("server: large.pdf is over SLOW_ABOVE", LARGE.length > SLOW_ABOVE, `${LARGE.length} bytes`);
-  check("server: without slowWhole, large.pdf comes whole within 1 s", big.status === 200 && bigBody.equals(LARGE) && Date.now() - t0 < 1000, `${big.status} in ${Date.now() - t0} ms`);
 
   // a port another server holds: serveDocs rejects instead of crashing
   let err = null;
@@ -232,6 +227,21 @@ for (const kind of ["docs", "remote cors"]) {
     check(`${kind}: rangeCounts counts 206 answers per path, %20 as sent`, same([...slow.rangeCounts], [["/files/large.pdf", 2], ["/files/sample%20copy.pdf", 1]]), JSON.stringify([...slow.rangeCounts]));
   } finally {
     slow.close();
+  }
+  // without the new options: large.pdf comes whole at once, with the headers
+  // a whole-file answer always had
+  const plain = await start();
+  try {
+    const t2 = Date.now();
+    const r = await fetch(`http://127.0.0.1:${plain.address().port}/files/large.pdf`);
+    const body = Buffer.from(await r.arrayBuffer());
+    const ms = Date.now() - t2;
+    const h = (k) => r.headers.get(k);
+    check(`${kind} default: large.pdf comes whole within 1 s`, r.status === 200 && body.equals(LARGE) && ms < 1000, `${r.status} in ${ms} ms`);
+    check(`${kind} default: whole-file headers`, h("content-type") === "application/pdf" && h("content-length") === String(LARGE.length) && h("accept-ranges") === "bytes" && h("cache-control") === "no-store", JSON.stringify([...r.headers]));
+    if (kind !== "docs") check(`${kind} default: Access-Control- headers`, h("access-control-allow-origin") === "*" && h("access-control-expose-headers") === "Accept-Ranges, Content-Range", JSON.stringify([...r.headers]));
+  } finally {
+    plain.close();
   }
   const none = await start({ noRanges: true });
   const at2 = `http://127.0.0.1:${none.address().port}/`;

@@ -87,7 +87,7 @@ no range in 3 of 3 runs. When the server sent the whole-file answer slowly
 - AC1 → T1
 - AC2 → T2, T3, T4
 - AC3 → T3, T4
-- AC4 → T2
+- AC4 → T2, T6
 - AC5 → T5
 
 ## Tasks
@@ -107,6 +107,10 @@ no range in 3 of 3 runs. When the server sent the whole-file answer slowly
       for a `tests/serve_docs.mjs` change: every `render_check.mjs`,
       `ios_check.mjs`, `name_rule_test.mjs`, and `safari_check.mjs` line in
       CLAUDE.md's fenced blocks must exit 0.
+- [x] T6: (review return 1) Add helpers_test cases in which `serveDocs` and
+      `serveRemote` without the new options send `files/large.pdf` whole at
+      once, with its Content-Type, Content-Length, and Accept-Ranges, and for
+      remote cors its Access-Control- headers.
 
 ## Work log
 
@@ -132,6 +136,10 @@ no range in 3 of 3 runs. When the server sent the whole-file answer slowly
 - 2026-10-19: T4 ios_check `--expect-ranges` and `--plant noranges` (refused with --remote, --missing-pdfs, --alone yes; the report gains "ranges"): "embedpdf iPhone" and "embedpdf iPad" (iOS 27.0) exit 0 with 3 range answers per embed; the iPhone plant exits 1 naming both addresses, with no ink failure.
 - 2026-10-19: T5 CLAUDE.md gains the 7 large_test.html lines, a paragraph on `--expect-ranges`, `--plant noranges`, and how files/large.pdf was made, a key-files mention, and a "Still unverified" entry. All 57 `node tests/…` lines in CLAUDE.md's fenced blocks (helpers_test, render_check, ios_check, name_rule_test, safari_check) exited 0 in one run, Chromium 155 via CHROME_PATH, no retries.
 - 2026-10-19: claim audit: not owed — internal tier.
+- 2026-10-19: implement done; status review.
+- 2026-10-19: review return 1: AC4 — no helpers_test case shows `serveRemote` without the new options sending a file whole, and no whole-file case checks the headers (Content-Type, Content-Length, Accept-Ranges, and for remote cors the Access-Control- headers); add those cases.
+- 2026-10-19: added T6 for review return 1 (minor amendment); Coverage AC4 → T2, T6.
+- 2026-10-19: T6 helpers_test default cases for serveDocs and serveRemote cors (large.pdf whole within 1 s; Content-Type, Content-Length, Accept-Ranges, Cache-Control; Access-Control- headers for remote), replacing the docs-only case; 113 passed, 0 failed. Plant: a `slowWhole = true` default in serveRemote failed the remote case (8,437 ms). serve_docs.mjs is unchanged at the end, so no browser line reruns here.
 - 2026-10-19: implement done; status review.
 
 ## Decisions
