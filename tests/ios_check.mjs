@@ -21,7 +21,8 @@
 //   --port <n>             server port on 127.0.0.1 (default: a free port the
 //                          system picks); a port in use, or any server that
 //                          cannot start, exits 2 with a message
-//   --timeout <s>          seconds to wait for the report (default 180)
+//   --timeout <s>          seconds to wait for the report (default 180, or 240
+//                          with --slow-text)
 //   --screenshot <file>    save a simulator screenshot, taken with the first
 //                          renderer=native embed scrolled into view
 //   --shot-embed <n>       scroll embed n (1-based) into view for the screenshot
@@ -55,9 +56,12 @@
 //                          Checks only embeds not set to renderer=native;
 //                          cannot be combined with --remote or --missing-pdfs.
 //   --slow-text <ms>       test aid, with --expect-text: after the wait above,
-//                          empty every PDF.js page's text and put it back one
-//                          page every <ms> ms while that wait runs again; the
-//                          run must still pass when <ms> is under 10000.
+//                          empty the text of every PDF.js page the viewer
+//                          filled and put it back one page every <ms> ms
+//                          while that wait runs again; the restoring stops
+//                          when that wait ends. The run must still pass when
+//                          <ms> is under 10000 and pages × <ms> is under
+//                          60000.
 //   --expect-name "<file name>"
 //                          fail unless each PDF.js embed has role="group" and
 //                          aria-label "PDF: <file name>" in the DOM (Safari's
@@ -95,7 +99,9 @@
 // same absolute URL as data-src with target _blank, and no "Download PDF
 // file." link. With --remote blocked its data-src must be on the remote
 // server, and the console must show the fetch of that URL failing ("Load
-// failed"); with --missing-pdfs, see that flag.
+// failed"); with --missing-pdfs, see that flag. With --expect-text and
+// --expect-name, those checks must pass too; with --expect-text, an embed
+// still not hydrated when the text wait ends is the one failure.
 
 import fs from "node:fs";
 import os from "node:os";
@@ -137,7 +143,9 @@ if (!/^\d+$/.test(portArg) || port > 65535) {
   console.error("ios_check: --port must be a port number from 0 to 65535");
   process.exit(2);
 }
-const timeoutS = Number(opt("timeout", "180"));
+// --slow-text runs the text wait twice (up to 60 s each) before the 90 s
+// scroll loop, so its default is longer
+const timeoutS = Number(opt("timeout", "slow-text" in parsed ? "240" : "180"));
 const screenshot = opt("screenshot", "");
 const plant = opt("plant", "");
 const shotEmbed = opt("shot-embed", "");
@@ -238,7 +246,9 @@ const deviceType = (dev.deviceTypeIdentifier || "").replace("com.apple.CoreSimul
 
 // The probe runs in Safari. It waits for every embed to hydrate, scrolls each
 // one (and each of its pages) into view so lazy rendering fires, waits for the
-// canvases, optionally plants a defect, measures, and POSTs the report.
+// canvases, optionally plants a defect, measures, and POSTs the report. With
+// --expect-text, an embed still not hydrated when the text wait ends makes it
+// POST at once, without scrolling.
 const PROBE = `<script>
 (async () => {
   const errors = [];
@@ -293,18 +303,6 @@ const PROBE = `<script>
     }
     return Date.now() - start;
   };
-  let slowPages = 0;
-  if (wantText && slowMs) {
-    await waitText();
-    const saved = blocks().filter(Boolean).map((t) => [t, t.textContent]);
-    for (const [t] of saved) t.textContent = "";
-    slowPages = saved.length;
-    let k = 0;
-    const timer = setInterval(() => {
-      if (k < saved.length) saved[k][0].textContent = saved[k++][1];
-      else clearInterval(timer);
-    }, slowMs);
-  }
   let waitPlanted = "";
   if (wantText && plant === "unhydrated") {
     // an embed with no data-src never hydrates
@@ -313,12 +311,27 @@ const PROBE = `<script>
     document.body.appendChild(stray);
     waitPlanted = plant;
   }
+  let slowPages = 0;
+  let timer = null;
+  if (wantText && slowMs) {
+    await waitText();
+    // only blocks the viewer filled, so a late fill is never written over
+    const saved = blocks().filter((t) => t && t.textContent.trim()).map((t) => [t, t.textContent]);
+    for (const [t] of saved) t.textContent = "";
+    slowPages = saved.length;
+    let k = 0;
+    timer = setInterval(() => {
+      if (k < saved.length) saved[k][0].textContent = saved[k++][1];
+      else clearInterval(timer);
+    }, slowMs);
+  }
   const textWaitedMs = wantText ? await waitText() : 0;
+  clearInterval(timer);
   // embeds still not hydrated when the text wait ended: the probe reports at
   // once, without scrolling
   const stuck = wantText ? unhydrated() : 0;
   let textPlanted = "";
-  if (["notext", "swap", "visible", "inert", "cvhidden"].includes(plant)) {
+  if (${JSON.stringify(TEXT_PLANTS)}.includes(plant)) {
     const first = embeds().find((el) => kind(el) === "pdfjs");
     const t = first ? [...first.querySelectorAll(".embedpdf-page .embedpdf-text")] : [];
     const last = t[t.length - 1];

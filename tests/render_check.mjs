@@ -83,15 +83,17 @@
 //                       out", "Zoom in", and "Download PDF". A null canvas
 //                       snapshot counts as hidden only for a canvas still in
 //                       the page; for one that left it, the page's current
-//                       canvas is read once instead. On a RevealJS page, a
+//                       canvas is read once instead. A snapshot that throws
+//                       for a canvas still in the page fails. On a RevealJS page, a
 //                       slide whose canvas wait runs out stops the run with
 //                       exit 1. Whitespace is collapsed before phrases are
 //                       compared.
 //   --slow-text <ms>    test aid, with --expect-text: after the whole-page
-//                       wait above, empty every PDF.js page's text and put
-//                       it back one page every <ms> ms while that wait runs
-//                       again; the run must still pass when <ms> is under
-//                       10000.
+//                       wait above, empty the text of every PDF.js page the
+//                       viewer filled and put it back one page every <ms> ms
+//                       while that wait runs again; the restoring stops when
+//                       that wait ends. The run must still pass when <ms> is
+//                       under 10000 and pages × <ms> is under 60000.
 //   --plant notext|swap|visible|gone|inert|cvhidden|nolabel|canvas|noname|detach|unhydrated|norender
 //                       plant a defect in the first PDF.js embed before the
 //                       --expect-text checks measure it; the run must then
@@ -107,8 +109,9 @@
 //                       act on the whole page: unhydrated adds a div.embedpdf
 //                       with no data-src before the text wait, and norender
 //                       makes every canvas's getContext return null from
-//                       load on, so no page gets a canvas. Needs
-//                       --expect-text.
+//                       load on, so no page gets a canvas (meant for a
+//                       RevealJS page: elsewhere each embed's canvas wait
+//                       runs out in turn). Needs --expect-text.
 //   --expect-name "<file name>" | "<name 1>|<name 2>|..."
 //                       after the pages are scrolled, fail unless each PDF.js
 //                       embed has role="group" and aria-label "PDF: <file
@@ -404,18 +407,22 @@ function waitForText(page) {
       return Date.now() - start;
     };
     let slowPages = 0;
+    let timer = null;
     if (slowMs) {
       await wait();
-      const saved = blocks().filter(Boolean).map((t) => [t, t.textContent]);
+      // only blocks the viewer filled, so a late fill is never written over
+      const saved = blocks().filter((t) => t && t.textContent.trim()).map((t) => [t, t.textContent]);
       for (const [t] of saved) t.textContent = "";
       slowPages = saved.length;
       let k = 0;
-      const timer = setInterval(() => {
+      timer = setInterval(() => {
         if (k < saved.length) saved[k][0].textContent = saved[k++][1];
         else clearInterval(timer);
       }, slowMs);
     }
     const waitedMs = await wait();
+    // no text changes after the wait, so every slide reads the same state
+    clearInterval(timer);
     return { waitedMs, slowPages, unhydrated: unhydrated(), planted };
   }, slowText, plant);
 }
@@ -547,15 +554,22 @@ async function treeFailures(page, slide) {
     TREE_PLANTS
   );
   const snap = (el) => page.accessibility.snapshot({ root: el, interestingOnly: false });
-  // a snapshot of an element that left the page may throw; read it as null
-  const snapOrNull = (el) => snap(el).catch(() => null);
+  // a canvas snapshot and the error it threw, if any; an error counts against
+  // a canvas still in the page, and is left aside for one that left it
+  const snapCanvas = (el) => snap(el).then((node) => ({ node, error: null }), (err) => ({ node: null, error: String(err && err.message ? err.message : err) }));
   const connected = (el) => el.evaluate((e) => e.isConnected);
   const allText = (node) => (node ? [node.name || "", ...(node.children || []).map(allText)].join(" ") : "");
   const out = [];
   for (const [i, embed] of embeds.entries()) {
     const at = `PDF.js embed ${i + 1}${where}`;
     const pages = await embed.$$(".embedpdf-page");
-    const canvases = await embed.$$(".embedpdf-page canvas");
+    // each canvas with its page, read together: the viewer keeps a page's
+    // element and swaps only its canvas
+    const canvases = [];
+    for (const p of pages) {
+      const c = await p.$("canvas");
+      if (c) canvases.push([p, c]);
+    }
     if (canvases.length !== pages.length) out.push(`${at}: ${canvases.length} canvases for ${pages.length} pages`);
     for (const [j, p] of pages.entries()) {
       const node = await snap(p);
@@ -571,23 +585,22 @@ async function treeFailures(page, slide) {
     // viewer swaps a page's canvas when it renders the page again, so a canvas
     // that left the page is replaced by the page's current canvas, once.
     const isFirst = await embed.evaluate((e) => e === document.querySelector(".embedpdf-pdfjs"));
-    for (const [j, found] of canvases.entries()) {
-      const holder = await found.evaluateHandle((c) => c.closest(".embedpdf-page"));
+    for (const [j, [holder, found]] of canvases.entries()) {
       if (plant === "detach" && isFirst && j === canvases.length - 1) {
         await found.evaluate((c) => c.remove());
         planted = plant;
       }
-      let c = found;
-      let node = await snapOrNull(c);
-      if (!node && !(await connected(c))) {
-        c = await holder.$("canvas");
-        node = c ? await snapOrNull(c) : null;
-        if (!c || (!node && !(await connected(c)))) {
+      let r = await snapCanvas(found);
+      if (!r.node && !(await connected(found))) {
+        const c = await holder.$("canvas");
+        r = c ? await snapCanvas(c) : null;
+        if (!r || (!r.node && !(await connected(c)))) {
           out.push(`${at}: canvas ${j + 1} left the page during the accessibility check`);
           continue;
         }
       }
-      if (node) out.push(`${at}: canvas ${j + 1} is in the accessibility tree (role ${node.role})`);
+      if (r.error) out.push(`${at}: canvas ${j + 1} snapshot failed (${r.error})`);
+      else if (r.node) out.push(`${at}: canvas ${j + 1} is in the accessibility tree (role ${r.node.role})`);
     }
     const toolbar = await embed.$(".embedpdf-toolbar");
     if (toolbar) {
@@ -767,7 +780,7 @@ try {
   // with --expect-text, a run that cannot get further stops at once: it prints
   // why and the text failures found so far, and exits 1
   const stopRun = async (why) => {
-    console.log(JSON.stringify({ device: deviceName || "chrome", alone, plant, textWait, stoppedBecause: why }, null, 2));
+    console.log(JSON.stringify({ device: deviceName || "chrome", alone, plant, textWait, stoppedBecause: why, consoleErrors }, null, 2));
     console.error("render_check: " + why);
     for (const f of [...textReports.flatMap(textFailures), ...treeReports.flatMap((r) => r.failures)]) console.error("render_check: " + f);
     await browser.close();
@@ -912,7 +925,12 @@ try {
     ? {
         phrases,
         plant,
-        planted: plant === "norender" ? plant : [textWait, ...textReports, ...treeReports].map((r) => r.planted).find(Boolean) || null,
+        // norender is planted at load; it lands only where the tree check met
+        // a PDF.js embed
+        planted:
+          plant === "norender"
+            ? treeReports.some((r) => r.embeds > 0) ? plant : null
+            : [textWait, ...textReports, ...treeReports].map((r) => r.planted).find(Boolean) || null,
         wait: textWait,
         pagesRead: textReports.reduce((n, r) => n + r.pages.flat().length, 0),
         embedsRead: textReports.reduce((n, r) => n + r.pages.length, 0),

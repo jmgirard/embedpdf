@@ -81,10 +81,10 @@ slide's canvas wait runs out (render_check); the plants and the `--slow-text` ai
 ## Coverage
 
 - AC1 → T1
-- AC2 → T2
-- AC3 → T3, T4
-- AC4 → T5
-- AC5 → T5
+- AC2 → T2, T7
+- AC3 → T3, T4, T7
+- AC4 → T5, T7
+- AC5 → T5, T7
 - AC6 → T6
 
 ## Tasks
@@ -109,6 +109,12 @@ slide's canvas wait runs out (render_check); the plants and the `--slow-text` ai
 - [x] T6: Docs and verify. Update both header comments (the text wait, now "at most 10 s" in render_check lines
       60-77 and ios_check lines 35-44, the new plants, `--slow-text`) and any CLAUDE.md note the change makes stale.
       Run every CLAUDE.md line that passes `--expect-text` (AC6), then the full `verify` slot.
+- [ ] T7: Review return 1. Fix pass 1's fix-now findings (Review section): each canvas's page read with the canvas
+      query; a snapshot error on a connected canvas fails; the slow aid saves only filled blocks, stops with the wait,
+      and its header claim names the 60 s cap; ios_check's timeout default fits two waits; `stopRun` reports console
+      errors; `norender` counts as planted only where an embed was checked; the CLAUDE.md note, probe comment, and
+      ios_check exit paragraph; one text plant list; the stray div planted first in both. File row "Text check
+      follow-ups"; narrow row "Name plant slide target". Run the AC1 to AC5 lines and every CLAUDE.md line.
 
 ## Work log
 
@@ -135,6 +141,7 @@ slide's canvas wait runs out (render_check); the plants and the `--slow-text` ai
 - 2026-10-19: claim audit: not owed — internal tier.
 - 2026-10-19: status review; all tasks done, verify slot green.
 - 2026-10-19: review return 1: AC2 — diff-bug #1, a canvas swapped before its page is looked up crashes the tree check (`holder.$` on a null `closest()`); fix with the 15 fix-now findings of pass 1 (Review section) and file row "Text check follow-ups".
+- 2026-10-19: T7 checkpoint (not done): fixes written, row "Text check follow-ups" filed, row "Name plant slide target" narrowed; probes on temporary copies show a swapped canvas passes the tree check and a thrown snapshot fails it ("canvas 1 snapshot failed (probe error)"); the AC and verify lines are running.
 
 ## Decisions
 
