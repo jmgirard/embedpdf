@@ -117,6 +117,7 @@ blocks cross-site reads.
 - 2026-10-18: re-audit: AC5 (full) — first reader: header-claim clause too wide (one URL stands for a host) and "Chrome" vs Chromium; both fixed in the wording above.
 - 2026-10-18: re-audit: AC5 (full) — re-entry reader: no finding on reachability, bounded promise, instrument, proportionality; ambiguities (each doc or both; "AC1's message"; no value when no header) and an iOS-simulator disclosure; the AC wording is kept and the docs meet each point (both docs carry every claim, quote the message, say nbviewer sent no header, and say iPhone and iPad were checked only in iOS 27.0 simulators).
 - 2026-10-18: after the fixes: `quarto render` exit 0; the 10 AC1–AC3 lines and the plain example.html desktop line exit 0; planted case (`--remote cors` on selfcontained_test.html, whose data: srcs are not rewritten) exits 1 on the new remote-server check. Status set to review.
+- 2026-10-18: step-7 approval: m003-remote-pdfs-on-phones approved for merge
 
 ## Decisions
 
