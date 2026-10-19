@@ -133,6 +133,20 @@
 //                          ResponseException, one line per embed. Needs
 //                          --expect-embeds above 0. Not with --remote,
 //                          --alone yes, --plant, --expect-text, --expect-name.
+//   --expect-ranges        takes no value: the docs server sends each
+//                          whole-file answer for a .pdf file over SLOW_ABOVE
+//                          bytes (tests/serve_docs.mjs) slowly, so PDF.js
+//                          loads it by byte ranges. Fail unless the server
+//                          answered at least one byte-range request (HTTP
+//                          206) for each PDF.js embed's address; the report's
+//                          "ranges" gives the count per path. Answers are
+//                          counted per address, so embeds that share an
+//                          address share the count. Not with --remote,
+//                          --missing-pdfs, or --alone yes.
+//   --plant noranges       with --expect-ranges: the server ignores every
+//                          Range header and sends the whole file (HTTP 200),
+//                          so the check must fail and name each PDF.js
+//                          embed's address
 //
 // Exits 0 only when every embed not set to renderer=native used PDF.js, has
 // exactly --expect-pages page containers, and every page canvas has ink, and
@@ -147,7 +161,8 @@
 // file." link. With --remote blocked its data-src must be on the remote
 // server, and the console must show the fetch of that URL failing ("Load
 // failed"); with --missing-pdfs, see that flag. With --expect-text and
-// --expect-name, those checks must pass too; with --expect-text, an embed
+// --expect-name, those checks must pass too, and so must the --expect-ranges
+// check when it is given; with --expect-text, an embed
 // still not hydrated when the text wait ends is the one failure.
 
 import fs from "node:fs";
@@ -161,7 +176,7 @@ import { expectedNames } from "./expect_names.mjs";
 const args = process.argv.slice(2);
 const FLAGS = ["device", "page", "expect-embeds", "expect-native", "expect-pages", "expect-text", "expect-name", "expect-download", "port", "timeout", "screenshot", "shot-embed", "plant", "alone", "remote", "slow-text"];
 // flags that take no value
-const BOOL_FLAGS = ["missing-pdfs"];
+const BOOL_FLAGS = ["missing-pdfs", "expect-ranges"];
 // parsed flags: a value flag's value is taken as it is, even when it starts
 // with "--", so it is never read as a flag
 const parsed = {};
@@ -177,6 +192,7 @@ for (let i = 0; i < args.length; i++) {
   parsed[args[i].slice(2)] = args[++i];
 }
 const missingPdfs = parsed["missing-pdfs"] === true;
+const expectRanges = parsed["expect-ranges"] === true;
 const opt = (name, fallback) => {
   return name in parsed ? parsed[name] : fallback;
 };
@@ -258,8 +274,18 @@ const NAME_PLANTS = ["wrongname", "nativename", "nativetitle", "norole", "nonumb
 const WAIT_PLANTS = ["unhydrated"];
 // planted in a failed embed whose PDF was inlined; needs --expect-download
 const DOWNLOAD_PLANTS = ["dltarget", "dlnoname", "dlwrongname", "dlhref", "dlsecond", "dltext", "decodelink", "extralog"];
-if (plant && !["blank", "missing", ...NAME_PLANTS, ...TEXT_PLANTS, ...WAIT_PLANTS, ...DOWNLOAD_PLANTS].includes(plant)) {
-  console.error(`ios_check: --plant must be blank, missing, ${[...TEXT_PLANTS, ...WAIT_PLANTS, ...NAME_PLANTS, ...DOWNLOAD_PLANTS].join(", ")}`);
+// planted in the docs server before the page loads; needs --expect-ranges
+const RANGE_PLANTS = ["noranges"];
+if (plant && !["blank", "missing", ...NAME_PLANTS, ...TEXT_PLANTS, ...WAIT_PLANTS, ...DOWNLOAD_PLANTS, ...RANGE_PLANTS].includes(plant)) {
+  console.error(`ios_check: --plant must be blank, missing, ${[...TEXT_PLANTS, ...WAIT_PLANTS, ...NAME_PLANTS, ...DOWNLOAD_PLANTS, ...RANGE_PLANTS].join(", ")}`);
+  process.exit(2);
+}
+if (RANGE_PLANTS.includes(plant) && !expectRanges) {
+  console.error(`ios_check: --plant ${plant} needs --expect-ranges`);
+  process.exit(2);
+}
+if (expectRanges && (remote || missingPdfs || alone === "yes")) {
+  console.error("ios_check: --expect-ranges cannot be combined with --remote, --missing-pdfs, or --alone yes");
   process.exit(2);
 }
 // one entry per embed on the page, in page order, each in the load-failure
@@ -678,6 +704,10 @@ if (pageFile) {
 const server = await serveDocs({
   port,
   missingPdfs,
+  // --expect-ranges: a whole large PDF is sent slowly, so PDF.js loads it by
+  // ranges; --plant noranges makes the server ignore every Range header
+  slowWhole: expectRanges,
+  noRanges: plant === "noranges",
   ...(aloneDir ? { root: aloneDir } : {}),
   // before the last </body>: a self-contained page can hold the text "</body>"
   // inside an inlined script
@@ -850,6 +880,21 @@ try {
     const inl = report.embeds.filter((e) => e.failure.text && e.inlined);
     if (inl.length) failures.push(`${inl.length} embeds with an inlined PDF are in the load-failure state (embeds ${inl.map((e) => e.index).join(", ")}); pass --expect-download`);
   }
+  // --expect-ranges: each PDF.js embed's PDF must have had at least one 206
+  // answer from the docs server (counted per address, so embeds that share
+  // an address share the count)
+  const ranges = expectRanges ? Object.fromEntries(server.rangeCounts) : undefined;
+  if (expectRanges && !report.stuck) {
+    const origin = `http://127.0.0.1:${server.address().port}`;
+    const pdfjsEmbeds = report.embeds.filter((e) => e.renderer === "pdfjs");
+    if (!pdfjsEmbeds.length) failures.push("--expect-ranges given, but no embed uses PDF.js");
+    for (const e of pdfjsEmbeds) {
+      const u = new URL(e.failure.expected);
+      if (u.origin !== origin || !server.rangeCounts.get(u.pathname)) {
+        failures.push(`embed ${e.index}: no byte-range request (HTTP 206) answered for ${e.failure.expected}`);
+      }
+    }
+  }
   // the full text is long; the report keeps its length
   for (const e of report.embeds) for (const b of e.text) if (b) b.text = `${normalize(b.text).length} characters`;
   const out = {
@@ -858,6 +903,7 @@ try {
     remote: remote || null,
     missingPdfs,
     ...report,
+    ranges,
     pass: failures.length === 0,
     failures,
   };
