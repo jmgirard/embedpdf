@@ -120,6 +120,7 @@ the new lines in CLAUDE.md "Verify before finishing".
 - 2026-10-18: review return 1: AC6 fails — CLAUDE.md has no literal `node tests/render_check.mjs percent_test.html --alone http --expect-native 0 --expect-pdfjs 2 --expect-pages 2 --expect-name "100%.pdf"` line. Fix-now items ride the same task: a failure line when the name-check wait times out, the header's RevealJS paragraph and `|` limits, ios_check's one-name note, the CLAUDE.md list note and Key files, and line wrapping.
 - 2026-10-18: T6 in progress (checkpoint): fixes written (CLAUDE.md `--alone http` percent line, list note, Key files; render_check timeout failure line and header notes; ios_check one-name note); the AC6 sweep and plant re-runs are running, and the timeout-line probe is not yet run.
 - 2026-10-18: T6 done: the CLAUDE.md sweep now finds 25 lines (the new `percent_test.html --alone http` line included), and all 25 exit 0; plants duplink, norole, dupdesc, notoolbar, wrongname (percent_test), the swapped revealjs list, and ios_check norole each exit 1 with their failure line. Probe: a temporary untracked copy of name_test.html with one `div.embedpdf` and no `data-src` exits 1 with "1 embed(s) on the page still not hydrated after 10 s", and name_test.html exits 0; the copy was deleted.
+- 2026-10-18: step-7 approval: m008-name-check-gaps approved for merge
 
 ## Decisions
 
