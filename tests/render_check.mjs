@@ -76,13 +76,15 @@
 //                       gives it role group and that name. Also fail unless
 //                       each toolbar control (zoom out, zoom in, download)
 //                       has a non-empty tree name, no tree description equal
-//                       to that name, and a title equal to that name.
-//   --plant wrongname|dupdesc
+//                       to that name, and a title equal to that name, and
+//                       unless each embed without a toolbar has
+//                       data-toolbar="false".
+//   --plant wrongname|dupdesc|notoolbar
 //                       with --expect-name, plant a defect in the first
 //                       PDF.js embed; the run must then fail: wrongname
 //                       changes its aria-label to "PDF: wrong.pdf", dupdesc
 //                       gives its zoom-in button an aria-label equal to its
-//                       title.
+//                       title, notoolbar removes its toolbar.
 // Set CHROME_PATH to use another Chrome or Chromium binary.
 //
 // On a RevealJS page the check goes to each slide with Reveal.slide() and
@@ -154,7 +156,7 @@ const DEVICES = {
 const FLAGS = ["device", "expect-native", "expect-pdfjs", "expect-pages", "expect-links", "expect-failed", "expect-text", "expect-name", "plant", "alone", "remote"];
 const TEXT_PLANTS = ["notext", "swap", "visible", "gone"];
 const TREE_PLANTS = ["nolabel", "canvas", "noname"];
-const NAME_PLANTS = ["wrongname", "dupdesc"];
+const NAME_PLANTS = ["wrongname", "dupdesc", "notoolbar"];
 const args = process.argv.slice(2);
 const flags = {};
 const positional = [];
@@ -428,6 +430,11 @@ async function nameFailures(page, slide) {
         if (!zoomIn) return null;
         zoomIn.setAttribute("aria-label", zoomIn.title);
       }
+      if (plant === "notoolbar") {
+        const toolbar = first.querySelector(".embedpdf-toolbar");
+        if (!toolbar) return null;
+        toolbar.remove();
+      }
       return plant;
     },
     slide,
@@ -449,7 +456,10 @@ async function nameFailures(page, slide) {
       if (node.name !== name) out.push(`${at}: tree name is "${node.name}", not "${name}"`);
     }
     // toolbar controls: one name (the title), not repeated as a description
+    // an embed lacks a toolbar only when its shortcode set toolbar=false
     const toolbar = await embed.$(".embedpdf-toolbar");
+    const toolbarOff = await embed.evaluate((el) => el.dataset.toolbar === "false");
+    if (!toolbar && !toolbarOff) out.push(`${at}: no toolbar, and toolbar=false is not set`);
     if (toolbar) {
       const buttons = await toolbar.$$("button");
       const controls = [

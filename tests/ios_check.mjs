@@ -43,8 +43,8 @@
 //   --expect-name "<file name>"
 //                          fail unless each PDF.js embed has role="group" and
 //                          aria-label "PDF: <file name>" in the DOM (Safari's
-//                          accessibility tree is not read); skipped under
-//                          --remote
+//                          accessibility tree is not read); cannot be
+//                          combined with --remote
 //   --plant wrongname      with --expect-name: change the first PDF.js
 //                          embed's aria-label to "PDF: wrong.pdf"; the check
 //                          must then fail
@@ -129,6 +129,10 @@ if (plant && !["blank", "missing", "wrongname", ...TEXT_PLANTS].includes(plant))
 const expectName = opt("expect-name", null);
 if (expectName === "") {
   console.error("ios_check: --expect-name needs a file name");
+  process.exit(2);
+}
+if (expectName && remote) {
+  console.error("ios_check: --expect-name cannot be combined with --remote (no embed shows a PDF there)");
   process.exit(2);
 }
 if (plant === "wrongname" && !expectName) {
