@@ -172,8 +172,10 @@ if (slowText && !(phrases && /^\d+$/.test(slowText) && Number(slowText) > 0)) {
 }
 const TEXT_PLANTS = ["notext", "swap", "visible", "inert", "cvhidden"];
 const NAME_PLANTS = ["wrongname", "norole"];
-if (plant && !["blank", "missing", ...NAME_PLANTS, ...TEXT_PLANTS].includes(plant)) {
-  console.error(`ios_check: --plant must be blank, missing, ${[...TEXT_PLANTS, ...NAME_PLANTS].join(", ")}`);
+// planted before the text wait; needs --expect-text
+const WAIT_PLANTS = ["unhydrated"];
+if (plant && !["blank", "missing", ...NAME_PLANTS, ...TEXT_PLANTS, ...WAIT_PLANTS].includes(plant)) {
+  console.error(`ios_check: --plant must be blank, missing, ${[...TEXT_PLANTS, ...WAIT_PLANTS, ...NAME_PLANTS].join(", ")}`);
   process.exit(2);
 }
 const expectName = opt("expect-name", null);
@@ -189,7 +191,7 @@ if (NAME_PLANTS.includes(plant) && !expectName) {
   console.error(`ios_check: --plant ${plant} needs --expect-name`);
   process.exit(2);
 }
-if (TEXT_PLANTS.includes(plant) && !phrases) {
+if ((TEXT_PLANTS.includes(plant) || WAIT_PLANTS.includes(plant)) && !phrases) {
   console.error(`ios_check: --plant ${plant} needs --expect-text`);
   process.exit(2);
 }
@@ -289,7 +291,18 @@ const PROBE = `<script>
       else clearInterval(timer);
     }, slowMs);
   }
+  let waitPlanted = "";
+  if (wantText && plant === "unhydrated") {
+    // an embed with no data-src never hydrates
+    const stray = document.createElement("div");
+    stray.className = "embedpdf";
+    document.body.appendChild(stray);
+    waitPlanted = plant;
+  }
   const textWaitedMs = wantText ? await waitText() : 0;
+  // embeds still not hydrated when the text wait ended: the probe reports at
+  // once, without scrolling
+  const stuck = wantText ? unhydrated() : 0;
   let textPlanted = "";
   if (["notext", "swap", "visible", "inert", "cvhidden"].includes(plant)) {
     const first = embeds().find((el) => kind(el) === "pdfjs");
@@ -327,13 +340,15 @@ const PROBE = `<script>
     };
   }));
 
-  const t0 = Date.now();
-  while (Date.now() - t0 < 90000) {
-    await scrollAll();
-    if (settled()) break;
+  if (!stuck) {
+    const t0 = Date.now();
+    while (Date.now() - t0 < 90000) {
+      await scrollAll();
+      if (settled()) break;
+      await sleep(1000);
+    }
     await sleep(1000);
   }
-  await sleep(1000);
 
   let namePlanted = "";
   if (plant === "wrongname") {
@@ -377,6 +392,8 @@ const PROBE = `<script>
     namePlanted,
     textWaitedMs,
     slowPages,
+    waitPlanted,
+    stuck,
     embeds: embeds().map((el, i) => {
       const pages = [...el.querySelectorAll(".embedpdf-page")];
       // the load-failure state, read from the text and links, not the class
@@ -503,10 +520,13 @@ try {
 
   const checked = report.embeds.filter((e) => e.requested !== "native");
   const failures = [];
-  if (checked.length !== expectEmbeds) {
+  // with --expect-text, an embed still not hydrated when the text wait ended
+  // is the one failure: the probe measured nothing more
+  if (report.stuck) failures.push(`${report.stuck} embed(s) still not hydrated when the text wait ended after ${report.textWaitedMs} ms`);
+  else if (checked.length !== expectEmbeds) {
     failures.push(`expected ${expectEmbeds} embeds not set to renderer=native, found ${checked.length}`);
   }
-  for (const e of checked) {
+  for (const e of report.stuck ? [] : checked) {
     if (remote) {
       // Safari names no cause beyond "Load failed"; it must be the fetch of
       // this embed's remote PDF that failed, not the PDF.js import
@@ -569,7 +589,7 @@ try {
   console.log(JSON.stringify(out, null, 2));
   exitCode = failures.length === 0 ? 0 : 1;
   // a text plant that found nothing proves nothing about the check
-  if ((TEXT_PLANTS.includes(plant) && !report.textPlanted) || (NAME_PLANTS.includes(plant) && !report.namePlanted)) {
+  if ((TEXT_PLANTS.includes(plant) && !report.textPlanted) || (NAME_PLANTS.includes(plant) && !report.namePlanted) || (WAIT_PLANTS.includes(plant) && !report.waitPlanted)) {
     console.error(`ios_check: --plant ${plant} found nothing to plant in`);
     exitCode = 2;
   }

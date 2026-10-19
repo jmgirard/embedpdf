@@ -190,6 +190,8 @@ const TEXT_PLANTS = ["notext", "swap", "visible", "gone", "inert", "cvhidden"];
 const TREE_PLANTS = ["nolabel", "canvas", "noname", "detach"];
 const NAME_PLANTS = ["wrongname", "dupdesc", "duplink", "norole", "notoolbar"];
 const INK_PLANTS = ["blank", "nocanvas", "nopages"];
+// planted before the text wait (unhydrated) or before the page loads (norender)
+const WAIT_PLANTS = ["unhydrated", "norender"];
 const args = process.argv.slice(2);
 const flags = {};
 const positional = [];
@@ -246,12 +248,12 @@ if (
   plant &&
   !(
     INK_PLANTS.includes(plant) ||
-    (phrases && [...TEXT_PLANTS, ...TREE_PLANTS].includes(plant)) ||
+    (phrases && [...TEXT_PLANTS, ...TREE_PLANTS, ...WAIT_PLANTS].includes(plant)) ||
     (expectName && NAME_PLANTS.includes(plant))
   )
 ) {
   console.error(
-    `render_check: --plant must be ${INK_PLANTS.join(", ")}, or ${[...TEXT_PLANTS, ...TREE_PLANTS].join(", ")} with --expect-text, or ${NAME_PLANTS.join(", ")} with --expect-name`
+    `render_check: --plant must be ${INK_PLANTS.join(", ")}, or ${[...TEXT_PLANTS, ...TREE_PLANTS, ...WAIT_PLANTS].join(", ")} with --expect-text, or ${NAME_PLANTS.join(", ")} with --expect-name`
   );
   process.exit(2);
 }
@@ -349,9 +351,18 @@ const url =
 // embed's text at load on one queue, whatever slide is shown. With
 // --slow-text <ms>, the same wait first runs once; then all the text is
 // emptied and put back one page every <ms> ms while the wait runs again.
+// --plant unhydrated first adds a div.embedpdf with no data-src, which never
+// hydrates.
 function waitForText(page) {
-  return page.evaluate(async (slowMs) => {
+  return page.evaluate(async (slowMs, plant) => {
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    let planted = null;
+    if (plant === "unhydrated") {
+      const stray = document.createElement("div");
+      stray.className = "embedpdf";
+      document.body.appendChild(stray);
+      planted = plant;
+    }
     const all = () => document.querySelectorAll("div.embedpdf").length;
     const unhydrated = () => document.querySelectorAll("div.embedpdf:not(.embedpdf-pdfjs):not(.embedpdf-native):not(.embedpdf-failed)").length;
     const blocks = () => [...document.querySelectorAll(".embedpdf-pdfjs .embedpdf-page")].map((p) => p.querySelector(".embedpdf-text"));
@@ -381,8 +392,8 @@ function waitForText(page) {
       }, slowMs);
     }
     const waitedMs = await wait();
-    return { waitedMs, slowPages, unhydrated: unhydrated() };
-  }, slowText);
+    return { waitedMs, slowPages, unhydrated: unhydrated(), planted };
+  }, slowText, plant);
 }
 
 // --expect-text, before the pages scroll: the hidden text of each page of each
@@ -484,11 +495,14 @@ async function treeFailures(page, slide) {
   const where = slide === null ? "" : ` on slide ${slide + 1}`;
   const root = slide === null ? page : (await page.evaluateHandle((k) => window.Reveal.getSlides()[k], slide)).asElement();
   const embeds = await root.$$(".embedpdf-pdfjs");
+  // the wait ran out: some page still had no canvas at its end
+  let ranOut = false;
   for (const embed of embeds) {
     const pages = await embed.$$(".embedpdf-page");
     for (let t = 0; t < 100 && (await embed.$$(".embedpdf-page canvas")).length < pages.length; t++) {
       await new Promise((r) => setTimeout(r, 100));
     }
+    if ((await embed.$$(".embedpdf-page canvas")).length < pages.length) ranOut = true;
   }
   let planted = await page.evaluate(
     (slide, plant, treePlants) => {
@@ -565,7 +579,7 @@ async function treeFailures(page, slide) {
       }
     }
   }
-  return { planted, failures: out, embeds: embeds.length };
+  return { planted, failures: out, embeds: embeds.length, ranOut };
 }
 
 // --expect-name, after the pages scroll: each PDF.js embed under a root is a
@@ -697,6 +711,13 @@ try {
   } else {
     await page.setViewport({ width: 1200, height: 900, deviceScaleFactor: 2 });
   }
+  // --plant norender: no canvas gets a 2D context, so the viewer's page
+  // renders fail and it puts no canvas on any page
+  if (plant === "norender") {
+    await page.evaluateOnNewDocument(() => {
+      HTMLCanvasElement.prototype.getContext = () => null;
+    });
+  }
   const response = await page.goto(url, { waitUntil: "networkidle0" });
   if (!response || !response.ok()) {
     throw new Error(`could not load ${url} (HTTP ${response ? response.status() : "no response"})`);
@@ -719,7 +740,21 @@ try {
   const textReports = [];
   const treeReports = [];
   const nameReports = [];
+  // with --expect-text, a run that cannot get further stops at once: it prints
+  // why and the text failures found so far, and exits 1
+  const stopRun = async (why) => {
+    console.log(JSON.stringify({ device: deviceName || "chrome", alone, plant, textWait, stoppedBecause: why }, null, 2));
+    console.error("render_check: " + why);
+    for (const f of [...textReports.flatMap(textFailures), ...treeReports.flatMap((r) => r.failures)]) console.error("render_check: " + f);
+    await browser.close();
+    server?.close();
+    remoteServer?.close();
+    process.exit(1);
+  };
   const textWait = phrases ? await waitForText(page) : null;
+  if (textWait && textWait.unhydrated) {
+    await stopRun(`${textWait.unhydrated} embed(s) still not hydrated when the text wait ended after ${textWait.waitedMs} ms`);
+  }
   if (slides) {
     for (let k = 0; k < slides; k++) {
       await page.evaluate(async (k) => {
@@ -730,6 +765,10 @@ try {
       if (phrases) textReports.push(await measureText(page, k));
       await scrollPages(k);
       if (phrases) treeReports.push(await treeFailures(page, k));
+      // a later slide would wait as long again, and the run fails already
+      if (phrases && treeReports[treeReports.length - 1].ranOut) {
+        await stopRun(`stopped at slide ${k + 1}: a PDF.js page there still had no canvas when the canvas wait ended`);
+      }
       if (expectName) nameReports.push(await nameFailures(page, k, nameReports.reduce((n, r) => n + r.embeds, 0)));
     }
   } else {
@@ -849,7 +888,7 @@ try {
     ? {
         phrases,
         plant,
-        planted: [...textReports, ...treeReports].map((r) => r.planted).find(Boolean) || null,
+        planted: plant === "norender" ? plant : [textWait, ...textReports, ...treeReports].map((r) => r.planted).find(Boolean) || null,
         wait: textWait,
         pagesRead: textReports.reduce((n, r) => n + r.pages.flat().length, 0),
         embedsRead: textReports.reduce((n, r) => n + r.pages.length, 0),
@@ -891,7 +930,7 @@ try {
     if (names.failures.length) process.exitCode = 1;
   }
   if (text) {
-    if (plant && [...TEXT_PLANTS, ...TREE_PLANTS].includes(plant) && !text.planted) {
+    if (plant && [...TEXT_PLANTS, ...TREE_PLANTS, ...WAIT_PLANTS].includes(plant) && !text.planted) {
       console.error(`render_check: --plant ${plant} found nothing to plant in`);
       await browser.close();
       server?.close();

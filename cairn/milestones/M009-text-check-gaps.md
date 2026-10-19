@@ -102,7 +102,7 @@ slide's canvas wait runs out (render_check); the plants and the `--slow-text` ai
       Add `--slow-text <ms>` to `FLAGS` and its in-page aid. Run the AC3 render_check line.
 - [x] T4: Whole-page wait in ios_check. Apply the T3 rule to the probe's wait (line 258), with `--slow-text` passed
       as a query parameter like `text=1`. Run the AC3 ios_check line.
-- [ ] T5: Fast exits. When the wait ends with an unhydrated embed, print the line and exit 1 in render_check; in
+- [x] T5: Fast exits. When the wait ends with an unhydrated embed, print the line and exit 1 in render_check; in
       ios_check, POST the report at once with that one failure. Add `unhydrated` to both plant lists. In
       render_check, stop the slide loop when a slide's canvas wait runs out; add `norender`, put in place before the
       page loads. Run the AC4 and AC5 lines.
@@ -130,6 +130,7 @@ slide's canvas wait runs out (render_check); the plants and the `--slow-text` ai
 - 2026-10-19: T2 done: a null canvas snapshot counts as hidden only for a connected canvas; else one snapshot of the page's current canvas; a snapshot that throws reads as null. AC2 run exits 1 with "PDF.js embed 1: canvas 2 left the page during the accessibility check"; `--plant canvas` still exits 1; iphone text line exits 0. Probe (temporary copy, not committed): a canvas swapped for a clone passes the tree check, so the retry path is reached.
 - 2026-10-19: T3 done: `waitForText()` runs once before the slide loop or scroll; `measureText()` no longer waits; the JSON `text.wait` holds `waitedMs`, `slowPages`, `unhydrated`. AC3 render_check line exits 0 with a 30019 ms wait over 20 pages; selfcontained_slides iphone text line exits 0; `--slow-text 12000` on desktop exits 1 after a 10008 ms wait, so the wait ends after 10 s without new text.
 - 2026-10-19: T4 done: the probe's text wait follows the T3 rule; `--slow-text` goes to the probe as `slow=<ms>`; the report adds `slowPages`. AC3 ios_check line (iPhone) exits 0 with `textWaitedMs` 30090 over 20 pages.
+- 2026-10-19: T5 done: render_check `stopRun()` prints the cause and the text and tree failures so far, then exits 1; plants `unhydrated` (in `waitForText()`) and `norender` (`getContext` returns null, set before load) in a new `WAIT_PLANTS` list; ios_check reports at once with `stuck`, which becomes the one failure. AC4 render_check exits 1 in 12 s with only "1 embed(s) still not hydrated when the text wait ended after 10007 ms"; AC4 ios_check (iPhone) exits 1 in 14 s with only that `failures` entry; AC5 exits 1 in 16 s with "stopped at slide 2: …" and one failure line, for slide 2.
 
 ## Decisions
 
