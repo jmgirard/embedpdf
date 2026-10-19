@@ -91,7 +91,8 @@ embed uses the query-style address `files/get?file=sample.pdf`, and
 `base64`) and has no download link. `percent_test.html` is self-contained. It shows
 `files/100%.pdf` by `files/100%25.pdf` and by a bare `%`.
 `--plant` in each script plants one defect so you can see a
-check fail. The two scripts have different plant lists (see each header).
+check fail. render_check, ios_check, safari_check, and name_rule_test take
+`--plant`, and each header says what its `--plant` does.
 With `--expect-text`, both scripts wait once for the page's text, or twice
 with `--slow-text`. When every
 embed is hydrated and every page has text, the wait ends. While something is
@@ -229,9 +230,12 @@ errors.
   checked only in Chromium and in the iOS 27.0 simulators.
 - A real screen reader (VoiceOver, TalkBack) reading a PDF.js embed's hidden
   page text, its "PDF: <file name>" group name, its toolbar controls'
-  `title`-only names, and the page indicator's "Page i of n". Checked in
-  Chromium's accessibility tree, in Safari's page DOM in the iOS simulators,
-  and in desktop Safari 27.0.1 by `safari_check.mjs --target mac`.
+  `title`-only names, and the page indicator's "Page i of n". All of these are
+  checked in Chromium's accessibility tree. In Safari's page DOM in the iOS
+  simulators, the group name, hidden text, and indicator are checked, but not
+  the toolbar controls. In desktop Safari 27.0.1, `safari_check.mjs --target
+  mac` checks the group name, toolbar controls, and indicator, but not the
+  page text.
 - Safari's computed names in the iOS simulators. On 2026-10-19 with iOS 27.0,
   `safari_check.mjs --target simulator` got "Could not find any session hosts
   that match the requested capabilities" from safaridriver. The simulators'

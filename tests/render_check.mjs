@@ -151,7 +151,9 @@
 //                       has none), rawindicator removes aria-hidden from its
 //                       shown "i / n", staleindicator swaps its "Page i of
 //                       n" text for a "Page 1 of n" copy that the scroll does
-//                       not update.
+//                       not update (this fails only when that embed is the
+//                       one scrolled to page 2, see page2Checked, as on
+//                       example.html).
 // Set CHROME_PATH to use another Chrome or Chromium binary.
 //
 // On a RevealJS page the check goes to each slide with Reveal.slide() and

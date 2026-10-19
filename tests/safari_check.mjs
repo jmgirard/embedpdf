@@ -30,7 +30,8 @@
 // computed name (Element.prototype.computedName). It fails when it cannot.
 //
 // Exits 0 on a pass, 1 on a failed check or a probe that cannot read names,
-// 2 on a bad argument or when safaridriver or the server cannot start.
+// 2 on a bad argument, when --plant finds nothing to plant in, or when
+// safaridriver or the server cannot start.
 
 import { spawn, execFileSync } from "node:child_process";
 import net from "node:net";
@@ -67,6 +68,12 @@ if (plant && (target === "page-script" || !["rawindicator", "nonumber"].includes
   process.exit(2);
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// the docs server, or exit 2 when it cannot start
+const startServer = (opts) =>
+  serveDocs(opts).catch((err) => {
+    console.error(`safari_check: cannot start the docs server: ${err.message}`);
+    process.exit(2);
+  });
 const simctl = (...a) => execFileSync("xcrun", ["simctl", ...a], { encoding: "utf8" });
 
 function simulator(key) {
@@ -91,7 +98,7 @@ const r = { hasComputedName: "computedName" in Element.prototype, hasComputedRol
   computedName: b.computedName === undefined ? null : String(b.computedName), userAgent: navigator.userAgent };
 fetch("/__probe", { method: "POST", body: JSON.stringify(r) });
 </script>`;
-  const server = await serveDocs({
+  const server = await startServer({
     routes: {
       "/__safari_probe.html": (req, res) => res.writeHead(200, { "Content-Type": "text/html" }).end(PROBE),
       "/__probe": (req, res) => {
@@ -135,6 +142,10 @@ const freePort = () =>
   });
 const sdPort = await freePort();
 const driver = spawn("safaridriver", ["-p", String(sdPort)], { stdio: "ignore" });
+driver.on("error", (err) => {
+  console.error(`safari_check: cannot start safaridriver: ${err.message}`);
+  process.exit(2);
+});
 const base = `http://127.0.0.1:${sdPort}`;
 async function wd(method, path, body) {
   const res = await fetch(base + path, {
@@ -159,7 +170,7 @@ for (let k = 0; ; k++) {
   }
 }
 
-const server = await serveDocs();
+const server = await startServer();
 const failures = [];
 let session = null;
 let report = {};
