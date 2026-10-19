@@ -1,6 +1,6 @@
 # M008: Name check gaps
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
@@ -31,16 +31,16 @@ the new lines in CLAUDE.md "Verify before finishing".
 
 ## Acceptance criteria
 
-- [ ] AC1: `tests/render_check.mjs` has a `--plant duplink` (with `--expect-name`) that gives the first PDF.js
+- [x] AC1: `tests/render_check.mjs` has a `--plant duplink` (with `--expect-name`) that gives the first PDF.js
       embed's toolbar download link an `aria-label` equal to its `title`.
       `node tests/render_check.mjs example.html --expect-native 9 --expect-pdfjs 2 --expect-name sample.pdf --plant duplink`
       exits 1 and prints a failure line saying that embed's download control has a description that repeats its name.
-- [ ] AC2: `tests/render_check.mjs` and `tests/ios_check.mjs` each have a `--plant norole` (with `--expect-name`)
+- [x] AC2: `tests/render_check.mjs` and `tests/ios_check.mjs` each have a `--plant norole` (with `--expect-name`)
       that removes the first PDF.js embed's `role` attribute.
       `node tests/render_check.mjs example.html --expect-native 9 --expect-pdfjs 2 --expect-name sample.pdf --plant norole`
       and `node tests/ios_check.mjs --device "embedpdf iPhone" --page name_test.html --expect-embeds 2 --expect-name "sample copy.pdf" --plant norole`
       each exit 1 and print a failure line saying that embed's role attribute is not group.
-- [ ] AC3: `tests/render_check.mjs --expect-name` accepts several names separated by `|`, in the document order of
+- [x] AC3: `tests/render_check.mjs --expect-name` accepts several names separated by `|`, in the document order of
       the page's PDF.js embeds. A single name still applies to every PDF.js embed. With two or more names, the run
       fails unless the number of names equals the number of PDF.js embeds and embed i is named "PDF: <name i>".
       `node tests/render_check.mjs revealjs_test.html --expect-native 2 --expect-pdfjs 1 --expect-name dummy2.pdf`
@@ -48,10 +48,10 @@ the new lines in CLAUDE.md "Verify before finishing".
       exit 0, and
       `node tests/render_check.mjs revealjs_test.html --device iphone --expect-native 1 --expect-pdfjs 2 --expect-name "dummy.pdf|dummy2.pdf"`
       exits 1.
-- [ ] AC4: On a RevealJS page, `tests/render_check.mjs` starts the `--expect-name` check of each slide only once no
+- [x] AC4: On a RevealJS page, `tests/render_check.mjs` starts the `--expect-name` check of each slide only once no
       `div.embedpdf` on that slide lacks all of `.embedpdf-pdfjs`, `.embedpdf-native`, and `.embedpdf-failed`, or
       after 10 s.
-- [ ] AC5: A new self-contained page `percent_test.qmd` (`embed-resources: true`) shows `files/100%.pdf`, a copy of
+- [x] AC5: A new self-contained page `percent_test.qmd` (`embed-resources: true`) shows `files/100%.pdf`, a copy of
       `sample.pdf`, in two `renderer=pdfjs` embeds: one by the path `files/100%25.pdf` and one by `files/100%.pdf`.
       These runs exit 0:
       `node tests/render_check.mjs percent_test.html --alone file --expect-native 0 --expect-pdfjs 2 --expect-pages 2 --expect-name "100%.pdf"`,
@@ -114,7 +114,64 @@ the new lines in CLAUDE.md "Verify before finishing".
 - 2026-10-18: T4 done: `percent_test.qmd` and `files/100%.pdf` (copy of `sample.pdf`); `quarto render` exits 0 with the one expected "Invalid URI 'files/100%.pdf'" WARN, and docs/ gains only `percent_test.html` and `files/100%.pdf`. The rendered hrefs are `files/100%25.pdf` and `files/100%.pdf`. render_check `--alone file`, `--alone http`, and `--alone file --device iphone` exit 0 (both links `blob`, every page ok); `--plant wrongname` exits 1; ios_check iPhone and iPad `--alone yes` exit 0 with both embeds role group, "PDF: 100%.pdf".
 - 2026-10-18: T5 done: CLAUDE.md's two revealjs_test.html lines gain the AC3 `--expect-name` arguments (in place, not as new lines), four percent_test lines are added, and the notes describe the `|` list and percent_test. A sweep of "Verify before finishing" for `node tests/(render|ios)_check.mjs` lines with `--expect-name` or `revealjs_test.html` found 24 lines, and all 24 exit 0 (Chromium 155, iOS 27.0 simulators). The simple-english hook reports 37 style hits across all of CLAUDE.md; the two added sentences carry none of them, and the older text stays as it is (out of scope).
 - 2026-10-18: claim audit: not owed — internal tier.
+- 2026-10-18: review return 1: AC6 fails — CLAUDE.md has no literal `node tests/render_check.mjs percent_test.html --alone http --expect-native 0 --expect-pdfjs 2 --expect-pages 2 --expect-name "100%.pdf"` line. Fix-now items ride the same task: a failure line when the name-check wait times out, the header's RevealJS paragraph and `|` limits, ios_check's one-name note, the CLAUDE.md list note and Key files, and line wrapping.
 
 ## Decisions
 
 ## Review
+
+Pass 1, 2026-10-18, at d98b38b (branch level with main at 4658f45). Chromium 155 via `CHROME_PATH`, iOS 27.0
+"embedpdf iPhone" and "embedpdf iPad" simulators.
+
+- AC1: `render_check.mjs example.html … --expect-name sample.pdf --plant duplink` exit 1, line "PDF.js embed 1,
+  download control: description repeats the name "Download PDF"". The clean run exits 0 (AC6 sweep line 1).
+- AC2: render_check `--plant norole` exit 1, lines "PDF.js embed 1: role attribute is null, not group" and "tree
+  role is generic, not group"; ios_check iPhone name_test.html `--plant norole` exit 1, report failure "embed 1:
+  role attribute is null, not group".
+- AC3: revealjs_test.html desktop `--expect-name dummy2.pdf` exit 0; iphone `"dummy2.pdf|dummy.pdf"` exit 0; iphone
+  `"dummy.pdf|dummy2.pdf"` exit 1 (aria-label and tree name mismatches on slides 3 and 4). Code: `expectNames` split
+  at render_check.mjs:231, per-embed index at :527, count check at :781. One-name runs (example.html, name_test.html)
+  exit 0 in the AC6 sweep.
+- AC4: render_check.mjs:495-498, inside `nameFailures()` before the plant and before any read: a loop of 100 ms steps
+  while `div.embedpdf:not(.embedpdf-pdfjs):not(.embedpdf-native):not(.embedpdf-failed)` under the slide is non-empty,
+  capped at 10 s. The two AC3 exit-0 revealjs runs pass no `--expect-text`.
+- AC5: `percent_test.qmd` has `embed-resources: true` and two `renderer=pdfjs` embeds of `files/100%25.pdf` and
+  `files/100%.pdf`; `files/100%.pdf` equals `sample.pdf` (copied). render_check `--alone file`, `--alone http`,
+  `--alone file --device iphone` exit 0; ios_check iPhone and iPad `--alone yes` exit 0; `--alone file --plant
+  wrongname` exit 1 ("aria-label is "PDF: wrong.pdf", not "PDF: 100%.pdf"").
+- AC6: FAILS as written. The AC5 run `percent_test.html --alone http …` exits 0 but is not a command line in
+  CLAUDE.md (only the general note "Run each `--alone file` line again with `--alone http`" covers it). The other
+  parts hold: the 24 swept lines exit 0, and both headers describe their plants and the `|` list. Not ticked.
+- Gate: `cairn_validate.py` exit 0 (all checks passed); no principle changed, so no `cairn_impact`; the generic
+  profile names no toolchain checks.
+- spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1: the hydration wait in `nameFailures()` ends after 10 s with no message — fix now (print a failure
+  line naming the unhydrated count).
+- diff-bug #2: on a deck the name plant picks the page's first PDF.js embed on every slide, so a late-hydrating
+  earlier embed can move it — follow-up, new row "Name plant slide target".
+- diff-bug #3: the `|` index counts hydrated embeds, so a late embed shifts later names — fix now, covered by #1's
+  message (the count check already fails such a run).
+- diff-bug #4: a short list prints both a per-embed line and the count line — reject (false as a defect: both
+  lines are true and the run exits 1).
+- diff-bug #5: names are not trimmed — reject (false: a name is compared as the file name is written).
+- diff-bug #6: ios_check gives no `|` error — reject (planned change: the list is render_check's only).
+- diff-bug #7: the header's RevealJS paragraph does not mention the wait — fix now.
+- diff-bug #8: new comment and CLAUDE.md lines are not wrapped — reject (style); rewrapped anyway with the fix.
+- diff-bug #9: no literal `--alone http` percent line — floor return (AC6 fails), see the work log.
+- diff-bug #10: the CLAUDE.md note leaves out that a list must name every embed — fix now.
+- diff-bug #11: the published page has a bare-`%` href that GitHub Pages answers 400 — reject (planned change:
+  the user chose the row "Bare percent path").
+- blame-history #1: no literal `--alone http` percent line — same as diff-bug #9.
+- blame-history #2: vertical slides would double-count — reject (false: `Reveal.getSlides()` leaves out stack
+  parents).
+- blame-history #3: the silent 10 s wait — same as diff-bug #1.
+- blame-history #4: a file name with `|` cannot be given — fix now (say so in the header).
+- blame-history #5: the revealjs lines gained `--expect-name` in place — reject (planned change).
+- blame-history #6: long CLAUDE.md sentence — reject (style); rewrapped with diff-bug #8.
+- prior-review #1: the silent 10 s wait — same as diff-bug #1.
+- prior-review #2: ios_check takes no `|` list — fix now in part (its header says one name and that the list is
+  render_check's); the parity itself is a planned change.
+- prior-review #3: the bare-`%` path on a normal page is unchecked — reject (planned change, row "Bare percent path").
+- ripple #1: ROADMAP row "Name check gaps" still lists the gaps — reject (planned change: post-merge hygiene
+  graduates it).
+- ripple #2: CLAUDE.md "Key files" omits percent_test.qmd (and name_test.qmd, the self-contained pages) — fix now.
