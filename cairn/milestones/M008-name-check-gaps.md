@@ -1,13 +1,13 @@
 # M008: Name check gaps
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** —
 - **Resolves:** —
 - **Surface tier:** internal — check scripts and test pages only; the extension code does not change
-- **Branch/PR:** —
+- **Branch/PR:** m008-name-check-gaps
 
 ## Goal
 
@@ -77,7 +77,7 @@ the new lines in CLAUDE.md "Verify before finishing".
 
 ## Tasks
 
-- [ ] T1: Plants. In `render_check.mjs` `nameFailures()` (near line 480) add `duplink` (the `a.embedpdf-download`
+- [x] T1: Plants. In `render_check.mjs` `nameFailures()` (near line 480) add `duplink` (the `a.embedpdf-download`
       gets `aria-label` = `title`) and `norole` (remove the embed's `role`), and add both to `NAME_PLANTS`. In
       `ios_check.mjs` add `norole` to the plant list (line 166), the needs-`--expect-name` guard (line 179), and the
       probe plant block (near line 288). Update both header comments. Run the AC1 and AC2 lines.
@@ -107,6 +107,8 @@ the new lines in CLAUDE.md "Verify before finishing".
 - 2026-10-18: plan gate chose a `|` name list in embed order over reading each embed's expected name from its own `data-src`, because an expectation derived from the page under test cannot catch a wrong file; falsified by a page whose PDF.js embed order differs between devices in a way a list cannot state.
 - 2026-10-18: plan gate chose a separate `duplink` plant over widening `dupdesc` to all controls, because one plant over several controls cannot show which control's check fails; falsified by a check that fails on one control only when planted with another.
 - 2026-10-18: plan gate chose render_check only for the `|` list, because `ios_check.mjs` has no slide-deck support and no single page needs several names there.
+- 2026-10-18: implement: branch m008-name-check-gaps cut from main at 4658f45; Google Chrome is not installed, so every render_check run uses Chromium 155 through `CHROME_PATH=/Applications/Chromium.app/Contents/MacOS/Chromium`, as in M001 to M007.
+- 2026-10-18: T1 done: render_check plants `duplink` and `norole`, ios_check plant `norole`. example.html `--plant duplink` exits 1 ("download control: description repeats the name"), `--plant norole` exits 1 ("role attribute is null, not group", tree role generic); name_test.html ios_check iPhone `--plant norole` exits 1 with the same role line; both clean runs exit 0.
 
 ## Decisions
 

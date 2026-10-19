@@ -95,12 +95,14 @@
 //                       to that name, and a title equal to that name, and
 //                       unless each embed without a toolbar has
 //                       data-toolbar="false".
-//   --plant wrongname|dupdesc|notoolbar
+//   --plant wrongname|dupdesc|duplink|norole|notoolbar
 //                       with --expect-name, plant a defect in the first
 //                       PDF.js embed; the run must then fail: wrongname
 //                       changes its aria-label to "PDF: wrong.pdf", dupdesc
 //                       gives its zoom-in button an aria-label equal to its
-//                       title, notoolbar removes its toolbar.
+//                       title, duplink does the same to its download link,
+//                       norole removes its role attribute, notoolbar
+//                       removes its toolbar.
 // Set CHROME_PATH to use another Chrome or Chromium binary.
 //
 // On a RevealJS page the check goes to each slide with Reveal.slide() and
@@ -179,7 +181,7 @@ const FLAGS = ["device", "expect-native", "expect-pdfjs", "expect-pages", "expec
 const BOOL_FLAGS = ["missing-pdfs"];
 const TEXT_PLANTS = ["notext", "swap", "visible", "gone"];
 const TREE_PLANTS = ["nolabel", "canvas", "noname"];
-const NAME_PLANTS = ["wrongname", "dupdesc", "notoolbar"];
+const NAME_PLANTS = ["wrongname", "dupdesc", "duplink", "norole", "notoolbar"];
 const INK_PLANTS = ["blank", "nocanvas", "nopages"];
 const args = process.argv.slice(2);
 const flags = {};
@@ -491,6 +493,12 @@ async function nameFailures(page, slide) {
         if (!zoomIn) return null;
         zoomIn.setAttribute("aria-label", zoomIn.title);
       }
+      if (plant === "duplink") {
+        const link = first.querySelector(".embedpdf-toolbar a.embedpdf-download");
+        if (!link) return null;
+        link.setAttribute("aria-label", link.title);
+      }
+      if (plant === "norole") first.removeAttribute("role");
       if (plant === "notoolbar") {
         const toolbar = first.querySelector(".embedpdf-toolbar");
         if (!toolbar) return null;

@@ -49,9 +49,11 @@
 //                          aria-label "PDF: <file name>" in the DOM (Safari's
 //                          accessibility tree is not read); cannot be
 //                          combined with --remote or --missing-pdfs
-//   --plant wrongname      with --expect-name: change the first PDF.js
-//                          embed's aria-label to "PDF: wrong.pdf"; the check
-//                          must then fail
+//   --plant wrongname|norole
+//                          with --expect-name: change the first PDF.js
+//                          embed's aria-label to "PDF: wrong.pdf"
+//                          (wrongname), or remove its role attribute
+//                          (norole); the check must then fail
 //   --alone yes|no         yes: serve a copy of the page from an empty
 //                          temporary directory instead of docs/ (default no)
 //   --remote blocked       serve the PDFs from a second server on another port
@@ -163,8 +165,9 @@ if (phrases && (remote || missingPdfs)) {
   process.exit(2);
 }
 const TEXT_PLANTS = ["notext", "swap", "visible"];
-if (plant && !["blank", "missing", "wrongname", ...TEXT_PLANTS].includes(plant)) {
-  console.error("ios_check: --plant must be blank, missing, notext, swap, visible, or wrongname");
+const NAME_PLANTS = ["wrongname", "norole"];
+if (plant && !["blank", "missing", ...NAME_PLANTS, ...TEXT_PLANTS].includes(plant)) {
+  console.error("ios_check: --plant must be blank, missing, notext, swap, visible, wrongname, or norole");
   process.exit(2);
 }
 const expectName = opt("expect-name", null);
@@ -176,8 +179,8 @@ if (expectName && (remote || missingPdfs)) {
   console.error("ios_check: --expect-name cannot be combined with --remote or --missing-pdfs (no embed shows a PDF there)");
   process.exit(2);
 }
-if (plant === "wrongname" && !expectName) {
-  console.error("ios_check: --plant wrongname needs --expect-name");
+if (NAME_PLANTS.includes(plant) && !expectName) {
+  console.error(`ios_check: --plant ${plant} needs --expect-name`);
   process.exit(2);
 }
 if (TEXT_PLANTS.includes(plant) && !phrases) {
@@ -288,6 +291,10 @@ const PROBE = `<script>
   if (plant === "wrongname") {
     const first = embeds().find((el) => kind(el) === "pdfjs");
     if (first) { first.setAttribute("aria-label", "PDF: wrong.pdf"); namePlanted = plant; }
+  }
+  if (plant === "norole") {
+    const first = embeds().find((el) => kind(el) === "pdfjs");
+    if (first) { first.removeAttribute("role"); namePlanted = plant; }
   }
 
   if (plant === "blank" || plant === "missing") {
@@ -511,7 +518,7 @@ try {
   console.log(JSON.stringify(out, null, 2));
   exitCode = failures.length === 0 ? 0 : 1;
   // a text plant that found nothing proves nothing about the check
-  if ((TEXT_PLANTS.includes(plant) && !report.textPlanted) || (plant === "wrongname" && !report.namePlanted)) {
+  if ((TEXT_PLANTS.includes(plant) && !report.textPlanted) || (NAME_PLANTS.includes(plant) && !report.namePlanted)) {
     console.error(`ios_check: --plant ${plant} found nothing to plant in`);
     exitCode = 2;
   }
