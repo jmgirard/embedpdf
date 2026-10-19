@@ -1,6 +1,6 @@
 # M013: Large PDF range check
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -103,7 +103,7 @@ no range in 3 of 3 runs. When the server sent the whole-file answer slowly
       header text. Run the render_check lines of AC3 and one plant run.
 - [x] T4: Add `--expect-ranges` and `--plant noranges` to ios_check, with
       header text. Run the ios_check lines of AC3 and one plant run.
-- [ ] T5: Add the CLAUDE.md lines and text of AC5. Then run the verify slot
+- [x] T5: Add the CLAUDE.md lines and text of AC5. Then run the verify slot
       for a `tests/serve_docs.mjs` change: every `render_check.mjs`,
       `ios_check.mjs`, `name_rule_test.mjs`, and `safari_check.mjs` line in
       CLAUDE.md's fenced blocks must exit 0.
@@ -130,6 +130,9 @@ no range in 3 of 3 runs. When the server sent the whole-file answer slowly
 - 2026-10-19: T3 found the slow answer also slowed Bootstrap's CSS and pdf.min.mjs (both over 131,072 bytes), so `networkidle0` timed out; `slowWhole` now applies to `.pdf` files only, with a helpers_test case that failed (22 s) without that rule; helpers_test 109 passed, 0 failed.
 - 2026-10-19: T3 render_check `--expect-ranges` (a flag with no value) and `--plant noranges`: the 5 AC3 render_check lines exit 0 with 3 range answers per PDF.js embed; plants on plain, iphone, and `--remote cors` iphone exit 1 naming each PDF.js address, every page still inked.
 - 2026-10-19: T4 ios_check `--expect-ranges` and `--plant noranges` (refused with --remote, --missing-pdfs, --alone yes; the report gains "ranges"): "embedpdf iPhone" and "embedpdf iPad" (iOS 27.0) exit 0 with 3 range answers per embed; the iPhone plant exits 1 naming both addresses, with no ink failure.
+- 2026-10-19: T5 CLAUDE.md gains the 7 large_test.html lines, a paragraph on `--expect-ranges`, `--plant noranges`, and how files/large.pdf was made, a key-files mention, and a "Still unverified" entry. All 57 `node tests/…` lines in CLAUDE.md's fenced blocks (helpers_test, render_check, ios_check, name_rule_test, safari_check) exited 0 in one run, Chromium 155 via CHROME_PATH, no retries.
+- 2026-10-19: claim audit: not owed — internal tier.
+- 2026-10-19: implement done; status review.
 
 ## Decisions
 

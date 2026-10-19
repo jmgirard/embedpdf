@@ -7,7 +7,7 @@ _Last hygiene check: 2026-10-19 (M012 done: graduated "Native embed name", added
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M013 | Large PDF range check | in-progress | — | normal | milestones/M013-large-pdf-range-check.md |
+| M013 | Large PDF range check | review | — | normal | milestones/M013-large-pdf-range-check.md |
 | M012 | Native embed name | done | — | normal | milestones/archive/M012-native-embed-name.md |
 | M011 | Inlined PDF failure | done | — | normal | milestones/archive/M011-inlined-pdf-failure.md |
 | M010 | Embed name gaps | done | — | high | milestones/archive/M010-embed-name-gaps.md |
