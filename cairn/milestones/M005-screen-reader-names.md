@@ -68,7 +68,7 @@ one PDF in a subfolder, named with a space once and percent-encoded once. Checks
       one with `%20`. Make sure that `quarto render` copies the PDF into `docs/`.
 - [x] T2: Add `--expect-name "<name>"` to `render_check.mjs` (accessibility tree, every PDF.js embed) and to
       `ios_check.mjs` (DOM `role` and `aria-label`). Plant a wrong name with `--plant` and see each check fail.
-- [ ] T3: Make each toolbar control's name come from its `title` alone: drop the duplicate `aria-label` and mark
+- [x] T3: Make each toolbar control's name come from its `title` alone: drop the duplicate `aria-label` and mark
       the glyph `aria-hidden` (`embedpdf-viewer.js:278-296`). Add a tree check of name, description, and `title` to
       `render_check.mjs` under `--expect-name`, and plant a duplicate description to see it fail.
 - [ ] T4: Bump the version to 1.2.1 in both places, `quarto render`, add `--expect-name` to the existing CLAUDE.md
@@ -89,6 +89,7 @@ one PDF in a subfolder, named with a space once and percent-encoded once. Checks
 - 2026-10-18: version 1.2.1 (patch): no option or default changes.
 - 2026-10-18: T1 done: `hydratePdfjs()` sets `role="group"` and `aria-label` ("PDF" alone when no file name is found); `name_test.qmd` lists `files/sample copy.pdf` under `resources`, and `quarto render name_test.qmd` copied it to `docs/files/`. Checked by T2's checks.
 - 2026-10-18: T2 done: `--expect-name` and `--plant wrongname` in both scripts (Chromium 155 via `CHROME_PATH`). Green on `name_test.html` (desktop, iphone), `example.html`, and `selfcontained_test.html --alone file`; red with the plant and with a wrong expected name, each naming the embed and the wrong label; iPhone simulator green on `name_test.html` and red with the plant. The `ios_check.mjs` edit went through a Python script, not the Edit tool, so the app's edited-files card misses it.
+- 2026-10-18: T3 done: each toolbar control holds its glyph in an `aria-hidden` span and has `title` only. `--expect-name` also checks the three controls; green on `example.html` (desktop, iphone, with `--expect-text`); `--plant dupdesc` fails with "description repeats the name"; the existing `--plant noname` now removes `title` and still fails.
 
 ## Decisions
 

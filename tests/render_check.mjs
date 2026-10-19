@@ -68,14 +68,21 @@
 //                       display to none, nolabel removes the last page's
 //                       aria-label, canvas removes the last canvas's
 //                       aria-hidden, noname removes the zoom-out button's
-//                       aria-label. Needs --expect-text.
+//                       title. Needs --expect-text.
 //   --expect-name "<file name>"
 //                       after the pages are scrolled, fail unless each PDF.js
 //                       embed has role="group" and aria-label "PDF: <file
 //                       name>" in the DOM, and Chrome's accessibility tree
-//                       gives it role group and that name.
-//   --plant wrongname   with --expect-name: change the first PDF.js embed's
-//                       aria-label to "PDF: wrong.pdf"; the run must then fail.
+//                       gives it role group and that name. Also fail unless
+//                       each toolbar control (zoom out, zoom in, download)
+//                       has a non-empty tree name, no tree description equal
+//                       to that name, and a title equal to that name.
+//   --plant wrongname|dupdesc
+//                       with --expect-name, plant a defect in the first
+//                       PDF.js embed; the run must then fail: wrongname
+//                       changes its aria-label to "PDF: wrong.pdf", dupdesc
+//                       gives its zoom-in button an aria-label equal to its
+//                       title.
 // Set CHROME_PATH to use another Chrome or Chromium binary.
 //
 // On a RevealJS page the check goes to each slide with Reveal.slide() and
@@ -147,7 +154,7 @@ const DEVICES = {
 const FLAGS = ["device", "expect-native", "expect-pdfjs", "expect-pages", "expect-links", "expect-failed", "expect-text", "expect-name", "plant", "alone", "remote"];
 const TEXT_PLANTS = ["notext", "swap", "visible", "gone"];
 const TREE_PLANTS = ["nolabel", "canvas", "noname"];
-const NAME_PLANTS = ["wrongname"];
+const NAME_PLANTS = ["wrongname", "dupdesc"];
 const args = process.argv.slice(2);
 const flags = {};
 const positional = [];
@@ -357,7 +364,7 @@ async function treeFailures(page, slide) {
       const target =
         plant === "nolabel" ? last : plant === "canvas" ? last && last.querySelector("canvas") : first.querySelector(".embedpdf-toolbar button");
       if (!target) return null;
-      target.removeAttribute(plant === "canvas" ? "aria-hidden" : "aria-label");
+      target.removeAttribute(plant === "canvas" ? "aria-hidden" : plant === "noname" ? "title" : "aria-label");
       return plant;
     },
     slide,
@@ -415,7 +422,12 @@ async function nameFailures(page, slide) {
       const root = slide === null ? document : window.Reveal.getSlides()[slide];
       const first = document.querySelector(".embedpdf-pdfjs");
       if (!namePlants.includes(plant) || !first || !root.contains(first)) return null;
-      first.setAttribute("aria-label", "PDF: wrong.pdf");
+      if (plant === "wrongname") first.setAttribute("aria-label", "PDF: wrong.pdf");
+      if (plant === "dupdesc") {
+        const zoomIn = first.querySelectorAll(".embedpdf-toolbar button")[1];
+        if (!zoomIn) return null;
+        zoomIn.setAttribute("aria-label", zoomIn.title);
+      }
       return plant;
     },
     slide,
@@ -435,6 +447,30 @@ async function nameFailures(page, slide) {
     else {
       if (node.role !== "group") out.push(`${at}: tree role is ${node.role}, not group`);
       if (node.name !== name) out.push(`${at}: tree name is "${node.name}", not "${name}"`);
+    }
+    // toolbar controls: one name (the title), not repeated as a description
+    const toolbar = await embed.$(".embedpdf-toolbar");
+    if (toolbar) {
+      const buttons = await toolbar.$$("button");
+      const controls = [
+        ["zoom out", buttons[0]],
+        ["zoom in", buttons[1]],
+        ["download", await toolbar.$("a.embedpdf-download")],
+      ];
+      for (const [what, el] of controls) {
+        const c = `${at}, ${what} control`;
+        if (!el) {
+          out.push(`${c}: missing`);
+          continue;
+        }
+        const title = await el.evaluate((e) => e.getAttribute("title"));
+        const node = await page.accessibility.snapshot({ root: el, interestingOnly: false });
+        if (!node || !node.name) out.push(`${c}: no name in the accessibility tree`);
+        else {
+          if (node.description === node.name) out.push(`${c}: description repeats the name "${node.name}"`);
+          if (title !== node.name) out.push(`${c}: title "${title}" is not the name "${node.name}"`);
+        }
+      }
     }
   }
   return { planted, failures: out, embeds: embeds.length };

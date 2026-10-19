@@ -277,27 +277,32 @@ async function hydratePdfjs(el, opts) {
     indicator.className = "embedpdf-pageinfo";
     indicator.textContent = `1 / ${doc.numPages}`;
 
+    // A control's title is its tooltip and its only name: the glyph is hidden
+    // from screen readers, and no aria-label repeats the title (Chrome would
+    // expose a repeated title as a description, read after the name).
+    const label = (control, glyph, title) => {
+      const span = document.createElement("span");
+      span.setAttribute("aria-hidden", "true");
+      span.textContent = glyph;
+      control.appendChild(span);
+      control.title = title;
+    };
+
     const zoomOut = document.createElement("button");
     zoomOut.type = "button";
-    zoomOut.textContent = "−";
-    zoomOut.title = "Zoom out";
-    zoomOut.setAttribute("aria-label", "Zoom out");
+    label(zoomOut, "−", "Zoom out");
     zoomOut.addEventListener("click", () => applyZoom(1 / 1.25));
 
     const zoomIn = document.createElement("button");
     zoomIn.type = "button";
-    zoomIn.textContent = "+";
-    zoomIn.title = "Zoom in";
-    zoomIn.setAttribute("aria-label", "Zoom in");
+    label(zoomIn, "+", "Zoom in");
     zoomIn.addEventListener("click", () => applyZoom(1.25));
 
     const download = document.createElement("a");
     download.className = "embedpdf-download";
     download.href = opts.href;
     download.setAttribute("download", opts.filename);
-    download.textContent = "⤓";
-    download.title = "Download PDF";
-    download.setAttribute("aria-label", "Download PDF");
+    label(download, "⤓", "Download PDF");
 
     toolbar.append(zoomOut, zoomIn, indicator, download);
     el.appendChild(toolbar);
