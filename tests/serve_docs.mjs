@@ -15,8 +15,9 @@
 //   routes         optional { "/path": (req, res) => void } handlers
 //   missingPdfs    true: answer 404 for every path that ends in .pdf, so each
 //                  PDF the page names is missing from its own origin
-//   slowWhole      true: send a whole-file answer for a file over SLOW_ABOVE
-//                  bytes slowly (see sendData), so PDF.js loads it by ranges
+//   slowWhole      true: send a whole-file answer for a .pdf file over
+//                  SLOW_ABOVE bytes slowly (see sendData), so PDF.js loads it
+//                  by ranges
 //   noRanges       true: ignore every Range header and send the whole file
 // The server's rangeCounts Map holds the number of 206 answers per request
 // path, as sent (still percent-encoded, no ?query).
@@ -150,7 +151,8 @@ export function serveDocs({ port = 0, transformHtml = null, routes = {}, root = 
     if (ext === ".html" && transformHtml) data = Buffer.from(transformHtml(data.toString("utf8")), "utf8");
     // no-store: the browser must load the viewer build under test, not a cached one
     const headers = { "Content-Type": TYPES[ext] || "application/octet-stream", "Cache-Control": "no-store" };
-    countRange(server, sendData(req, res, data, headers, { slowWhole, noRanges }), url);
+    // only a PDF is slow: Bootstrap's CSS and PDF.js itself are over SLOW_ABOVE too
+    countRange(server, sendData(req, res, data, headers, { slowWhole: slowWhole && ext === ".pdf", noRanges }), url);
   });
   server.rangeCounts = new Map();
   return listen(server, port);
@@ -190,7 +192,7 @@ export function serveRemote(mode, { port = 0, slowWhole = false, noRanges = fals
       return;
     }
     const headers = { "Content-Type": TYPES[path.extname(file)] || "application/octet-stream", "Cache-Control": "no-store", ...cors };
-    countRange(server, sendData(req, res, fs.readFileSync(file), headers, { slowWhole, noRanges }), url);
+    countRange(server, sendData(req, res, fs.readFileSync(file), headers, { slowWhole: slowWhole && path.extname(file) === ".pdf", noRanges }), url);
   });
   server.rangeCounts = new Map();
   return listen(server, port);

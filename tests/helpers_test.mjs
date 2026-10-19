@@ -207,6 +207,9 @@ async function getRange(url, range) {
   return { status: r.status, body: Buffer.from(await r.arrayBuffer()), ranges: r.headers.get("accept-ranges") };
 }
 const SAMPLE = fs.readFileSync(path.join(DOCS, "sample.pdf"));
+// a file under docs/ over SLOW_ABOVE bytes that is not a PDF (PDF.js itself)
+const BIG_LIB = path.join("large_test_files", "libs", "quarto-contrib", fs.readdirSync(path.join(DOCS, "large_test_files", "libs", "quarto-contrib")).find((d) => d.startsWith("embedpdf-pdfjs-")), "pdf.min.mjs");
+check("slow: pdf.min.mjs is over SLOW_ABOVE", fs.statSync(path.join(DOCS, BIG_LIB)).size > SLOW_ABOVE, BIG_LIB);
 for (const kind of ["docs", "remote cors"]) {
   const start = (opts) => (kind === "docs" ? serveDocs(opts) : serveRemote("cors", opts));
   const slow = await start({ slowWhole: true });
@@ -218,6 +221,10 @@ for (const kind of ["docs", "remote cors"]) {
     const small = await fetch(at + "sample.pdf");
     const smallBody = Buffer.from(await small.arrayBuffer());
     check(`${kind} slowWhole: sample.pdf (not over SLOW_ABOVE) comes whole at once`, smallBody.equals(SAMPLE) && Date.now() - t0 < 1000, `${Date.now() - t0} ms`);
+    const t1 = Date.now();
+    const lib = await fetch(at + BIG_LIB.split(path.sep).map(encodeURIComponent).join("/"));
+    const libBody = Buffer.from(await lib.arrayBuffer());
+    check(`${kind} slowWhole: a file over SLOW_ABOVE that is not a PDF comes whole at once`, libBody.equals(fs.readFileSync(path.join(DOCS, BIG_LIB))) && Date.now() - t1 < 1000, `${BIG_LIB}: ${Date.now() - t1} ms`);
     const a = await getRange(at + "files/large.pdf", "bytes=0-99");
     const b = await getRange(at + "files/large.pdf", `bytes=${LARGE.length - 100}-`);
     const c = await getRange(at + "files/sample%20copy.pdf", "bytes=0-9");

@@ -214,6 +214,20 @@
 //                       a "1 / n" copy the scroll does not update (nothing
 //                       to plant in unless that embed is the one scrolled
 //                       to page 2).
+//   --expect-ranges     takes no value: the server that serves the PDFs (the
+//                       page's server, or the remote one with --remote cors)
+//                       sends each whole-file answer for a .pdf file over
+//                       SLOW_ABOVE bytes (tests/serve_docs.mjs) slowly, so
+//                       PDF.js loads it by byte ranges. Fail unless that
+//                       server answered at least one byte-range request
+//                       (HTTP 206) for each PDF.js embed's address. Answers
+//                       are counted per address, so embeds that share an
+//                       address share the count. Not with --alone,
+//                       --missing-pdfs, a URL, or --remote blocked|missing.
+//   --plant noranges    with --expect-ranges: that server ignores every
+//                       Range header and sends the whole file (HTTP 200), so
+//                       the run must fail and name each PDF.js embed's
+//                       address.
 // Set CHROME_PATH to use another Chrome or Chromium binary.
 //
 // On a RevealJS page the check goes to each slide with Reveal.slide() and
@@ -231,7 +245,7 @@
 // --expect-text, --expect-name, or --expect-download check fails, if an
 // embed with an inlined PDF is in the load-failure state without
 // --expect-download, or if the "failed to render an inlined PDF" lines do not
-// number one per such embed. Exits 2 on a bad argument,
+// number one per such embed, or if an --expect-ranges check fails. Exits 2 on a bad argument,
 // when a server cannot start, or when --plant finds nothing to plant in.
 
 import fs from "node:fs";
@@ -296,7 +310,9 @@ const DEVICES = {
 // take none; anything else (a misspelled flag, --flag=value) is an error
 // rather than silently ignored
 const FLAGS = ["device", "expect-native", "expect-pdfjs", "expect-pages", "expect-links", "expect-failed", "expect-download", "expect-text", "expect-name", "plant", "alone", "remote", "slow-text"];
-const BOOL_FLAGS = ["missing-pdfs"];
+const BOOL_FLAGS = ["missing-pdfs", "expect-ranges"];
+// planted in the server that serves the PDFs, before the page loads
+const RANGE_PLANTS = ["noranges"];
 const TEXT_PLANTS = ["notext", "swap", "visible", "gone", "inert", "cvhidden"];
 const TREE_PLANTS = ["nolabel", "canvas", "noname", "detach"];
 const NAME_PLANTS = ["wrongname", "nativename", "nativetitle", "nativedesc", "dupdesc", "duplink", "norole", "notoolbar", "nonumber", "rawindicator", "staleindicator", "showindicator", "tallframe", "hideshown", "staleshown"];
@@ -336,6 +352,7 @@ const expectFailed = flags["expect-failed"] ?? null;
 const alone = flags["alone"] ?? null;
 const remote = flags["remote"] ?? null;
 const missingPdfs = flags["missing-pdfs"] === true;
+const expectRanges = flags["expect-ranges"] === true;
 const normalize = (s) => s.replace(/\s+/g, " ").trim();
 const phrases = flags["expect-text"] === undefined ? null : flags["expect-text"].split("|").map(normalize);
 const plant = flags["plant"] ?? null;
@@ -377,12 +394,17 @@ if (
     INK_PLANTS.includes(plant) ||
     (phrases && [...TEXT_PLANTS, ...TREE_PLANTS, ...WAIT_PLANTS].includes(plant)) ||
     (expectName && NAME_PLANTS.includes(plant)) ||
-    (expectDownloads && DOWNLOAD_PLANTS.includes(plant))
+    (expectDownloads && DOWNLOAD_PLANTS.includes(plant)) ||
+    (expectRanges && RANGE_PLANTS.includes(plant))
   )
 ) {
   console.error(
-    `render_check: --plant must be ${INK_PLANTS.join(", ")}, or ${[...TEXT_PLANTS, ...TREE_PLANTS, ...WAIT_PLANTS].join(", ")} with --expect-text, or ${NAME_PLANTS.join(", ")} with --expect-name, or ${DOWNLOAD_PLANTS.join(", ")} with --expect-download`
+    `render_check: --plant must be ${INK_PLANTS.join(", ")}, or ${[...TEXT_PLANTS, ...TREE_PLANTS, ...WAIT_PLANTS].join(", ")} with --expect-text, or ${NAME_PLANTS.join(", ")} with --expect-name, or ${DOWNLOAD_PLANTS.join(", ")} with --expect-download, or ${RANGE_PLANTS.join(", ")} with --expect-ranges`
   );
+  process.exit(2);
+}
+if (expectRanges && (alone || missingPdfs || /^https?:/.test(target) || (remote && remote !== "cors"))) {
+  console.error("render_check: --expect-ranges needs a page under docs/, without --alone or --missing-pdfs, and --remote only as cors");
   process.exit(2);
 }
 if (alone && alone !== "http" && alone !== "file") {
@@ -442,7 +464,11 @@ const cannotServe = (what) => (err) => {
   console.error(`render_check: cannot start the ${what} server: ${err.message}`);
   process.exit(2);
 };
-const remoteServer = remote ? await serveRemote(remote).catch(cannotServe("remote")) : null;
+// --expect-ranges: the server that serves the PDFs sends a whole large file
+// slowly, so PDF.js loads it by ranges; --plant noranges makes it ignore
+// every Range header
+const rangeOpts = { slowWhole: expectRanges, noRanges: plant === "noranges" };
+const remoteServer = remote ? await serveRemote(remote, rangeOpts).catch(cannotServe("remote")) : null;
 const remoteBase = remoteServer ? `http://127.0.0.1:${remoteServer.address().port}/` : null;
 // --remote on a page with an embed whose PDF stays off the remote server (such
 // as the inlined PDFs of a self-contained page) would check nothing remote for
@@ -463,7 +489,7 @@ const server =
           ? { root: aloneDir }
           : remoteBase
             ? { transformHtml: (html) => pointPdfsAt(html, remoteBase, target) }
-            : { missingPdfs }
+            : { missingPdfs, ...rangeOpts }
       ).catch(cannotServe("docs"));
 const url =
   alone === "file"
@@ -1127,6 +1153,8 @@ try {
       ...[...document.querySelectorAll("div.embedpdf")].map((el) => new URL(el.dataset.src || "", document.baseURI).href),
       ...[...document.querySelectorAll("a.embedpdf-btn")].map((a) => a.href),
     ];
+    // each PDF.js embed's PDF as an absolute URL (--expect-ranges)
+    const pdfjsSrcs = [...document.querySelectorAll(".embedpdf-pdfjs")].map((el) => new URL(el.dataset.src || "", document.baseURI).href);
     // embeds in the load-failure state (see --expect-failed); each other embed
     // that holds the failure text is reported as malformed
     const failed = [];
@@ -1235,6 +1263,7 @@ try {
       inlinedFailed,
       malformed,
       srcs,
+      pdfjsSrcs,
       inkPlanted,
     };
   }, inkInPixels.toString(), plant);
@@ -1504,6 +1533,24 @@ try {
     if (wrong.length) {
       console.error(`render_check: --missing-pdfs: fewer "ResponseException" errors than failed embeds, or a PDF not on ${own}: ${wrong.map((f) => f.expected).join(", ")}`);
       ok = false;
+    }
+  }
+  if (expectRanges) {
+    // each PDF.js embed's PDF must have had at least one 206 answer from the
+    // server that serves the PDFs (the remote one with --remote cors)
+    const pdfServer = remoteServer || server;
+    const origin = `http://127.0.0.1:${pdfServer.address().port}`;
+    if (res.pdfjsSrcs.length === 0) {
+      console.error("render_check: --expect-ranges given, but no embed uses PDF.js");
+      ok = false;
+    }
+    for (const src of res.pdfjsSrcs) {
+      const u = new URL(src);
+      const count = u.origin === origin ? pdfServer.rangeCounts.get(u.pathname) || 0 : 0;
+      if (count === 0) {
+        console.error(`render_check: --expect-ranges: no byte-range request (HTTP 206) answered for ${src}${u.origin === origin ? "" : ` (not on ${origin})`}`);
+        ok = false;
+      } else console.log(`render_check: ${count} byte-range answers (HTTP 206) for ${src}`);
     }
   }
   if (res.malformed.length) {
