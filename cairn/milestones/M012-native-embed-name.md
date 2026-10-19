@@ -74,7 +74,7 @@ Architecture, and CLAUDE.md "Still unverified" follow. Version 1.2.4, no tag.
       lists, with no flag dropped and no count lowered; `node
       tests/helpers_test.mjs` and `pandoc lua tests/test_shortcode.lua` print
       "0 failed"; and `quarto render` finishes with no errors.
-- [ ] AC6: README.md's screen-reader paragraph and DESIGN.md Architecture
+- [x] AC6: README.md's screen-reader paragraph and DESIGN.md Architecture
       state that a native embed's `<object>` gets the same name and numbering
       as a PDF.js embed, and where that was checked; the README sentence "A
       `renderer=native` embed has no such name." is gone; CLAUDE.md "Still
@@ -154,3 +154,6 @@ Architecture, and CLAUDE.md "Still unverified" follow. Version 1.2.4, no tag.
 ## Decisions
 
 ## Review
+
+- 2026-10-19: sync: branch level with origin/main (e85454a); Copilot review round off (no `# Copilot review: on` in PROFILE.md).
+- AC6 evidence (2026-10-19, HEAD 4d5b007): README.md says a native embed "gets the same name on its `<object>`" and "The count takes PDF.js embeds and native embeds together", names Chromium, desktop Safari 27.0.1 WebDriver, and the iOS 27.0 simulators' page attributes; `grep -c "no such name" README.md` = 0; DESIGN.md:144 and :150 state the name and the joint numbering; CLAUDE.md:274 lists the native name under "Still unverified"; `_extension.yml` `version: 1.2.4` and `embedpdf.lua` `VERSION = "1.2.4"`, which both `add_html_dependency` calls use.
