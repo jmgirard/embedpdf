@@ -70,6 +70,13 @@ one with `%20`. `percent_test.html` is self-contained. It shows
 `files/100%.pdf` by `files/100%25.pdf` and by a bare `%`.
 `--plant` in each script plants one defect so you can see a
 check fail. The two scripts have different plant lists (see each header).
+With `--expect-text`, both scripts wait once for the page's text, or twice
+with `--slow-text`. When every
+embed is hydrated and every page has text, the wait ends. While something is
+missing, it ends after 10 s with no change, or after 60 s in all. If an embed
+is still not hydrated then, the run fails at once. `--slow-text <ms>` puts the
+text back one page every `<ms>` ms, so you can see a run pass a wait longer
+than 10 s.
 
 Self-contained pages (`embed-resources: true`): `--alone http|file` (render_check)
 and `--alone yes` (ios_check) load a copy of the page with no other file beside it.
