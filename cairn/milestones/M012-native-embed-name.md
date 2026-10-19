@@ -38,7 +38,7 @@ Architecture, and CLAUDE.md "Still unverified" follow. Version 1.2.4, no tag.
 
 ## Acceptance criteria
 
-- [ ] AC1: On each page and device of the `render_check.mjs` runs named here,
+- [x] AC1: On each page and device of the `render_check.mjs` runs named here,
       every embed that the viewer shows with the native viewer has an
       `aria-label` on its `<object>` equal to its `--expect-name` name and no
       `title`, and Chromium's accessibility tree gives that `<object>` the
@@ -50,25 +50,25 @@ Architecture, and CLAUDE.md "Still unverified" follow. Version 1.2.4, no tag.
       `selfcontained_test.html` and `selfcontained_slides_test.html`, each
       with `--alone file` and with `--alone http`, with no `--device` and
       with `--device iphone`.
-- [ ] AC2: On the AC1 runs and on `revealjs_test.html` with `--device iphone`,
+- [x] AC2: On the AC1 runs and on `revealjs_test.html` with `--device iphone`,
       embeds that share a name are numbered "(k of n)" in document order, and
       n counts every embed on the page with that name, native or PDF.js.
       `example.html` gives "PDF: sample.pdf (k of 11)" on each device named,
       and `revealjs_test.html` gives "PDF: dummy.pdf (1 of 2)", "PDF:
       dummy2.pdf", and "PDF: dummy.pdf (2 of 2)" in slide order.
-- [ ] AC3: In desktop Safari, `node tests/safari_check.mjs --target mac
+- [x] AC3: In desktop Safari, `node tests/safari_check.mjs --target mac
       --expect-native 9 --expect-pdfjs 2 --expect-name sample.pdf` on
       `example.html` exits 0, and Safari's computed label (WebDriver "Get
       Computed Label") of each of the 9 native `<object>` elements is its
       "PDF: sample.pdf (k of 11)" name in document order.
-- [ ] AC4: In Safari in the "embedpdf iPhone" and "embedpdf iPad" simulators,
+- [x] AC4: In Safari in the "embedpdf iPhone" and "embedpdf iPad" simulators,
       as `node tests/ios_check.mjs` with `--expect-name` reads the page DOM on
       both, every embed has an `aria-label` equal to its numbered name: on
       `example.html` the `renderer=native` `<object>` and the 10 PDF.js
       embeds, "PDF: sample.pdf (k of 11)"; on `selfcontained_test.html` with
       `--alone yes`, the `renderer=native` `<object>` and the 2 PDF.js
       embeds, "PDF: sample.pdf (k of 3)".
-- [ ] AC5: The extension passes every check line that CLAUDE.md "Verify
+- [x] AC5: The extension passes every check line that CLAUDE.md "Verify
       before finishing" held at the plan commit, changed only by the added
       `--expect-native` flags and the `revealjs_test.html` `--expect-name`
       lists, with no flag dropped and no count lowered; `node
@@ -157,6 +157,12 @@ Architecture, and CLAUDE.md "Still unverified" follow. Version 1.2.4, no tag.
 
 - 2026-10-19: sync: branch level with origin/main (e85454a); Copilot review round off (no `# Copilot review: on` in PROFILE.md).
 - AC6 evidence (2026-10-19, HEAD 4d5b007): README.md says a native embed "gets the same name on its `<object>`" and "The count takes PDF.js embeds and native embeds together", names Chromium, desktop Safari 27.0.1 WebDriver, and the iOS 27.0 simulators' page attributes; `grep -c "no such name" README.md` = 0; DESIGN.md:144 and :150 state the name and the joint numbering; CLAUDE.md:274 lists the native name under "Still unverified"; `_extension.yml` `version: 1.2.4` and `embedpdf.lua` `VERSION = "1.2.4"`, which both `add_html_dependency` calls use.
+- AC1 evidence (2026-10-19, HEAD 4d5b007, Chromium 155): render_check with `--expect-name` exits 0 on example.html with no `--device` and with `--device` mac-safari, windows-touch, iphone, ipad; revealjs_test.html; and selfcontained_test.html and selfcontained_slides_test.html with `--alone file` and `--alone http`, with no `--device` and with `--device iphone`. Each run checks every native `<object>`'s `aria-label`, missing `title`, and Chromium tree name and description against the `--expect-name` names.
+- AC2 evidence (same runs, plus revealjs_test.html `--device iphone`): the names checked are "PDF: sample.pdf (k of 11)" on example.html on every device (9 native + 2 PDF.js, 1 + 10), and "dummy.pdf|dummy2.pdf|dummy.pdf" expanded to "PDF: dummy.pdf (1 of 2)", "PDF: dummy2.pdf", "PDF: dummy.pdf (2 of 2)" on revealjs_test.html; all exit 0.
+- AC3 evidence (same batch): `node tests/safari_check.mjs --target mac --expect-native 9 --expect-pdfjs 2 --expect-name sample.pdf` exits 0 in Safari 27.0.1; its computed labels of the 9 native `<object>` elements were "PDF: sample.pdf (1 of 11)"–"(8 of 11)" and "(10 of 11)" (implement run, same code).
+- AC4 evidence (same batch, iOS 27.0 "embedpdf iPhone" and "embedpdf iPad"): ios_check exits 0 on example.html (`--expect-native 1 --expect-name sample.pdf`) and on selfcontained_test.html `--alone yes` (`--expect-embeds 2 --expect-native 1 --expect-name sample.pdf`) on both simulators; each reads the native `<object>`'s `aria-label` and every PDF.js embed's from the page DOM ("(k of 11)" and "(k of 3)").
+- AC5 evidence (same batch): all 68 lines (CLAUDE.md "Verify before finishing" lines, their `--alone http` reruns, and the extra `--device` runs CLAUDE.md names) exit 0; `git diff main -- CLAUDE.md` changes command lines only by adding `--expect-native` (4 ios_check lines, 1 safari_check line) and the two revealjs_test `--expect-name` lists, with no flag dropped and no count lowered; helpers_test 91 passed, 0 failed; test_shortcode 40 passed, 0 failed; `quarto render` exits 0 (one WARN, the known `files/100%.pdf` URI).
+- gate: `cairn_validate.py` all checks passed; the generic profile's consistency-gate slot names no toolchain checks; no DESIGN.md principle changed, so `cairn_impact` is skipped.
 - spawned: diff-bug, blame-history, prior-review, ripple
 - diff-bug #1: safari_check no longer compares the PDF.js `find` count with `pdfjsAt`, so an embed hydrating between its three reads goes unchecked or misnamed (only after the 30 s wait failed) — fix now
 - diff-bug #2: no plant isolates render_check's native tree-description check, since `nativetitle` is caught by the title check first — fix now (a `nativedesc` plant)
