@@ -692,6 +692,9 @@ async function nameFailures(page, slide, before) {
         spoken.style.position = "static";
         spoken.style.width = "auto";
         spoken.style.height = "auto";
+        spoken.style.overflow = "visible";
+        spoken.style.clip = "auto";
+        spoken.style.clipPath = "none";
       }
       if (plant === "staleindicator") {
         // a copy the viewer does not hold, so the scroll never updates it

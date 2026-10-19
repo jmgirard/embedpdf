@@ -78,6 +78,7 @@ A screen reader tells each PDF.js embed apart by a name that never comes from a 
 - 2026-10-19: review return 1: AC5 fails (README names neither failed iOS Safari probe nor its result) and AC1 fails for `https://example.com//a.pdf` (gives "" not "a.pdf"); the return also carries the fix-now findings listed in the Review section, pass 1.
 - 2026-10-19: T8 added (minor amendment for review return 1); Coverage gains T8 on AC1, AC4, AC5, AC6.
 - 2026-10-19: T8 fixes: `fileName()` strips the host once (rows `https://example.com//a.pdf` and `//example.com//a.pdf`; the first fails on the old viewer, 23 rows pass); `aria-label` falls back to "PDF"; `-webkit-user-select` on the indicator; render_check checks the shown "1 / n" and the 1px hidden box (plant `showindicator` fails) and plants `staleindicator` only in the embed scrolled to page 2 (nothing to plant in on revealjs iPhone, exit 2); ios_check fails a missing indicator (plant `noindicator` fails) and exits 2 on a non-integer `--expect-embeds`; safari_check reads page 2 only where page 1 moves past the middle line and removes the role in a finally. README names both iOS probes and their results; CLAUDE.md, DESIGN.md, the script headers, `serve_docs.mjs` header, and row "Safari names on iOS" corrected.
+- 2026-10-19: claim audit: 44 claims read, 2 corrected — tests/render_check.mjs (`showindicator` now also removes the clip, so the text is visible as its header says; still fails), tests/serve_docs.mjs (header names helpers_test). The same reader re-read both as correct.
 
 ## Decisions
 
