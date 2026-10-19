@@ -1,0 +1,28 @@
+---
+title: "embedpdf failures in a self-contained page"
+format:
+  html:
+    embed-resources: true
+---
+
+This page is built with `embed-resources: true`, so each PDF is inside the
+page. No embed on it can show its PDF. The checks in `tests/` open a copy of
+the page with no other file beside it.
+
+## A file that is not a PDF
+
+The file `files/broken.pdf` holds text, not a PDF, so PDF.js cannot load it.
+The embed shows "This PDF cannot be shown here." and a "Download the PDF"
+link that saves the file as `broken.pdf`.
+
+{{< pdf files/broken.pdf renderer=pdfjs >}}
+
+## Inlined PDFs that cannot be decoded
+
+These two embeds are written by hand, not by the shortcode. Each `data-src`
+is a `data:` address whose base64 holds `@`, which is not a base64
+character, so the browser cannot decode it. The first embed uses PDF.js and
+the second the browser's own viewer. Each shows "This PDF cannot be shown
+here." with no link.
+
+{{< include files/undecodable-embeds.md >}}

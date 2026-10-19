@@ -1,13 +1,13 @@
 # M011: Inlined PDF failure
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2
 - **Resolves:** —
 - **Surface tier:** user-facing — readers of self-contained pages see the failure message and its link
-- **Branch/PR:** —
+- **Branch/PR:** m011-inlined-pdf-failure
 
 ## Goal
 
@@ -39,7 +39,7 @@ When a self-contained page cannot show an inlined PDF, the embed says so, and wh
 
 ## Tasks
 
-- [ ] T1: Fixtures. Add `files/broken.pdf` (plain text, not a PDF), `files/undecodable-embeds.md` (two hand-written `div.embedpdf` embeds, `data-renderer="pdfjs"` and `"native"`, `data-src="data:application/pdf;base64,@@@@"`), and `selfcontained_failed_test.qmd` (`embed-resources: true`, `{{< pdf files/broken.pdf renderer=pdfjs >}}`, then the include). `quarto render`; confirm the page keeps the hand-written `data:` addresses as written and inlines `broken.pdf`. Probe `fetch()` of the bad address in Safari (iOS simulator); if Safari accepts it, find an address both engines reject before T2, or amend AC3. Run the current scripts on the page to see today's state (malformed failure, kept fallback link).
+- [x] T1: Fixtures. Add `files/broken.pdf` (plain text, not a PDF), `files/undecodable-embeds.md` (two hand-written `div.embedpdf` embeds, `data-renderer="pdfjs"` and `"native"`, `data-src="data:application/pdf;base64,@@@@"`), and `selfcontained_failed_test.qmd` (`embed-resources: true`, `{{< pdf files/broken.pdf renderer=pdfjs >}}`, then the include). `quarto render`; confirm the page keeps the hand-written `data:` addresses as written and inlines `broken.pdf`. Probe `fetch()` of the bad address in Safari (iOS simulator); if Safari accepts it, find an address both engines reject before T2, or amend AC3. Run the current scripts on the page to see today's state (malformed failure, kept fallback link).
 - [ ] T2: `render_check.mjs`: a failed embed whose PDF was inlined passes only with the AC1 link (blob `href`, `download` name given by a new flag as an independent fact, no `target`, one link in the embed) or, while its `data-src` is still a `data:` address, with no link. Count the "failed to render an inlined PDF" console lines against the failed inlined embeds. Add a Chromium download check (set the download folder, click, compare name and bytes with the source file). Plants that vary each axis: a `target`, no `download`, a wrong name, a non-`blob:` `href`, a second link, the text "Open the PDF", a link on a decode failure, a wrong downloaded file. Header comment and `--plant` list updated. If a helper changes, `node tests/helpers_test.mjs`.
 - [ ] T3: `ios_check.mjs`: the same failure-state rule with `--alone yes` and an expected count of failed embeds, with plants for the link axes.
 - [ ] T4: Viewer. `showFailure()` builds the "Download the PDF" link when `opts.blob` is set; `hydrate()` wraps `inlinedPdf()` so a decode failure calls `showFailure()` with no link and still logs the "failed to render" line; failed embeds keep no name. Bump `VERSION` in `embedpdf.lua` and `version:` in `_extension.yml` to 1.2.3. Run T2 and T3 lines to green.
@@ -57,6 +57,8 @@ When a self-contained page cannot show an inlined PDF, the embed says so, and wh
 - 2026-10-19: probe: Chromium `fetch()` rejects `data:application/pdf;base64,@@@@`, `…,JVBER`, and `…,%%%` with "TypeError: Failed to fetch"; Safari not probed (T1).
 - 2026-10-19: version 1.2.3 (patch: a failure-path fix, no option change).
 - 2026-10-19: criteria audit (full mode, fresh Opus reader): AC1 link count scoped to the embed's `div`; plants for every link axis moved to T2/T3; AC2 download proven only in Chromium, Safari's `blob:` download goes to "Still unverified" and the goal says "is a download"; AC3 console-line clause dropped (instrument, and the AC1 embed logs the same line) and kept as a T2 count, input narrowed to characters outside the alphabet, Safari leniency probed at T1, IP2 status recorded as a Known issues entry (T5) with no D-entry since the dead link failed IP2 before too; AC4 narrowed to non-`data:` embeds in the named lines; AC6 new lines tied to AC1–AC3.
+- 2026-10-19: started on branch m011-inlined-pdf-failure.
+- 2026-10-19: T1 done: `files/broken.pdf`, `files/undecodable-embeds.md`, `selfcontained_failed_test.qmd`; `quarto render` keeps both `data:…base64,@@@@` addresses as written and inlines `broken.pdf`; desktop Safari 27.0.1 `fetch()` rejects `@@@@` and `JVBER` ("TypeError: Load failed"), the iOS simulators are checked by T3's runs; render_check before the fix: embed 1 malformed (`blob:` link, `target=_blank`), embeds 2 and 3 never hydrate.
 
 ## Decisions
 
