@@ -17,7 +17,14 @@
 //   --expect-native <n> fail unless exactly n embeds use the native viewer
 //   --expect-pdfjs <n>  fail unless exactly n embeds use PDF.js
 //   --expect-pages <n>  fail unless each PDF.js embed has exactly n
-//                       .embedpdf-page elements, each with an inked canvas
+//                       .embedpdf-page elements (each page's canvas is
+//                       checked for ink on every run, with or without this)
+//   --plant blank|nocanvas|nopages
+//                       plant a defect in the first PDF.js embed after the
+//                       scroll, before the ink check; the run must then
+//                       fail: blank paints the last page's canvas white,
+//                       nocanvas removes that canvas, nopages removes every
+//                       page of the embed. Needs no other flag.
 //   --expect-links <n>  fail unless exactly n download links
 //                       (.embedpdf-download, .embedpdf object a[download],
 //                       a.embedpdf-btn) exist, each with a data: or blob: href
@@ -90,8 +97,12 @@
 // On a RevealJS page the check goes to each slide with Reveal.slide() and
 // scrolls each embed's pages into view before it measures.
 //
-// Exits non-zero if the page does not load, if no embed is hydrated, if any
-// PDF.js block failed to render actual content, if an expected count does
+// Ink: a canvas has ink by the rule in tests/ink.mjs (some pixel neither
+// transparent nor white, read over every pixel and channel).
+//
+// Exits non-zero if the page does not load, if no embed is hydrated, if a
+// PDF.js embed has no pages, or a page with no canvas or a canvas without
+// ink, if an expected count does
 // not match, or if an --expect-text check fails. Exits 2 on a bad argument,
 // or when --plant finds nothing to plant in.
 
@@ -158,6 +169,7 @@ const FLAGS = ["device", "expect-native", "expect-pdfjs", "expect-pages", "expec
 const TEXT_PLANTS = ["notext", "swap", "visible", "gone"];
 const TREE_PLANTS = ["nolabel", "canvas", "noname"];
 const NAME_PLANTS = ["wrongname", "dupdesc", "notoolbar"];
+const INK_PLANTS = ["blank", "nocanvas", "nopages"];
 const args = process.argv.slice(2);
 const flags = {};
 const positional = [];
@@ -200,10 +212,14 @@ if (expectName === "") {
 }
 if (
   plant &&
-  !((phrases && [...TEXT_PLANTS, ...TREE_PLANTS].includes(plant)) || (expectName && NAME_PLANTS.includes(plant)))
+  !(
+    INK_PLANTS.includes(plant) ||
+    (phrases && [...TEXT_PLANTS, ...TREE_PLANTS].includes(plant)) ||
+    (expectName && NAME_PLANTS.includes(plant))
+  )
 ) {
   console.error(
-    `render_check: --plant must be ${[...TEXT_PLANTS, ...TREE_PLANTS].join(", ")} with --expect-text, or ${NAME_PLANTS.join(", ")} with --expect-name`
+    `render_check: --plant must be ${INK_PLANTS.join(", ")}, or ${[...TEXT_PLANTS, ...TREE_PLANTS].join(", ")} with --expect-text, or ${NAME_PLANTS.join(", ")} with --expect-name`
   );
   process.exit(2);
 }
@@ -561,17 +577,37 @@ try {
   if (phrases && !slides) treeReports.push(await treeFailures(page, null));
   if (expectName && !slides) nameReports.push(await nameFailures(page, null));
 
-  const res = await page.evaluate(async (inkSource) => {
+  const res = await page.evaluate(async (inkSource, plant) => {
     // the ink rule of tests/ink.mjs, rebuilt from its source text
     const inkInPixels = new Function("return " + inkSource)();
     const hasInk = (c) => inkInPixels(c.getContext("2d").getImageData(0, 0, c.width, c.height).data);
+    // an ink plant goes into the first PDF.js embed before anything is measured
+    let inkPlanted = null;
+    const first = document.querySelector(".embedpdf-pdfjs");
+    const firstPages = first ? [...first.querySelectorAll(".embedpdf-page")] : [];
+    const lastCanvas = firstPages.length ? firstPages[firstPages.length - 1].querySelector("canvas") : null;
+    if (plant === "blank" && lastCanvas) {
+      const ctx = lastCanvas.getContext("2d");
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, lastCanvas.width, lastCanvas.height);
+      inkPlanted = plant;
+    }
+    if (plant === "nocanvas" && lastCanvas) {
+      lastCanvas.remove();
+      inkPlanted = plant;
+    }
+    if (plant === "nopages" && firstPages.length) {
+      firstPages.forEach((p) => p.remove());
+      inkPlanted = plant;
+    }
     const canvases = [...document.querySelectorAll(".embedpdf-page canvas")];
     const withInk = canvases.filter(hasInk).length;
-    // per PDF.js embed: one entry per .embedpdf-page, true when its canvas has ink
+    // per PDF.js embed: one entry per .embedpdf-page, "ok" when its canvas has
+    // ink, else "no canvas" or "no ink"
     const pdfjsPages = [...document.querySelectorAll(".embedpdf-pdfjs")].map((el) =>
       [...el.querySelectorAll(".embedpdf-page")].map((p) => {
         const c = p.querySelector("canvas");
-        return !!c && hasInk(c);
+        return !c ? "no canvas" : hasInk(c) ? "ok" : "no ink";
       })
     );
     const objects = [];
@@ -624,8 +660,9 @@ try {
       failed,
       malformed,
       srcs,
+      inkPlanted,
     };
-  }, inkInPixels.toString());
+  }, inkInPixels.toString(), plant);
 
   const text = phrases
     ? {
@@ -666,7 +703,7 @@ try {
     if (names.failures.length) process.exitCode = 1;
   }
   if (text) {
-    if (plant && !NAME_PLANTS.includes(plant) && !text.planted) {
+    if (plant && [...TEXT_PLANTS, ...TREE_PLANTS].includes(plant) && !text.planted) {
       console.error(`render_check: --plant ${plant} found nothing to plant in`);
       await browser.close();
       server?.close();
@@ -681,9 +718,26 @@ try {
     for (const f of text.failures) console.error("render_check: " + f);
     if (text.failures.length) process.exitCode = 1;
   }
-  // ok if there were no PDF.js blocks, or every rendered canvas has content
-  let ok = res.pdfjs === 0 || (res.canvases > 0 && res.canvasesWithInk === res.canvases);
-  if (!ok) console.error("render_check: PDF.js blocks did not all render content");
+  if (INK_PLANTS.includes(plant) && !res.inkPlanted) {
+    console.error(`render_check: --plant ${plant} found nothing to plant in`);
+    await browser.close();
+    server?.close();
+    remoteServer?.close();
+    process.exit(2);
+  }
+  // each PDF.js embed must have pages, and each page a canvas with ink
+  let ok = true;
+  res.pdfjsPages.forEach((pages, i) => {
+    if (pages.length === 0) {
+      console.error(`render_check: PDF.js embed ${i + 1} has no pages`);
+      ok = false;
+    }
+    const bad = pages.map((v, j) => (v === "ok" ? null : `page ${j + 1} ${v}`)).filter(Boolean);
+    if (bad.length) {
+      console.error(`render_check: PDF.js embed ${i + 1}: ${bad.join(", ")}`);
+      ok = false;
+    }
+  });
   if (res.native + res.pdfjs + res.failed.length === 0) {
     // a wrong page, or viewer JS that never loaded, must not pass as "no PDF.js blocks"
     console.error("render_check: no embed was hydrated");
@@ -705,9 +759,6 @@ try {
     res.pdfjsPages.forEach((pages, i) => {
       if (pages.length !== Number(expectPages)) {
         console.error(`render_check: PDF.js embed ${i + 1} has ${pages.length} pages, expected ${expectPages}`);
-        ok = false;
-      } else if (!pages.every(Boolean)) {
-        console.error(`render_check: PDF.js embed ${i + 1} has pages without ink`);
         ok = false;
       }
     });
