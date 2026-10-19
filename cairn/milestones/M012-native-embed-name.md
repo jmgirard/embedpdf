@@ -1,13 +1,13 @@
 # M012: Native embed name
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1, GP5
 - **Resolves:** —
 - **Surface tier:** user-facing — the screen-reader name of native embeds on readers' pages
-- **Branch/PR:** —
+- **Branch/PR:** m012-native-embed-name
 
 ## Goal
 
@@ -94,12 +94,12 @@ Architecture, and CLAUDE.md "Still unverified" follow. Version 1.2.4, no tag.
 
 ## Tasks
 
-- [ ] T1: Viewer. `embedNames()` (`embedpdf-viewer.js:454`) names every
+- [x] T1: Viewer. `embedNames()` (`embedpdf-viewer.js:454`) names every
       placeholder with a `data-src`, any renderer; `hydrateNative()` (:109)
       sets `aria-label` from `opts.name` on the `<object>`, never a `title`.
       Update the comments at :431 and :450. Bump 1.2.3 → 1.2.4 in
       `_extension.yml` and `embedpdf.lua`; `quarto render`.
-- [ ] T2: `render_check.mjs`. `--expect-name` lists one name per embed that
+- [x] T2: `render_check.mjs`. `--expect-name` lists one name per embed that
       shows a PDF, native and PDF.js, in page order (slide order on a deck);
       one name stands for `--expect-native` plus `--expect-pdfjs` embeds.
       `nameFailures()` (:721) reads `.embedpdf-native` and `.embedpdf-pdfjs`
@@ -140,6 +140,9 @@ Architecture, and CLAUDE.md "Still unverified" follow. Version 1.2.4, no tag.
 - 2026-10-19: plan chose numbering across both renderers over numbering each renderer apart, because a reader cannot tell which renderer an embed got; falsified by screen-reader users finding the shared count harder to follow. The PDF.js names on mixed pages change, for example "(1 of 2)" → "(9 of 11)" on desktop `example.html`.
 - 2026-10-19: plan chose version 1.2.4 with no tag, as M011 did with 1.2.3.
 - 2026-10-19: criteria audit (full mode, fresh Opus reader) returned 6 findings: AC1's no-file and query rules had no native test page (narrowed to the names the runs show; remainder to Out); AC1 lacked the iphone and ipad runs (added); AC3 Safari reading unproven (probed, holds); AC4 left out the renumbered PDF.js names (added); AC5 bound the check lines as the branch writes them (anchored to the plan commit's lines); AC6 lacked CLAUDE.md "Still unverified" (added). No IP or D-entry blocks a criterion.
+- 2026-10-19: implement started on branch m012-native-embed-name, cut from main at e85454a.
+- 2026-10-19: T1 done: `hydrateNative()` sets `aria-label` from the embed's name; `embedNames()` names and numbers every embed with a `data-src`; version 1.2.4; `quarto render` clean; test_shortcode 40 passed, 0 failed.
+- 2026-10-19: T2 done: render_check `--expect-name` covers native embeds in document order (one name stands for `--expect-native` + `--expect-pdfjs`); plants `nativename` and `nativetitle` each exit 1 on example.html and exit 2 (nothing to plant in) on name_test.html; omitting `--expect-native` on example.html exits 1; helpers_test 91 passed, 0 failed; the example.html (5 devices), revealjs_test.html (2), and self-contained name lines pass in Chromium. The safari_check and ios_check lines wait for T3–T5.
 
 ## Decisions
 

@@ -7,7 +7,7 @@ _Last hygiene check: 2026-10-19 (M011 done: graduated "Inlined PDF failure link"
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M012 | Native embed name | planned | — | normal | milestones/M012-native-embed-name.md |
+| M012 | Native embed name | in-progress | — | normal | milestones/M012-native-embed-name.md |
 | M011 | Inlined PDF failure | done | — | normal | milestones/archive/M011-inlined-pdf-failure.md |
 | M010 | Embed name gaps | done | — | high | milestones/archive/M010-embed-name-gaps.md |
 | M009 | Text check gaps | done | — | high | milestones/archive/M009-text-check-gaps.md |

@@ -112,6 +112,9 @@ function hydrateNative(el, opts) {
   object.data = opts.page > 1 ? `${opts.href}#page=${opts.page}` : opts.href;
   if (opts.width) object.setAttribute("width", opts.width);
   if (opts.height) object.setAttribute("height", opts.height);
+  // a screen reader names the embed by its file, as it names a PDF.js embed;
+  // aria-label alone, since a title equal to it is read again as a description
+  if (opts.name) object.setAttribute("aria-label", opts.name);
   // keep the no-JS fallback content (image or download link) inside the object
   while (el.firstChild) object.appendChild(el.firstChild);
   el.appendChild(object);
@@ -428,7 +431,7 @@ export function fileName(address) {
   return segments.filter(Boolean).pop() || "";
 }
 
-// A PDF.js embed's name for screen readers: "PDF: <file name>", or "PDF" when
+// An embed's name for screen readers: "PDF: <file name>", or "PDF" when
 // its address names no file. An inlined (data:) PDF is named by its fallback
 // download link, which still names the separate file.
 function embedName(el) {
@@ -447,15 +450,15 @@ function usesPdfjs(el) {
   return !(renderer === "native" || (renderer === "auto" && nativeSupported()));
 }
 
-// Each embed's name, by placeholder. PDF.js embeds that share a name are
-// numbered "(k of n)" in document order (a RevealJS deck holds all its slides
-// in the document), so a screen reader can tell them apart. The count takes
-// each embed by the renderer it gets here, whether or not its PDF loads.
+// Each embed's name, by placeholder. Embeds that share a name are numbered
+// "(k of n)" in document order (a RevealJS deck holds all its slides in the
+// document), so a screen reader can tell them apart. The count takes every
+// embed with a PDF address, native or PDF.js, whether or not its PDF loads.
 function embedNames(placeholders) {
   const names = new Map();
   const total = new Map();
   for (const el of placeholders) {
-    if (!el.dataset.src || !usesPdfjs(el)) continue;
+    if (!el.dataset.src) continue;
     const name = embedName(el);
     names.set(el, name);
     total.set(name, (total.get(name) || 0) + 1);
