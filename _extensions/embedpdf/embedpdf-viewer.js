@@ -80,7 +80,6 @@ async function pageText(page) {
   const content = await page.getTextContent();
   let text = "";
   for (const item of content.items) {
-    if (typeof item.str !== "string") continue; // a marked-content marker
     text += item.str;
     if (item.hasEOL) text += "\n";
   }
@@ -332,13 +331,22 @@ async function hydratePdfjs(el, opts) {
   kickInitial();
 
   // read every page's text, so a screen reader can reach pages that were
-  // never scrolled into view; a page whose text fails keeps an empty block
+  // never scrolled into view; a page whose text fails keeps an empty block.
+  // A read that has not finished after 10 s gives up its place in the queue,
+  // so a stuck read cannot stop the page renders behind it.
   state.textEls.forEach((textEl, i) =>
     enqueueText(async () => {
+      let timer;
       try {
-        textEl.textContent = await pageText(await state.doc.getPage(i + 1));
+        const read = state.doc.getPage(i + 1).then(pageText);
+        const timeout = new Promise((_, reject) => {
+          timer = setTimeout(() => reject(new Error("the text read took more than 10 s")), 10000);
+        });
+        textEl.textContent = await Promise.race([read, timeout]);
       } catch (err) {
         console.error("embedpdf: failed to read the text of page " + (i + 1) + " of " + opts.label, err);
+      } finally {
+        clearTimeout(timer);
       }
     })
   );

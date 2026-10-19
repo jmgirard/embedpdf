@@ -75,8 +75,9 @@
 // scrolls each embed's pages into view before it measures.
 //
 // Exits non-zero if the page does not load, if no embed is hydrated, if any
-// PDF.js block failed to render actual content, or if an expected count does
-// not match.
+// PDF.js block failed to render actual content, if an expected count does
+// not match, or if an --expect-text check fails. Exits 2 on a bad argument,
+// or when --plant finds nothing to plant in.
 
 import fs from "node:fs";
 import os from "node:os";
@@ -316,10 +317,18 @@ function textFailures(report) {
 
 // --expect-text, after the pages scroll: Chrome's accessibility tree for each
 // page, canvas, and toolbar control of each PDF.js embed under a root. Waits
-// at most 10 s per embed for its pages to have canvases. A tree plant goes into the
-// page's first PDF.js embed, when it is under the root, first.
+// at most 10 s per embed for its pages to have canvases. Then a tree plant goes
+// into the page's first PDF.js embed, when it is under the root.
 async function treeFailures(page, slide) {
   const where = slide === null ? "" : ` on slide ${slide + 1}`;
+  const root = slide === null ? page : (await page.evaluateHandle((k) => window.Reveal.getSlides()[k], slide)).asElement();
+  const embeds = await root.$$(".embedpdf-pdfjs");
+  for (const embed of embeds) {
+    const pages = await embed.$$(".embedpdf-page");
+    for (let t = 0; t < 100 && (await embed.$$(".embedpdf-page canvas")).length < pages.length; t++) {
+      await new Promise((r) => setTimeout(r, 100));
+    }
+  }
   const planted = await page.evaluate(
     (slide, plant, treePlants) => {
       const root = slide === null ? document : window.Reveal.getSlides()[slide];
@@ -337,19 +346,13 @@ async function treeFailures(page, slide) {
     plant,
     TREE_PLANTS
   );
-  const root = slide === null ? page : (await page.evaluateHandle((k) => window.Reveal.getSlides()[k], slide)).asElement();
   const snap = (el) => page.accessibility.snapshot({ root: el, interestingOnly: false });
   const allText = (node) => (node ? [node.name || "", ...(node.children || []).map(allText)].join(" ") : "");
   const out = [];
-  const embeds = await root.$$(".embedpdf-pdfjs");
   for (const [i, embed] of embeds.entries()) {
     const at = `PDF.js embed ${i + 1}${where}`;
-    let pages = await embed.$$(".embedpdf-page");
-    let canvases = await embed.$$(".embedpdf-page canvas");
-    for (let t = 0; t < 100 && canvases.length < pages.length; t++) {
-      await new Promise((r) => setTimeout(r, 100));
-      canvases = await embed.$$(".embedpdf-page canvas");
-    }
+    const pages = await embed.$$(".embedpdf-page");
+    const canvases = await embed.$$(".embedpdf-page canvas");
     if (canvases.length !== pages.length) out.push(`${at}: ${canvases.length} canvases for ${pages.length} pages`);
     for (const [j, p] of pages.entries()) {
       const node = await snap(p);

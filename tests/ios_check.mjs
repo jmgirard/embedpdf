@@ -109,6 +109,10 @@ if (phrases && phrases.some((p) => !p)) {
   console.error("ios_check: --expect-text needs a non-empty phrase for each page");
   process.exit(2);
 }
+if (phrases && remote) {
+  console.error("ios_check: --expect-text cannot be combined with --remote (no embed shows a PDF there)");
+  process.exit(2);
+}
 const TEXT_PLANTS = ["notext", "swap", "visible"];
 if (plant && !["blank", "missing", ...TEXT_PLANTS].includes(plant)) {
   console.error("ios_check: --plant must be blank, missing, notext, swap, or visible");
@@ -179,14 +183,17 @@ const PROBE = `<script>
       }
     }
   };
-  // the hidden text of each page, read before anything scrolls: wait at most
-  // 10 s for every embed to hydrate and every PDF.js page to have text
+  // --expect-text: the hidden text of each page, read before anything
+  // scrolls; wait at most 10 s for every embed to hydrate and every PDF.js
+  // page to have text
+  const wantText = params.get("text") === "1";
   const blocks = () => embeds().filter((el) => kind(el) === "pdfjs")
     .flatMap((el) => [...el.querySelectorAll(".embedpdf-page")].map((p) => p.querySelector(".embedpdf-text")));
   const tText = Date.now();
-  while (Date.now() - tText < 10000 &&
+  while (wantText && Date.now() - tText < 10000 &&
     (embeds().some((el) => kind(el) === "none") || !blocks().every((t) => t && t.textContent.trim()))) await sleep(100);
   const textWaitedMs = Date.now() - tText;
+  let textPlanted = "";
   if (["notext", "swap", "visible"].includes(plant)) {
     const first = embeds().find((el) => kind(el) === "pdfjs");
     const t = first ? [...first.querySelectorAll(".embedpdf-page .embedpdf-text")] : [];
@@ -194,6 +201,7 @@ const PROBE = `<script>
     if (plant === "notext" && last) last.textContent = "";
     if (plant === "swap" && t.length > 1) [t[0].textContent, t[1].textContent] = [t[1].textContent, t[0].textContent];
     if (plant === "visible" && last) last.style.overflow = "visible";
+    if (last && (plant !== "swap" || t.length > 1)) textPlanted = plant;
   }
   const text = embeds().map((el) => [...el.querySelectorAll(".embedpdf-page")].map((p) => {
     const t = p.querySelector(".embedpdf-text");
@@ -241,6 +249,7 @@ const PROBE = `<script>
     maxTouchPoints: navigator.maxTouchPoints,
     viewer: [...document.scripts].map((s) => s.src).find((s) => /embedpdf-viewer\\.js/.test(s)) || "",
     plant,
+    textPlanted,
     textWaitedMs,
     embeds: embeds().map((el, i) => {
       const pages = [...el.querySelectorAll(".embedpdf-page")];
@@ -328,7 +337,7 @@ const server = await serveDocs({
 let exitCode = 1;
 try {
   simctl("bootstatus", dev.udid, "-b");
-  const target = `http://127.0.0.1:${port}/${servedPath}?run=${runId}${plant ? "&plant=" + plant : ""}${shotEmbed ? "&shot=" + shotEmbed : ""}`;
+  const target = `http://127.0.0.1:${port}/${servedPath}?run=${runId}${plant ? "&plant=" + plant : ""}${phrases ? "&text=1" : ""}${shotEmbed ? "&shot=" + shotEmbed : ""}`;
   simctl("openurl", dev.udid, target);
 
   const timer = new Promise((_, rej) =>
@@ -386,6 +395,11 @@ try {
   };
   console.log(JSON.stringify(out, null, 2));
   exitCode = failures.length === 0 ? 0 : 1;
+  // a text plant that found nothing proves nothing about the check
+  if (TEXT_PLANTS.includes(plant) && !report.textPlanted) {
+    console.error(`ios_check: --plant ${plant} found nothing to plant in`);
+    exitCode = 2;
+  }
 } catch (err) {
   console.error("ios_check: " + err.message);
 } finally {

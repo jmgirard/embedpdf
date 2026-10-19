@@ -142,6 +142,8 @@ errors.
   of `docs/`.
 - The viewer serializes rendering (one page at a time, shared PDF.js worker) and
   caps canvas pixels — keep both; they matter on constrained mobile devices.
+  The same queue reads each page's hidden text at load. Page renders go
+  first, and each text read gives up after 10 s.
 
 ## Still unverified
 - A real Android device loading the GitHub Pages site (the actual target
@@ -156,6 +158,8 @@ errors.
 - A real screen reader (VoiceOver, TalkBack) reading a PDF.js embed's hidden
   page text. Checked only in Chromium's accessibility tree and in Safari's page
   DOM in the iOS simulators.
+- The cost of reading every page's text at load on a constrained phone: memory
+  and first-paint delay for a long PDF were not measured.
 
 ## Project tracking (cairn)
 

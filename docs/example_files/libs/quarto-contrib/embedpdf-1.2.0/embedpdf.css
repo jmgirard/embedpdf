@@ -99,7 +99,8 @@
   overflow: hidden;
   clip: rect(0 0 0 0);
   clip-path: inset(50%);
-  white-space: pre-line;
+  /* keep the PDF's line breaks, but do not wrap each word in the 1px box */
+  white-space: pre;
   user-select: none;
   -webkit-user-select: none;
 }
