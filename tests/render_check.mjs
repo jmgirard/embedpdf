@@ -316,7 +316,7 @@ function textFailures(report) {
 
 // --expect-text, after the pages scroll: Chrome's accessibility tree for each
 // page, canvas, and toolbar control of each PDF.js embed under a root. Waits
-// at most 10 s for every page to have a canvas. A tree plant goes into the
+// at most 10 s per embed for its pages to have canvases. A tree plant goes into the
 // page's first PDF.js embed, when it is under the root, first.
 async function treeFailures(page, slide) {
   const where = slide === null ? "" : ` on slide ${slide + 1}`;

@@ -38,6 +38,8 @@
 //                          1px, overflow hidden, user-select none, display
 //                          not none, visibility visible, no aria-hidden on it
 //                          or an ancestor. Whitespace is collapsed first.
+//                          Checks only embeds not set to renderer=native,
+//                          and is skipped under --remote.
 //   --alone yes|no         yes: serve a copy of the page from an empty
 //                          temporary directory instead of docs/ (default no)
 //   --remote blocked       serve the PDFs from a second server on another port
