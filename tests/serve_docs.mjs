@@ -9,6 +9,7 @@
 //   root           directory to serve (default docs/)
 //   transformHtml  optional (html) => html applied to every .html response
 //   routes         optional { "/path": (req, res) => void } handlers
+// serveRemote(mode) and pointPdfsAt(html, base) put the PDFs on another origin.
 
 import http from "node:http";
 import fs from "node:fs";
@@ -54,4 +55,39 @@ export function serveDocs({ port = 0, transformHtml = null, routes = {}, root = 
     res.end(data);
   });
   return new Promise((resolve) => server.listen(port, "127.0.0.1", () => resolve(server)));
+}
+
+// A second origin for remote-PDF checks: serves docs/ on its own port, which
+// makes it another origin than the page's server.
+//   mode blocked  no Access-Control-Allow-Origin header, so PDF.js cannot read it
+//   mode cors     Access-Control-Allow-Origin: *
+//   mode missing  HTTP 404 for every path, with Access-Control-Allow-Origin: *
+//                 so that the 404 itself, not CORS, is what PDF.js meets
+export const REMOTE_MODES = ["blocked", "cors", "missing"];
+export function serveRemote(mode, { port = 0 } = {}) {
+  const server = http.createServer((req, res) => {
+    const url = new URL(req.url, "http://127.0.0.1");
+    const cors = mode === "blocked" ? {} : { "Access-Control-Allow-Origin": "*" };
+    let file = null;
+    try {
+      file = path.join(DOCS, decodeURIComponent(url.pathname));
+    } catch {}
+    if (mode === "missing" || !file || !file.startsWith(DOCS + path.sep) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
+      res.writeHead(404, cors).end();
+      return;
+    }
+    const headers = { "Content-Type": TYPES[path.extname(file)] || "application/octet-stream", "Cache-Control": "no-store", ...cors };
+    res.writeHead(200, headers);
+    res.end(fs.readFileSync(file));
+  });
+  return new Promise((resolve) => server.listen(port, "127.0.0.1", () => resolve(server)));
+}
+
+// Point each relative .pdf in a double-quoted data-src or href at the remote
+// origin `base` (e.g. "http://127.0.0.1:9000/"), so each embed, fallback link,
+// and button link names the remote PDF. Paths resolve against the remote root,
+// so this fits pages at the root of docs/; a .pdf with a query or #fragment is
+// left as it is.
+export function pointPdfsAt(html, base) {
+  return html.replace(/\b(data-src|href)="(?![a-z][a-z0-9+.-]*:)([^"#?]+\.pdf)"/gi, (_, attr, file) => `${attr}="${new URL(file, base).href}"`);
 }

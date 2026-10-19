@@ -7,7 +7,7 @@ _Last hygiene check: 2026-10-18 (M002 done and archived; "Self-contained embeds"
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M003 | Remote PDFs on phones | planned | — | normal | milestones/M003-remote-pdfs-on-phones.md |
+| M003 | Remote PDFs on phones | review | — | normal | milestones/M003-remote-pdfs-on-phones.md |
 | M002 | Self-contained embeds | done | — | high | milestones/archive/M002-self-contained-embeds.md |
 | M001 | iOS Safari check | done | — | high | milestones/archive/M001-ios-safari-check.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
@@ -20,6 +20,9 @@ _Last hygiene check: 2026-10-18 (M002 done and archived; "Self-contained embeds"
      the opening token is `[high]`/`[low]` or absent (`normal`) — tracking-rules "Candidate priority token";
      open each row with its short title, the words the cairn pane shows, then `: `;
      tracking-rules "Candidate short title" has the whole rule -->
+- Safari shared remote URL: in Safari (seen in an iOS 27.0 iPhone simulator), a PDF.js embed fails ("Load failed") when an `<object>` on the same page, such as a `renderer=native` embed, shows the same PDF from another site, even when that site sends `Access-Control-Allow-Origin: *`. A fix might fetch the PDF with its own request (M003 implement) — added 2026-10-18
+- Inlined PDF failure link: on a self-contained page, a PDF.js failure links "Open the PDF" to a `blob:` URL with no file name (untested, and fragile on `file://` pages and in iOS Safari), and a failed `data:` decode in `inlinedPdf()` runs outside the failure path, so it keeps the dead no-JS link (M003 review) — added 2026-10-18
+- Remote check gaps: see "Check script gaps". `pointPdfsAt` (tests/serve_docs.mjs) resolves paths against the remote root (pages in a docs/ subfolder would 404), skips single-quoted or unquoted attributes and `.pdf?`/`#` URLs, and rewrites every `href="*.pdf"`; `serveRemote` has no Range or OPTIONS handling; a same-origin 404 (a missing local PDF) is not exercised; `ios_check --remote` on a self-contained page fails with an unclear message (M003 review) — added 2026-10-18
 - Self-contained no-JS link: with JavaScript disabled, the fallback link and the `button` link in a self-contained page point at the separate PDF file, which is not shipped, because Quarto inlines `data-src` but not `<a href>` (M002 plan) — added 2026-10-18
 - Self-contained native checks: in a self-contained page the native `<object>` gets a `blob:` PDF, but only its bytes are checked (fetch in Chromium). Its display in desktop Safari and Firefox, `#page=` on a `blob:` URL, and the file name that the native viewer's own save button uses are not checked (M002 review) — added 2026-10-18
 - Self-contained slides on iOS: check self-contained RevealJS slides in Safari on iPhone and iPad with `tests/ios_check.mjs`; M002 checks them only in Chrome or Chromium (M002 plan) — added 2026-10-18

@@ -87,14 +87,41 @@ function hydrateNative(el, opts) {
   el.classList.add("embedpdf-native");
 }
 
+// PDF.js could not load the PDF, for example a PDF on another site that sends
+// no Access-Control-Allow-Origin header, or a missing file. Say so, and link to
+// the PDF so the browser can open it in a new tab.
+function showFailure(el, opts) {
+  const msg = document.createElement("p");
+  msg.className = "embedpdf-failed-text";
+  msg.textContent = "This PDF cannot be shown here. ";
+  const link = document.createElement("a");
+  link.href = opts.href;
+  link.target = "_blank";
+  link.rel = "noopener";
+  link.textContent = "Open the PDF";
+  msg.appendChild(link);
+  el.replaceChildren(msg);
+  el.classList.add("embedpdf-failed");
+  if (opts.width) el.style.width = /^\d+$/.test(opts.width) ? opts.width + "px" : opts.width;
+}
+
 async function hydratePdfjs(el, opts) {
-  const pdfjs = await loadPdfjs();
-  // an inlined PDF is read from its Blob only now, so a native embed never
-  // holds its bytes as an array
-  const source = opts.blob
-    ? { data: new Uint8Array(await opts.blob.arrayBuffer()) }
-    : { url: new URL(opts.src, document.baseURI).href };
-  const doc = await pdfjs.getDocument(source).promise;
+  let doc, page1;
+  try {
+    const pdfjs = await loadPdfjs();
+    // an inlined PDF is read from its Blob only now, so a native embed never
+    // holds its bytes as an array
+    const source = opts.blob
+      ? { data: new Uint8Array(await opts.blob.arrayBuffer()) }
+      : { url: new URL(opts.src, document.baseURI).href };
+    doc = await pdfjs.getDocument(source).promise;
+    page1 = await doc.getPage(1);
+  } catch (err) {
+    // a document that loaded but whose page 1 failed still holds worker memory
+    if (doc) doc.destroy();
+    showFailure(el, opts);
+    throw err; // the caller logs it
+  }
 
   el.textContent = "";
   el.classList.add("embedpdf-pdfjs");
@@ -110,7 +137,6 @@ async function hydratePdfjs(el, opts) {
   const state = { doc, pagesEl, zoom, pageEls: [], ratios: [] };
 
   // page 1 sets the placeholder aspect ratio; refined per page on render
-  const page1 = await doc.getPage(1);
   const vp1 = page1.getViewport({ scale: 1 });
   const defaultRatio = vp1.height / vp1.width;
 
@@ -325,8 +351,9 @@ async function hydrate(el) {
   }
 }
 
-// one embed that fails leaves its no-JS fallback content in place and never
-// stops the others
+// a PDF.js embed that cannot load its PDF shows the failure message
+// (showFailure); any other failure leaves the no-JS fallback content in place;
+// one failure never stops the others
 document.querySelectorAll("div.embedpdf").forEach((el) => {
   const label = /^data:/i.test(el.dataset.src || "") ? "an inlined PDF" : el.dataset.src;
   hydrate(el).catch((err) => console.error("embedpdf: failed to render " + label, err));
