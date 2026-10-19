@@ -6,7 +6,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { inkInPixels } from "./ink.mjs";
-import { serveDocs, DOCS } from "./serve_docs.mjs";
+import { serveDocs, pointPdfsAt, DOCS } from "./serve_docs.mjs";
 
 let passed = 0;
 let failed = 0;
@@ -40,6 +40,31 @@ check("ink: no pixels is no ink", inkInPixels(new Uint8ClampedArray(0)) === fals
 check("ink: rule runs from its source text", new Function("return " + inkInPixels.toString())()(pixels(10, WHITE, 3, [0, 0, 255, 255])) === true);
 // ios_check pastes the source into an HTML <script>, which "</script" or "<!--" would break
 check("ink: source text is safe inside a <script>", !/<\/script|<!--/i.test(inkInPixels.toString()));
+
+// --- pointPdfsAt ------------------------------------------------------------
+const R = "http://127.0.0.1:9000/";
+const div = (src, pre = "") => `<div ${pre}class="embedpdf" data-src="${src}" data-renderer="auto">`;
+const point = (html, page = "p.html") => pointPdfsAt(html, R, page);
+check("point: root page", point(div("x.pdf")) === div(R + "x.pdf"), point(div("x.pdf")));
+check("point: subfolder page", point(div("x.pdf"), "sub/p.html") === div(R + "sub/x.pdf"), point(div("x.pdf"), "sub/p.html"));
+check("point: ?query kept", point(div("x.pdf?x=1")) === div(R + "x.pdf?x=1"), point(div("x.pdf?x=1")));
+check("point: #fragment kept", point(div("x.pdf#page=2")) === div(R + "x.pdf#page=2"), point(div("x.pdf#page=2")));
+check("point: attribute before class", point(div("x.pdf", 'role="img" ')) === div(R + "x.pdf", 'role="img" '), point(div("x.pdf", 'role="img" ')));
+check("point: other classes", point('<div class="embedpdf myclass" data-src="x.pdf">') === `<div class="embedpdf myclass" data-src="${R}x.pdf">`);
+const fallback = '<a href="x.pdf" download="">Download PDF file.</a>';
+check("point: download link", point(fallback) === `<a href="${R}x.pdf" download="">Download PDF file.</a>`, point(fallback));
+const button = '<a class="embedpdf-btn" href="x.pdf" download>Download PDF</a>';
+check("point: button link", point(button) === `<a class="embedpdf-btn" href="${R}x.pdf" download>Download PDF</a>`, point(button));
+const absolute = div("https://example.org/x.pdf");
+check("point: absolute https: URL unchanged", point(absolute) === absolute, point(absolute));
+const prose = '<a href="x.pdf">a PDF</a>';
+check("point: link with no download unchanged", point(prose) === prose, point(prose));
+const notEmbed = '<div class="other" data-src="x.pdf">';
+check("point: div that is not an embed unchanged", point(notEmbed) === notEmbed, point(notEmbed));
+const word = '<a href="x.pdf" title="download">a PDF</a>';
+check("point: download only in a value unchanged", point(word) === word, point(word));
+const inlined = div("data:application/pdf;base64,JVBERi0=");
+check("point: data: URL unchanged", point(inlined) === inlined, point(inlined));
 
 // --- docs/ server -----------------------------------------------------------
 const server = await serveDocs();

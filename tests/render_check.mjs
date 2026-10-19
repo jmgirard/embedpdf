@@ -278,7 +278,7 @@ const server =
   /^https?:/.test(target) || alone === "file"
     ? null
     : await serveDocs(
-        aloneDir ? { root: aloneDir } : remoteBase ? { transformHtml: (html) => pointPdfsAt(html, remoteBase) } : {}
+        aloneDir ? { root: aloneDir } : remoteBase ? { transformHtml: (html) => pointPdfsAt(html, remoteBase, target) } : {}
       ).catch(cannotServe("docs"));
 const url =
   alone === "file"

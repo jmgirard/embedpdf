@@ -10,7 +10,8 @@
 //   root           directory to serve (default docs/)
 //   transformHtml  optional (html) => html applied to every .html response
 //   routes         optional { "/path": (req, res) => void } handlers
-// serveRemote(mode) and pointPdfsAt(html, base) put the PDFs on another origin.
+// serveRemote(mode) and pointPdfsAt(html, base, page) put the PDFs on another
+// origin.
 
 import http from "node:http";
 import fs from "node:fs";
@@ -131,11 +132,29 @@ export function serveRemote(mode, { port = 0 } = {}) {
   return listen(server, port);
 }
 
-// Point each relative .pdf in a double-quoted data-src or href at the remote
+// The attributes the shortcode writes, always double-quoted (embedpdf.lua):
+// the data-src of <div class="embedpdf">, and the href of the fallback and
+// button links, which carry `download`. Quarto can add attributes before
+// class (role="img" on a self-contained page). Other quoting forms are not
+// matched.
+const DIV_TAG = /<div\b[^>]*>/gi;
+const A_TAG = /<a\b[^>]*>/gi;
+const isEmbedDiv = (tag) => /\sclass="(?:[^"]*\s)?embedpdf(?:\s[^"]*)?"/i.test(tag);
+// `download` as an attribute name, outside any quoted value
+const hasDownload = (tag) => /\sdownload(?=[\s=>/])/i.test(tag.replace(/"[^"]*"/g, '""'));
+// a relative URL (no scheme, not //host) whose path ends in .pdf
+const isRelativePdf = (v) => !/^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(v) && /^[^?#]*\.pdf(?:[?#]|$)/i.test(v);
+
+// Point each relative PDF URL of the shortcode's attributes at the remote
 // origin `base` (e.g. "http://127.0.0.1:9000/"), so each embed, fallback link,
-// and button link names the remote PDF. Paths resolve against the remote root,
-// so this fits pages at the root of docs/; a .pdf with a query or #fragment is
-// left as it is.
-export function pointPdfsAt(html, base) {
-  return html.replace(/\b(data-src|href)="(?![a-z][a-z0-9+.-]*:)([^"#?]+\.pdf)"/gi, (_, attr, file) => `${attr}="${new URL(file, base).href}"`);
+// and button link names the remote PDF. `page` is the page's path under docs/
+// (e.g. "sub/p.html"): a URL resolves against the page's folder on `base`,
+// and keeps its ?query or #fragment. Other links are left as they are.
+export function pointPdfsAt(html, base, page = "") {
+  const pageUrl = new URL(page.split("/").map(encodeURIComponent).join("/"), base);
+  const point = (attr) => (tag) =>
+    tag.replace(new RegExp(`(\\s${attr}=")([^"]*)"`, "i"), (m, pre, v) => (isRelativePdf(v) ? `${pre}${new URL(v, pageUrl).href}"` : m));
+  return html
+    .replace(DIV_TAG, (tag) => (isEmbedDiv(tag) ? point("data-src")(tag) : tag))
+    .replace(A_TAG, (tag) => (hasDownload(tag) ? point("href")(tag) : tag));
 }

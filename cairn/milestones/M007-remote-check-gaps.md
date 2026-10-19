@@ -1,13 +1,13 @@
 # M007: Remote check gaps
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2
 - **Resolves:** —
 - **Surface tier:** internal — check scripts and their server helpers in tests/, which no extension user runs
-- **Branch/PR:** —
+- **Branch/PR:** m007-remote-check-gaps
 
 ## Goal
 
@@ -79,7 +79,7 @@ Close the gaps that the M003 review found in the remote-PDF checks of `tests/ser
 
 ## Tasks
 
-- [ ] T1: `tests/serve_docs.mjs` `pointPdfsAt(html, base, page)`: match the double-quoted `data-src` of a `<div>`
+- [x] T1: `tests/serve_docs.mjs` `pointPdfsAt(html, base, page)`: match the double-quoted `data-src` of a `<div>`
       whose class holds `embedpdf` (Quarto may put `role="img"` before `class`) and the double-quoted `href` of an
       `<a>` with `download`; resolve against `new URL(dirname(page) + "/", base)`; keep `?`/`#`. Pass the page path
       from `render_check.mjs` (`target`) and `ios_check.mjs` (`pagePath`). Add the AC1 cases to
@@ -114,6 +114,8 @@ Close the gaps that the M003 review found in the remote-PDF checks of `tests/ser
 - 2026-10-18: question set: rewrite only the shortcode's double-quoted form, or every quoting form — shortcode form.
 - 2026-10-18: plan gate chose the shortcode's double-quoted form over every quoting form because the shortcode and Quarto write only double quotes; falsified by a shortcode or Quarto page whose embed attribute uses another form.
 - 2026-10-18: plan chose a text rewrite of the served HTML over puppeteer request interception because ios_check drives Safari with no puppeteer and both scripts share `pointPdfsAt`; falsified by a shortcode embed that the rewrite misses and interception would move.
+- 2026-10-18: implement started on branch m007-remote-check-gaps. Google Chrome is not installed here, so render_check runs use `CHROME_PATH=/Applications/Chromium.app/Contents/MacOS/Chromium`.
+- 2026-10-18: T1 done: `pointPdfsAt(html, base, page)` matches `<div>` start tags whose class holds `embedpdf` and `<a>` tags with a `download` attribute name, resolves against the page URL, keeps `?`/`#`; 13 helper cases (50 passed, 0 failed); a planted root-relative resolve failed the subfolder case; the 10 Chromium `--remote` runs exit 0.
 
 ## Decisions
 

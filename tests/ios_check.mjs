@@ -363,7 +363,7 @@ const server = await serveDocs({
   // before the last </body>: a self-contained page can hold the text "</body>"
   // inside an inlined script
   transformHtml: (html) => {
-    if (remoteBase) html = pointPdfsAt(html, remoteBase);
+    if (remoteBase) html = pointPdfsAt(html, remoteBase, pagePath);
     const i = html.lastIndexOf("</body>");
     return i < 0 ? html + PROBE : html.slice(0, i) + PROBE + html.slice(i);
   },
