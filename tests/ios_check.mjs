@@ -57,7 +57,9 @@
 //   --remote blocked       serve the PDFs from a second server on another port
 //                          (another origin) that sends no
 //                          Access-Control-Allow-Origin header, and point each
-//                          embed's data-src and links at it
+//                          embed's data-src and links at it. A page whose
+//                          embeds hold their PDF inline (self-contained)
+//                          exits 2 before the simulator opens.
 //
 // Exits 0 only when every embed not set to renderer=native used PDF.js, has
 // exactly --expect-pages page containers, and every page canvas has ink, and
@@ -72,7 +74,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { serveDocs, serveRemote, pointPdfsAt, DOCS } from "./serve_docs.mjs";
+import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, DOCS } from "./serve_docs.mjs";
 import { inkInPixels } from "./ink.mjs";
 
 const args = process.argv.slice(2);
@@ -356,6 +358,15 @@ const remoteServer = remote
     })
   : null;
 const remoteBase = remoteServer ? `http://127.0.0.1:${remoteServer.address().port}/` : null;
+// --remote on a page whose embeds keep their PDF on the page (a self-contained
+// page) would check nothing remote, so it stops here, before the simulator
+if (remoteBase && fs.existsSync(path.join(DOCS, pagePath))) {
+  const off = embedSrcsOffRemote(fs.readFileSync(path.join(DOCS, pagePath), "utf8"), remoteBase, pagePath);
+  if (off.length) {
+    console.error(`ios_check: --remote: ${pagePath} has embeds whose PDF cannot be moved to the remote server (a self-contained page holds its PDFs inline): ${off.join(", ")}`);
+    process.exit(2);
+  }
+}
 
 const server = await serveDocs({
   port,

@@ -84,7 +84,7 @@ Close the gaps that the M003 review found in the remote-PDF checks of `tests/ser
       `<a>` with `download`; resolve against `new URL(dirname(page) + "/", base)`; keep `?`/`#`. Pass the page path
       from `render_check.mjs` (`target`) and `ios_check.mjs` (`pagePath`). Add the AC1 cases to
       `tests/helpers_test.mjs`, and update the header comments.
-- [ ] T2: A shared helper that lists the embed `data-src` values left off the remote server; both scripts call it on
+- [x] T2: A shared helper that lists the embed `data-src` values left off the remote server; both scripts call it on
       the page read from docs/ right after the remote server starts, and exit 2 with the AC2 message. Add helper
       cases (a self-contained page, a normal page with none left). Run both scripts on `selfcontained_test.html`.
 - [ ] T3: `serveRemote` sends file bodies through `sendData` (ranges) and answers OPTIONS with 204 and the mode's CORS
@@ -116,6 +116,7 @@ Close the gaps that the M003 review found in the remote-PDF checks of `tests/ser
 - 2026-10-18: plan chose a text rewrite of the served HTML over puppeteer request interception because ios_check drives Safari with no puppeteer and both scripts share `pointPdfsAt`; falsified by a shortcode embed that the rewrite misses and interception would move.
 - 2026-10-18: implement started on branch m007-remote-check-gaps. Google Chrome is not installed here, so render_check runs use `CHROME_PATH=/Applications/Chromium.app/Contents/MacOS/Chromium`.
 - 2026-10-18: T1 done: `pointPdfsAt(html, base, page)` matches `<div>` start tags whose class holds `embedpdf` and `<a>` tags with a `download` attribute name, resolves against the page URL, keeps `?`/`#`; 13 helper cases (50 passed, 0 failed); a planted root-relative resolve failed the subfolder case; the 10 Chromium `--remote` runs exit 0.
+- 2026-10-18: T2 done: `embedSrcsOffRemote(html, base, page)` in serve_docs.mjs; both scripts exit 2 on `selfcontained_test.html --remote blocked` with the three `data:` values cut to 40 characters, before Chromium or the simulator opens; 5 helper cases (55 passed); example.html and revealjs_test.html `--remote blocked` on iphone still exit 0.
 
 ## Decisions
 

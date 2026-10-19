@@ -41,7 +41,9 @@
 //                       and unless the console shows each failure's cause
 //                       (PDF.js UnknownErrorException for the CORS block of
 //                       blocked, ResponseException for the 404 of missing).
-//                       blocked and missing need --expect-failed.
+//                       blocked and missing need --expect-failed. A page
+//                       whose embeds hold their PDF inline (self-contained)
+//                       exits 2 before the browser opens.
 //   --expect-failed <n> fail unless exactly n embeds show the load-failure
 //                       state: the text "This PDF cannot be shown here.", an
 //                       "Open the PDF" link to the same absolute URL as
@@ -111,7 +113,7 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import puppeteer from "puppeteer-core";
-import { serveDocs, serveRemote, pointPdfsAt, REMOTE_MODES, DOCS } from "./serve_docs.mjs";
+import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, REMOTE_MODES, DOCS } from "./serve_docs.mjs";
 import { inkInPixels } from "./ink.mjs";
 
 // For iphone and ipad, userAgent, maxTouchPoints, and pdfViewerEnabled are what
@@ -274,6 +276,15 @@ const cannotServe = (what) => (err) => {
 };
 const remoteServer = remote ? await serveRemote(remote).catch(cannotServe("remote")) : null;
 const remoteBase = remoteServer ? `http://127.0.0.1:${remoteServer.address().port}/` : null;
+// --remote on a page whose embeds keep their PDF on the page (a self-contained
+// page) would check nothing remote, so it stops here, before the browser opens
+if (remoteBase && fs.existsSync(path.join(DOCS, target))) {
+  const off = embedSrcsOffRemote(fs.readFileSync(path.join(DOCS, target), "utf8"), remoteBase, target);
+  if (off.length) {
+    console.error(`render_check: --remote: ${target} has embeds whose PDF cannot be moved to the remote server (a self-contained page holds its PDFs inline): ${off.join(", ")}`);
+    process.exit(2);
+  }
+}
 const server =
   /^https?:/.test(target) || alone === "file"
     ? null

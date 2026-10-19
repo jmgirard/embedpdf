@@ -6,7 +6,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { inkInPixels } from "./ink.mjs";
-import { serveDocs, pointPdfsAt, DOCS } from "./serve_docs.mjs";
+import { serveDocs, pointPdfsAt, embedSrcsOffRemote, DOCS } from "./serve_docs.mjs";
 
 let passed = 0;
 let failed = 0;
@@ -65,6 +65,16 @@ const word = '<a href="x.pdf" title="download">a PDF</a>';
 check("point: download only in a value unchanged", point(word) === word, point(word));
 const inlined = div("data:application/pdf;base64,JVBERi0=");
 check("point: data: URL unchanged", point(inlined) === inlined, point(inlined));
+
+// --- embedSrcsOffRemote -------------------------------------------------------
+const read = (f) => fs.readFileSync(path.join(DOCS, f), "utf8");
+const offSelf = embedSrcsOffRemote(read("selfcontained_test.html"), R, "selfcontained_test.html");
+check("off: self-contained page has 3 inlined embeds", offSelf.length === 3, JSON.stringify(offSelf));
+check("off: values are cut to 40 characters", offSelf.every((v) => v.startsWith("data:application/pdf") && v.length === 41 && v.endsWith("…")), JSON.stringify(offSelf));
+const offExample = embedSrcsOffRemote(read("example.html"), R, "example.html");
+check("off: example.html has none left", offExample.length === 0, JSON.stringify(offExample));
+check("off: example.html has embeds to move", (read("example.html").match(/class="embedpdf/g) || []).length > 0);
+check("off: absolute URL is left off", embedSrcsOffRemote(absolute, R).length === 1);
 
 // --- docs/ server -----------------------------------------------------------
 const server = await serveDocs();

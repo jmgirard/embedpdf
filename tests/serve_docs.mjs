@@ -158,3 +158,15 @@ export function pointPdfsAt(html, base, page = "") {
     .replace(DIV_TAG, (tag) => (isEmbedDiv(tag) ? point("data-src")(tag) : tag))
     .replace(A_TAG, (tag) => (hasDownload(tag) ? point("href")(tag) : tag));
 }
+
+// The embed data-src values that pointPdfsAt leaves off `base`, such as the
+// data: URLs of a self-contained page, each cut to its first 40 characters.
+// A --remote run on such a page would check nothing remote.
+export function embedSrcsOffRemote(html, base, page = "") {
+  const off = [];
+  for (const tag of pointPdfsAt(html, base, page).match(DIV_TAG) || []) {
+    const m = isEmbedDiv(tag) && /\sdata-src="([^"]*)"/i.exec(tag);
+    if (m && !m[1].startsWith(base)) off.push(m[1].length > 40 ? m[1].slice(0, 40) + "…" : m[1]);
+  }
+  return off;
+}
