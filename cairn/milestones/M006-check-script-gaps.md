@@ -2,7 +2,7 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M006: Check script gaps
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
@@ -85,7 +85,7 @@ CLAUDE.md and script header updates.
       error. Add the AC3 cases to `helpers_test.mjs` first.
 - [x] T5: In `ios_check.mjs`, default `--port` to 0, build the target URL from `server.address().port`, and turn a
       listen error for a given port into exit 2 with a message naming the port.
-- [ ] T6: Update CLAUDE.md "Verify before finishing" and the two script headers (AC7). Run `quarto render`,
+- [x] T6: Update CLAUDE.md "Verify before finishing" and the two script headers (AC7). Run `quarto render`,
       `node tests/helpers_test.mjs`, the AC1 plants, the AC4 port runs, and every render_check and ios_check line in
       CLAUDE.md.
 
@@ -107,6 +107,8 @@ CLAUDE.md and script header updates.
 - 2026-10-18: T3: render_check reports each PDF.js page as "ok", "no canvas", or "no ink" and fails per embed on every run; `--plant blank|nocanvas|nopages` act in the final measure step. On example.html (Chrome and `--device iphone`) the clean run exits 0 and each plant exits 1 naming embed 1 (page 2 no ink, page 2 no canvas, no pages). The old all-canvases check passes nocanvas and nopages, since every canvas left has ink. The T3 edit was made with a python script, not the Edit tool; later edits use Edit.
 - 2026-10-18: T4: server cases added first (14 failed on the old server: four extensions, headers, ranges, and an unhandled EADDRINUSE crash); `serveDocs` now sends types for `.ttf`, `.eot`, `.map`, `.yml`, Content-Length and Accept-Ranges, 206 for `bytes=a-b` and `bytes=a-`, 416 past the end, other Range forms get the whole file; `serveDocs` and `serveRemote` reject on a listen error. `node tests/helpers_test.mjs`: 32 passed, 0 failed.
 - 2026-10-18: T5: ios_check `--port` defaults to 0 and the target URL reads `server.address().port`; a bad `--port` value exits 2. With a second process holding 8766: `--port 8766` exits 2 ("port 8766 is in use…"), and the default run on "embedpdf iPhone" exits 0 on port 52578. With the shared ink rule, `--plant blank` reports "embed 1: pages without ink: 2" (exit 1) and `--plant missing` exits 1.
+- 2026-10-18: T6: CLAUDE.md names `node tests/helpers_test.mjs` and the shared ink rule; script headers updated in T3 and T5. `quarto render` exits 0 with no docs/ change. All 29 render_check and ios_check lines in CLAUDE.md exit 0 (Chromium via CHROME_PATH; "embedpdf iPhone" and "embedpdf iPad"), and 11 prose variants (`--alone http`, mac-safari, windows-touch, ipad) exit 0; the ipad variant of the `--alone http` iphone line was not run. The simple-english hook reports 37 style hits in CLAUDE.md that predate this milestone; only the one em dash this milestone added was fixed.
+- 2026-10-18: claim audit: not owed — internal tier.
 
 ## Decisions
 
