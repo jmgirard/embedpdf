@@ -14,9 +14,10 @@ Key files:
 - `example.qmd` (guide), `native.qmd`, `revealjs_test.qmd` → rendered into `docs/`
   (GitHub Pages). `dummy*.pdf` are blank test files; `sample.pdf` is the realistic
   example used by `example.qmd`.
-- `name_test.qmd`, `percent_test.qmd`, `selfcontained_test.qmd`, and
-  `selfcontained_slides_test.qmd` are test pages, also rendered into `docs/`.
-  `files/` holds copies of `sample.pdf` under the names they test.
+- `name_test.qmd`, `name_edge_test.qmd`, `percent_test.qmd`,
+  `selfcontained_test.qmd`, and `selfcontained_slides_test.qmd` are test
+  pages, also rendered into `docs/`. `files/` holds copies of `sample.pdf`
+  under the names they test.
 
 ## Verify before finishing — you are the test runner (no CI)
 
@@ -50,10 +51,14 @@ node tests/render_check.mjs example.html --device iphone --expect-native 1 --exp
 node tests/render_check.mjs example.html --device ipad --expect-native 1 --expect-pdfjs 10 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/render_check.mjs name_test.html --expect-native 0 --expect-pdfjs 2 --expect-name "sample copy.pdf"
 node tests/render_check.mjs name_test.html --device iphone --expect-native 0 --expect-pdfjs 2 --expect-name "sample copy.pdf"
+node tests/render_check.mjs name_edge_test.html --expect-native 0 --expect-pdfjs 2 --expect-pages 2 --expect-name "sample.pdf|-" --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/render_check.mjs name_edge_test.html --device iphone --expect-native 0 --expect-pdfjs 2 --expect-pages 2 --expect-name "sample.pdf|-" --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/ios_check.mjs --device "embedpdf iPhone" --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/ios_check.mjs --device "embedpdf iPad" --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/ios_check.mjs --device "embedpdf iPhone" --page name_test.html --expect-embeds 2 --expect-name "sample copy.pdf"
 node tests/ios_check.mjs --device "embedpdf iPad" --page name_test.html --expect-embeds 2 --expect-name "sample copy.pdf"
+node tests/ios_check.mjs --device "embedpdf iPhone" --page name_edge_test.html --expect-embeds 2 --expect-name "sample.pdf|-" --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/ios_check.mjs --device "embedpdf iPad" --page name_edge_test.html --expect-embeds 2 --expect-name "sample.pdf|-" --expect-text "On the Origin of Coastlines|Why It Matters"
 ```
 
 `--expect-text` checks the hidden page text that screen readers read. The
@@ -70,7 +75,11 @@ One name stands for the `--expect-pdfjs` (render_check) or `--expect-embeds`
 "PDF: <file name> (k of n)". The viewer numbers embeds that share a name in
 the same way. `-` stands for an embed named "PDF" alone.
 `name_test.html` shows `files/sample copy.pdf` by a path with a space and by
-one with `%20`. `percent_test.html` is self-contained. It shows
+one with `%20`. `name_edge_test.html` shows `sample.pdf` twice. The first
+embed uses the query-style address `files/get?file=sample.pdf`, and
+`files/get` is a copy of the PDF. The second embed is written by hand in
+`files/inlined-sample.md`. It holds the PDF as a `data:` address (made with
+`base64`) and has no download link. `percent_test.html` is self-contained. It shows
 `files/100%.pdf` by `files/100%25.pdf` and by a bare `%`.
 `--plant` in each script plants one defect so you can see a
 check fail. The two scripts have different plant lists (see each header).
