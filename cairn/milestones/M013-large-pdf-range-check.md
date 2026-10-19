@@ -1,13 +1,13 @@
 # M013: Large PDF range check
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1
 - **Resolves:** —
 - **Surface tier:** internal — test scripts, a test fixture, and a test page that no user of the extension relies on
-- **Branch/PR:** —
+- **Branch/PR:** m013-large-pdf-range-check
 
 ## Goal
 
@@ -41,6 +41,9 @@ no range in 3 of 3 runs. When the server sent the whole-file answer slowly
   which the candidate row "Safari shared remote URL" holds.
 - Desktop Safari (`safari_check.mjs`). Its `auto` embeds use the native
   viewer, and the iOS simulator lines run Safari's PDF.js path.
+- A text check of the large PDF. Its pages repeat the text of `sample.pdf`,
+  and `--expect-text` needs a phrase that is on one page only. The candidate
+  row "Large PDF text check" holds it.
 - Byte ranges on GitHub Pages or a real phone. Only a person can check that,
   and CLAUDE.md "Still unverified" records it (AC5).
 
@@ -61,9 +64,8 @@ no range in 3 of 3 runs. When the server sent the whole-file answer slowly
       of each script on `large_test.html` exits non-zero and names each
       PDF.js embed's address.
 - [ ] AC3: Each run below on `large_test.html` exits 0 with
-      `--expect-ranges`, `--expect-pages 14`, `--expect-name
-      "large.pdf|large-2.pdf"`, and `--expect-text "On the Origin of
-      Coastlines|Why It Matters"`. The render_check runs are plain Chrome
+      `--expect-ranges`, `--expect-pages 14`, and `--expect-name
+      "large.pdf|large-2.pdf"`. The render_check runs are plain Chrome
       (`--expect-native 1 --expect-pdfjs 1`), `--device iphone`, and
       `--device android` (both `--expect-native 0 --expect-pdfjs 2`). They
       also include `--remote cors` with each of those two devices. The
@@ -90,7 +92,7 @@ no range in 3 of 3 runs. When the server sent the whole-file answer slowly
 
 ## Tasks
 
-- [ ] T1: Build `files/large.pdf` with `pdfunite` from seven copies of
+- [x] T1: Build `files/large.pdf` with `pdfunite` from seven copies of
       `sample.pdf`, and copy it to `files/large-2.pdf`. Add `large_test.qmd`
       with the two embeds and both files in `resources:`. Run `quarto render`.
 - [ ] T2: In `tests/serve_docs.mjs`, give `serveDocs` and `serveRemote` a slow
@@ -119,6 +121,11 @@ no range in 3 of 3 runs. When the server sent the whole-file answer slowly
 - 2026-10-19: plan gate chose a slow whole-file answer over a bigger PDF because a 978 KB PDF got no range request in 3 of 3 probe runs; falsified by a run with the slow answer in which PDF.js asks for no range.
 - 2026-10-19: plan gate chose counting 206 answers in the server over puppeteer response events because ios_check has no puppeteer page; falsified by a counted 206 that no PDF.js request asked for.
 - 2026-10-19: plan gate chose a second file for the `auto` embed over sorting requests by type because on desktop the native viewer may ask for ranges of the same address; falsified by a desktop run in which the native embed sends no request for its PDF.
+
+- 2026-10-19: started implement on branch m013-large-pdf-range-check.
+- 2026-10-19: T1 built files/large.pdf (14 pages, 171,198 bytes by `wc -c`) and files/large-2.pdf, added large_test.qmd; `quarto render` completes (only the known 100% URI warning).
+- 2026-10-19: substantive amendment: AC3 drops `--expect-text`, because the copies of sample.pdf repeat its text and the text check needs a phrase on one page only; new Out item and candidate row "Large PDF text check".
+- 2026-10-19: re-audit: AC3 (reduced) — nothing.
 
 ## Decisions
 
