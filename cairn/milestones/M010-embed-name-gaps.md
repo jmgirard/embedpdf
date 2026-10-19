@@ -1,6 +1,6 @@
 # M010: Embed name gaps
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
@@ -45,7 +45,7 @@ A screen reader tells each PDF.js embed apart by a name that never comes from a 
 - [x] T4: Add `files/get` and `name_edge_test.qmd` (resources so Quarto copies `files/get`; a raw `div.embedpdf` with a `data:` `data-src` of `sample.pdf`); add its render_check (with `--expect-pages 2`) and ios_check (`--expect-embeds 2`) lines to CLAUDE.md.
 - [x] T5: Indicator: a visually hidden "Page i of n" and the visible "i / n" `aria-hidden`, both updated by the scroll handler (`:317`). render_check reads the toolbar subtree and scrolls one embed's pages to page 2; ios_check reads the DOM. Add plant `rawindicator` (visible text not hidden) to both.
 - [x] T6: Safari: the user runs `safaridriver --enable` once (a stop for the user's hands). Write `tests/safari_check.mjs` with raw WebDriver HTTP calls (no new npm dependency): desktop Safari on `example.html`, then the `safari:useSimulator` and page-script `computedName` probes; record each probe that fails in README, CLAUDE.md, and a candidate row.
-- [ ] T7: Bump to 1.2.2 in both places; update README (screen-reader paragraph), DESIGN.md Architecture, and CLAUDE.md; `quarto render`; run every CLAUDE.md verify command.
+- [x] T7: Bump to 1.2.2 in both places; update README (screen-reader paragraph), DESIGN.md Architecture, and CLAUDE.md; `quarto render`; run every CLAUDE.md verify command.
 
 ## Work log
 
@@ -73,6 +73,7 @@ A screen reader tells each PDF.js embed apart by a name that never comes from a 
 - 2026-10-19: T6 done: `--target mac` on example.html passes in desktop Safari 27.0.1 ("PDF: sample.pdf (1 of 2)"/"(2 of 2)", controls named by title, indicator "Page 1 of 2" then "Page 2 of 2"). Get Computed Label gives a plain span "", so the check sets role heading on the indicator for the read and removes it. Plants `rawindicator` ("Page 1 of 2 1 / 2") and `nonumber` fail. `--target simulator` fails with "Could not find any session hosts that match the requested capabilities" (UDID, no UDID, and deviceType tried; the simulators' Remote Automation setting not changed by this run). Recorded in CLAUDE.md "Still unverified" and candidate row "Safari names on iOS"; README follows in T7.
 - 2026-10-19: T7 docs: version 1.2.2 in `_extension.yml` and `embedpdf.lua`; README screen-reader bullet, DESIGN.md Architecture (corrected M010), and the name_test and percent_test page text give the name rule, the numbering, and the indicator. The simple-english hook's README count is 10 before and after the edit (none added).
 - 2026-10-19: claim audit: 76 claims read, 6 corrected — README.md (Safari scope of the check; a query with no `.pdf` value gives "PDF"), CLAUDE.md (what each browser check covers; four scripts take `--plant`), tests/safari_check.mjs (exit 2 for a plant with nothing to plant in, a server that cannot start, and a missing safaridriver, now true in code), tests/render_check.mjs (staleindicator fails only on the embed scrolled to page 2). The same reader re-read all six as correct.
+- 2026-10-19: T7 done: a scratchpad runner ran every `node tests/` and `pandoc lua` line in CLAUDE.md's fenced blocks plus the variants its notes name (`--alone http` for each `--alone file`, mac-safari and windows-touch for the desktop selfcontained, `--remote blocked`, and `--missing-pdfs` lines, ipad for the selfcontained iphone lines): 62 commands, 0 failed (viewer at 799db1e; the later script edits were the safari_check exit handling, rerun by hand with exit 0, and comments). Status set to review.
 
 ## Decisions
 
