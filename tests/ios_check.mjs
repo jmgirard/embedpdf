@@ -21,9 +21,23 @@
 //   --screenshot <file>    save a simulator screenshot, taken with the first
 //                          renderer=native embed scrolled into view
 //   --shot-embed <n>       scroll embed n (1-based) into view for the screenshot
-//   --plant blank|missing  plant a defect before measuring (blank the last
-//                          page canvas of the first PDF.js embed, or remove
-//                          that page's container); the check must then fail
+//   --plant blank|missing|notext|swap|visible
+//                          plant a defect in the first PDF.js embed before
+//                          measuring (blank its last page canvas, remove
+//                          that page's container, empty that page's hidden
+//                          text, swap the first two pages' text, or set the
+//                          last text block's overflow to visible); the check
+//                          must then fail. The last three need --expect-text.
+//   --expect-text "<p1>|<p2>|…"
+//                          phrase i is a phrase of page i's text. Before the
+//                          probe scrolls, it waits at most 10 s for every
+//                          embed to hydrate and every PDF.js page to have
+//                          text. Fail unless each page's .embedpdf-text block
+//                          contains its own phrase and no other page's, and
+//                          is hidden but readable: computed width and height
+//                          1px, overflow hidden, user-select none, display
+//                          not none, visibility visible, no aria-hidden on it
+//                          or an ancestor. Whitespace is collapsed first.
 //   --alone yes|no         yes: serve a copy of the page from an empty
 //                          temporary directory instead of docs/ (default no)
 //   --remote blocked       serve the PDFs from a second server on another port
@@ -47,7 +61,7 @@ import { execFileSync } from "node:child_process";
 import { serveDocs, serveRemote, pointPdfsAt, DOCS } from "./serve_docs.mjs";
 
 const args = process.argv.slice(2);
-const FLAGS = ["device", "page", "expect-embeds", "expect-pages", "port", "timeout", "screenshot", "shot-embed", "plant", "alone", "remote"];
+const FLAGS = ["device", "page", "expect-embeds", "expect-pages", "expect-text", "port", "timeout", "screenshot", "shot-embed", "plant", "alone", "remote"];
 for (let i = 0; i < args.length; i += 2) {
   if (!FLAGS.includes(args[i].replace(/^--/, "")) || !args[i].startsWith("--") || i + 1 >= args.length) {
     console.error(`ios_check: unexpected argument "${args[i]}" (flags: --${FLAGS.join(", --")}, each with a value)`);
@@ -87,8 +101,19 @@ if (!device) {
   console.error("ios_check: --device <simulator name or udid> is required");
   process.exit(2);
 }
-if (plant && plant !== "blank" && plant !== "missing") {
-  console.error("ios_check: --plant must be blank or missing");
+const normalize = (s) => s.replace(/\s+/g, " ").trim();
+const phrases = opt("expect-text", null) === null ? null : opt("expect-text").split("|").map(normalize);
+if (phrases && phrases.some((p) => !p)) {
+  console.error("ios_check: --expect-text needs a non-empty phrase for each page");
+  process.exit(2);
+}
+const TEXT_PLANTS = ["notext", "swap", "visible"];
+if (plant && !["blank", "missing", ...TEXT_PLANTS].includes(plant)) {
+  console.error("ios_check: --plant must be blank, missing, notext, swap, or visible");
+  process.exit(2);
+}
+if (TEXT_PLANTS.includes(plant) && !phrases) {
+  console.error(`ios_check: --plant ${plant} needs --expect-text`);
   process.exit(2);
 }
 
@@ -152,6 +177,33 @@ const PROBE = `<script>
       }
     }
   };
+  // the hidden text of each page, read before anything scrolls: wait at most
+  // 10 s for every embed to hydrate and every PDF.js page to have text
+  const blocks = () => embeds().filter((el) => kind(el) === "pdfjs")
+    .flatMap((el) => [...el.querySelectorAll(".embedpdf-page")].map((p) => p.querySelector(".embedpdf-text")));
+  const tText = Date.now();
+  while (Date.now() - tText < 10000 &&
+    (embeds().some((el) => kind(el) === "none") || !blocks().every((t) => t && t.textContent.trim()))) await sleep(100);
+  const textWaitedMs = Date.now() - tText;
+  if (["notext", "swap", "visible"].includes(plant)) {
+    const first = embeds().find((el) => kind(el) === "pdfjs");
+    const t = first ? [...first.querySelectorAll(".embedpdf-page .embedpdf-text")] : [];
+    const last = t[t.length - 1];
+    if (plant === "notext" && last) last.textContent = "";
+    if (plant === "swap" && t.length > 1) [t[0].textContent, t[1].textContent] = [t[1].textContent, t[0].textContent];
+    if (plant === "visible" && last) last.style.overflow = "visible";
+  }
+  const text = embeds().map((el) => [...el.querySelectorAll(".embedpdf-page")].map((p) => {
+    const t = p.querySelector(".embedpdf-text");
+    if (!t) return null;
+    const s = getComputedStyle(t);
+    return {
+      text: t.textContent, width: s.width, height: s.height, overflow: s.overflow,
+      userSelect: s.userSelect || s.webkitUserSelect, display: s.display, visibility: s.visibility,
+      ariaHidden: !!t.closest('[aria-hidden="true"]'),
+    };
+  }));
+
   const t0 = Date.now();
   while (Date.now() - t0 < 90000) {
     await scrollAll();
@@ -160,7 +212,7 @@ const PROBE = `<script>
   }
   await sleep(1000);
 
-  if (plant) {
+  if (plant === "blank" || plant === "missing") {
     const first = embeds().find((el) => kind(el) === "pdfjs");
     const pages = first ? first.querySelectorAll(".embedpdf-page") : [];
     const last = pages[pages.length - 1];
@@ -187,6 +239,7 @@ const PROBE = `<script>
     maxTouchPoints: navigator.maxTouchPoints,
     viewer: [...document.scripts].map((s) => s.src).find((s) => /embedpdf-viewer\\.js/.test(s)) || "",
     plant,
+    textWaitedMs,
     embeds: embeds().map((el, i) => {
       const pages = [...el.querySelectorAll(".embedpdf-page")];
       // the load-failure state, read from the text and links, not the class
@@ -206,6 +259,7 @@ const PROBE = `<script>
         renderer: kind(el),
         pages: pages.length,
         ink: pages.map((p) => { const c = p.querySelector("canvas"); return !!c && hasInk(c); }),
+        text: text[i],
         failure,
       };
     }),
@@ -298,7 +352,28 @@ try {
     } else if (e.renderer !== "pdfjs") failures.push(`embed ${e.index}: renderer ${e.renderer}, expected pdfjs`);
     else if (e.pages !== expectPages) failures.push(`embed ${e.index}: ${e.pages} page containers, expected ${expectPages}`);
     else if (!e.ink.every(Boolean)) failures.push(`embed ${e.index}: pages without ink: ${e.ink.map((v, i) => (v ? null : i + 1)).filter(Boolean).join(", ")}`);
+    // --expect-text: the hidden text, read before the probe scrolled
+    if (phrases && !remote && e.renderer === "pdfjs") {
+      if (e.text.length !== phrases.length) failures.push(`embed ${e.index}: ${e.text.length} pages read for text, --expect-text gives ${phrases.length} phrases`);
+      e.text.forEach((b, j) => {
+        const at = `embed ${e.index}, page ${j + 1}`;
+        if (!b) return failures.push(`${at}: no .embedpdf-text block`);
+        const t = normalize(b.text);
+        if (phrases[j] && !t.includes(phrases[j])) failures.push(`${at}: text lacks "${phrases[j]}"`);
+        phrases.forEach((p, k) => {
+          if (k !== j && t.includes(p)) failures.push(`${at}: text has page ${k + 1}'s phrase "${p}"`);
+        });
+        if (b.width !== "1px" || b.height !== "1px") failures.push(`${at}: text box is ${b.width} by ${b.height}, not 1px by 1px`);
+        if (b.overflow !== "hidden") failures.push(`${at}: text overflow is ${b.overflow}, not hidden`);
+        if (b.userSelect !== "none") failures.push(`${at}: text user-select is ${b.userSelect}, not none`);
+        if (b.display === "none") failures.push(`${at}: text display is none`);
+        if (b.visibility !== "visible") failures.push(`${at}: text visibility is ${b.visibility}`);
+        if (b.ariaHidden) failures.push(`${at}: text is under aria-hidden`);
+      });
+    }
   }
+  // the full text is long; the report keeps its length
+  for (const e of report.embeds) for (const b of e.text) if (b) b.text = `${normalize(b.text).length} characters`;
   const out = {
     device: { name: dev.name, udid: dev.udid, type: deviceType, runtime: runtimeName },
     url: target,

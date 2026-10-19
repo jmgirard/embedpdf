@@ -136,7 +136,7 @@ GitHub release for 1.2.0: the user declares the release window separately.
       (drop one page's label), `canvas` (drop one canvas's `aria-hidden`),
       `noname` (drop one toolbar name). Show each run fails with its own
       message before trusting the green.
-- [ ] T5: `tests/ios_check.mjs`: the probe reports each page's hidden text and
+- [x] T5: `tests/ios_check.mjs`: the probe reports each page's hidden text and
       computed style; `--expect-text` checks them as in AC1. Add the
       `notext`, `swap`, and `visible` plants; show each fails.
 - [ ] T6: Docs: README "Known limitations" (the AC7 statement; keep the
@@ -166,6 +166,7 @@ GitHub release for 1.2.0: the user declares the release window separately.
 - 2026-10-18: T1-T3 done: the shared queue is now two lists (renders first, then text tasks), a page render swaps only its canvas, the text block is absolutely placed in a `position: relative` page so layout is unchanged; version 1.2.0. Shortcode tests 40 passed, 0 failed; `quarto render` clean; render_check example.html on iphone (10 PDF.js, 1 native) exits 0. The full verify slot runs at T7.
 - 2026-10-18: implement chose no `page.cleanup()` after text extraction: text reading loads no page images, and cleanup could drop objects a pending render needs.
 - 2026-10-18: T4 done: render_check `--expect-text` and `--plant`; the RevealJS slide loop moved from the browser to Node so text is read per shown slide and the tree checked per slide. Green in Chromium: example.html iphone (10 embeds read before and after the scroll, text there at 0 ms wait), selfcontained_test and selfcontained_slides_test `--alone file` iphone; revealjs_test iphone without the flag. Each of the 7 plants exits 1 with its own message (example.html), and `notext` on the slides page too. An `<canvas>` without `aria-hidden` shows in Chrome's tree as role `none`.
+- 2026-10-18: T5 done: ios_check `--expect-text` reads the text before the probe scrolls (waits at most 10 s). Green on "embedpdf iPhone" (iOS 27.0, text there after 607 ms) and "embedpdf iPad"; the `notext`, `swap`, and `visible` plants each exit 1 with their own message on the iPhone.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local. -->
