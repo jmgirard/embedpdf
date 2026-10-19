@@ -124,6 +124,7 @@ Close the gaps that the M003 review found in the remote-PDF checks of `tests/ser
 - 2026-10-18: the simple-english lint hook reports 37 hits in CLAUDE.md; all 37 were there before this branch (the same count on main), and the added paragraph has none, so the rest of the file was left as it is.
 - 2026-10-18: claim audit: not owed — internal tier.
 - 2026-10-18: implement complete; status review.
+- 2026-10-18: step-7 approval: m007-remote-check-gaps approved for merge
 
 ## Decisions
 
