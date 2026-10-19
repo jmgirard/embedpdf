@@ -43,7 +43,8 @@
 //   --expect-name "<file name>"
 //                          fail unless each PDF.js embed has role="group" and
 //                          aria-label "PDF: <file name>" in the DOM (Safari's
-//                          accessibility tree is not read)
+//                          accessibility tree is not read); skipped under
+//                          --remote
 //   --plant wrongname      with --expect-name: change the first PDF.js
 //                          embed's aria-label to "PDF: wrong.pdf"; the check
 //                          must then fail

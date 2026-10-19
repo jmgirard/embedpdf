@@ -58,7 +58,8 @@ phrases come from `pdftotext sample.pdf`: phrase 1 is on page 1, phrase 2 on
 page 2. In render_check it also checks Chrome's accessibility tree.
 `revealjs_test.html` uses other PDFs and gets no text check. `--expect-name`
 checks that each PDF.js embed is a group named "PDF: <file name>", and in
-render_check that each toolbar control has one name, its tooltip.
+render_check that each toolbar control's name is its tooltip and is not
+repeated as its description.
 `name_test.html` shows `files/sample copy.pdf` by a path with a space and by
 one with `%20`. `--plant` in both scripts plants one defect so you can see a
 check fail.

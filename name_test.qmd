@@ -6,8 +6,8 @@ resources:
 
 Both embeds show `files/sample copy.pdf`, a copy of `sample.pdf` in a
 subfolder. The first gives the path with a space, and the second gives it with
-`%20`. A screen reader names each one "PDF: sample copy.pdf". The checks in
-`tests/` read that name.
+`%20`. The viewer names each one "PDF: sample copy.pdf" for screen readers.
+The checks in `tests/` read that name.
 
 ## Path with a space
 
