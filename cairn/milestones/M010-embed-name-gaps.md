@@ -1,6 +1,6 @@
 # M010: Embed name gaps
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
@@ -80,6 +80,8 @@ A screen reader tells each PDF.js embed apart by a name that never comes from a 
 - 2026-10-19: T8 fixes: `fileName()` strips the host once (rows `https://example.com//a.pdf` and `//example.com//a.pdf`; the first fails on the old viewer, 23 rows pass); `aria-label` falls back to "PDF"; `-webkit-user-select` on the indicator; render_check checks the shown "1 / n" and the 1px hidden box (plant `showindicator` fails) and plants `staleindicator` only in the embed scrolled to page 2 (nothing to plant in on revealjs iPhone, exit 2); ios_check fails a missing indicator (plant `noindicator` fails) and exits 2 on a non-integer `--expect-embeds`; safari_check reads page 2 only where page 1 moves past the middle line and removes the role in a finally. README names both iOS probes and their results; CLAUDE.md, DESIGN.md, the script headers, `serve_docs.mjs` header, and row "Safari names on iOS" corrected.
 - 2026-10-19: claim audit: 44 claims read, 2 corrected — tests/render_check.mjs (`showindicator` now also removes the clip, so the text is visible as its header says; still fails), tests/serve_docs.mjs (header names helpers_test). The same reader re-read both as correct.
 - 2026-10-19: T8 done: `quarto render` exit 0 (known `100%.pdf` warning); the full verify list, 62 commands, 0 failed (viewer at f552a30; the later commit changed only a plant not in the list and a header). Status set to review.
+- 2026-10-19: amendment routed: AC1 — `fileName()` drops spaces around the address, which AC1's rule does not state (review pass 2, diff-bug #6).
+- 2026-10-19: amendment routed: AC6 — "with its `--expect-name` values updated to the AC2 names" cannot hold: a value is a file name, and the scripts add "PDF: " and the numbers (review pass 2, blame-history #2).
 
 ## Decisions
 
@@ -166,3 +168,4 @@ spawned: diff-bug, blame-history, prior-review, ripple
 - ripple #5: row "Name plant slide target" does not mention `staleindicator` — reject, false: that plant exits 2 rather than passing, as the row says of name plants.
 - ripple #6: DESIGN.md Known issues does not mention the desktop Safari check — reject, false: that entry is about hidden page text, which `safari_check.mjs` does not read, so it stays true.
 - ripple #7: `tests/expect_names.mjs` header omits safari_check — fix now.
+- Pass-2 fix-now items fixed d479ccd: diff-bug #1 (plant `tallframe` fails), #2, #3 (plant `namefailed` fails), #6 (trim before the `data:` test; 2 table rows, 25 pass), #8, #9 (ios_check plant `strayindicator` fails), #10, #11, #12 (no Chrome exits 2), #13; blame-history #1; prior-review #3, #4; ripple #1, #2, #7. The AC1 and AC6 wording goes to implement as an amendment return.
