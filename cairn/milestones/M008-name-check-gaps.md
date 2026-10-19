@@ -81,10 +81,10 @@ the new lines in CLAUDE.md "Verify before finishing".
       gets `aria-label` = `title`) and `norole` (remove the embed's `role`), and add both to `NAME_PLANTS`. In
       `ios_check.mjs` add `norole` to the plant list (line 166), the needs-`--expect-name` guard (line 179), and the
       probe plant block (near line 288). Update both header comments. Run the AC1 and AC2 lines.
-- [ ] T2: Name list. Split `--expect-name` on `|`; give `nameFailures()` the running PDF.js embed index across
+- [x] T2: Name list. Split `--expect-name` on `|`; give `nameFailures()` the running PDF.js embed index across
       slides; fail on a count mismatch when two or more names are given. Run the AC3 lines, and the existing
       `--expect-name` lines (one name) to show they still pass.
-- [ ] T3: Hydration wait. Before `nameFailures()` reads a slide, wait (100 ms steps, 10 s cap) for no unhydrated
+- [x] T3: Hydration wait. Before `nameFailures()` reads a slide, wait (100 ms steps, 10 s cap) for no unhydrated
       `div.embedpdf` under the slide, with the condition `measureText()` uses (line 340). Run the AC3 exit-0 lines.
 - [ ] T4: Percent page. Add `files/100%.pdf` (copy of `sample.pdf`) and `percent_test.qmd` (listed under
       `resources:`). Run `quarto render`; Quarto prints a "Invalid URI 'files/100%.pdf'" WARN for the bare-`%` link,
@@ -109,6 +109,8 @@ the new lines in CLAUDE.md "Verify before finishing".
 - 2026-10-18: plan gate chose render_check only for the `|` list, because `ios_check.mjs` has no slide-deck support and no single page needs several names there.
 - 2026-10-18: implement: branch m008-name-check-gaps cut from main at 4658f45; Google Chrome is not installed, so every render_check run uses Chromium 155 through `CHROME_PATH=/Applications/Chromium.app/Contents/MacOS/Chromium`, as in M001 to M007.
 - 2026-10-18: T1 done: render_check plants `duplink` and `norole`, ios_check plant `norole`. example.html `--plant duplink` exits 1 ("download control: description repeats the name"), `--plant norole` exits 1 ("role attribute is null, not group", tree role generic); name_test.html ios_check iPhone `--plant norole` exits 1 with the same role line; both clean runs exit 0.
+- 2026-10-18: T2 done: `--expect-name` splits on `|`; `nameFailures(page, slide, before)` takes the count of PDF.js embeds on earlier slides; a list whose length differs from the embeds checked fails. revealjs_test.html desktop `dummy2.pdf` and iphone `dummy2.pdf|dummy.pdf` exit 0; iphone `dummy.pdf|dummy2.pdf` exits 1 (slides 3 and 4 misnamed), a 3-name list exits 1 ("gives 3 names for 2 PDF.js embeds"), `--plant wrongname` with the list exits 1; name_test.html one-name run exits 0.
+- 2026-10-18: T3 done: `nameFailures()` waits (100 ms steps, 10 s cap) for no unhydrated `div.embedpdf` under its root, the `measureText()` condition, before planting or reading; it runs for the whole page too, where it is harmless. Choice: the wait sits inside `nameFailures()` rather than in the slide loop, so the plant also waits for the embed.
 
 ## Decisions
 
