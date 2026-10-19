@@ -139,34 +139,36 @@ Pass 1, 2026-10-18, branch head ca784ed, main f1ab6f8 (not moved). Chromium via 
 - AC6 evidence: helpers_test `75 passed, 0 failed`; 48 of 48 runs exited 0: the 34 `node tests/...` check lines in the CLAUDE.md code blocks, the 4 `--alone http` reruns, the self-contained mac-safari, windows-touch (file and http), and ipad (file and http) runs, and the mac-safari and windows-touch runs of the remote and missing desktop lines.
 - Gate: `cairn_validate.py` all checks passed; no principle changed (no `cairn_impact` run); the generic profile names no toolchain checks.
 - spawned: diff-bug, blame-history, prior-review, ripple
-- diff-bug #1: the `--missing-pdfs` checks pass every embed if any one console line names its shared `data-src`, so nine of ten embeds sharing `sample.pdf` could fail another way — fix now (count lines per `data-src`); the same pre-existing gap in the `--remote` checks — follow-up (new row "Remote failure line count").
-- diff-bug #2: ios_check sets `missingPdfs` with `args.includes`, so `--page --missing-pdfs` turns the mode on — fix now (set it in the parse loop).
-- diff-bug #3: `--missing-pdfs --expect-failed 0` checks nothing — fix now (exit 2 unless `--expect-failed` is above 0).
+- diff-bug #1: the `--missing-pdfs` checks pass every embed if any one console line names its shared `data-src`, so nine of ten embeds sharing `sample.pdf` could fail another way — fix now, fixed 35af9db (count lines per `data-src`); the same pre-existing gap in the `--remote` checks — follow-up (new row "Remote failure line count").
+- diff-bug #2: ios_check sets `missingPdfs` with `args.includes`, so `--page --missing-pdfs` turns the mode on — fix now, fixed 35af9db (set it in the parse loop).
+- diff-bug #3: `--missing-pdfs --expect-failed 0` checks nothing — fix now, fixed 35af9db (exit 2 unless `--expect-failed` is above 0).
 - diff-bug #4: the cut value is 41 characters with the cut mark — reject (false: the value is given by its first 40 characters, and "…" marks the cut).
-- diff-bug #5: `pointPdfsAt` encodes each page-path part, so a literal `%` doubles and a `?` moves the folder, unlike the scripts' raw page URL — fix now (resolve `page` with `new URL(page, base)`).
-- diff-bug #6: the preflight is skipped for a target with `?`/`#` and crashes with EISDIR on a directory — fix now (strip `?`/`#`, check `isFile()`).
+- diff-bug #5: `pointPdfsAt` encodes each page-path part, so a literal `%` doubles and a `?` moves the folder, unlike the scripts' raw page URL — fix now, fixed 35af9db (resolve `page` with `new URL(page, base)`).
+- diff-bug #6: the preflight is skipped for a target with `?`/`#` and crashes with EISDIR on a directory — fix now, fixed 35af9db (strip `?`/`#`, check `isFile()`).
 - diff-bug #7: a `>` inside an attribute value ends the tag match early — follow-up (row "Remote rewrite quoting", hand-written HTML only).
-- diff-bug #8: the preflight message blames a self-contained page for any unmovable value, such as `getfile?id=3` — fix now (reword).
-- diff-bug #9: stale headers: ios_check `--expect-text` "skipped under --remote", the "Exits 0 only when" paragraph, the `serveDocs` signature line — fix now.
-- diff-bug #10: `Content-Length` in Expose-Headers has no effect — fix now (remove it).
-- diff-bug #11: CLAUDE.md "Still unverified" has no line for `--missing-pdfs` — fix now.
+- diff-bug #8: the preflight message blames a self-contained page for any unmovable value, such as `getfile?id=3` — fix now, fixed 35af9db (reword).
+- diff-bug #9: stale headers: ios_check `--expect-text` "skipped under --remote", the "Exits 0 only when" paragraph, the `serveDocs` signature line — fix now, fixed 35af9db.
+- diff-bug #10: `Content-Length` in Expose-Headers has no effect — fix now, fixed 35af9db (remove it).
+- diff-bug #11: CLAUDE.md "Still unverified" has no line for `--missing-pdfs` — fix now, fixed 35af9db.
 - diff-bug #12: `--plant missing` and `--missing-pdfs` are easy to confuse — reject (style: naming nit).
-- blame-history #1: the serveRemote mode table says missing answers 404 for every path, but OPTIONS gets 204 — fix now.
+- blame-history #1: the serveRemote mode table says missing answers 404 for every path, but OPTIONS gets 204 — fix now, fixed 35af9db.
 - blame-history #2: browser cors runs never load by ranges (PDFs under 128 KB) — follow-up (row "Large PDF range check" already holds it).
 - blame-history #3: `pointPdfsAt` no longer rewrites links without `download` — reject (planned change, Scope In).
 - blame-history #4: any absolute non-remote embed URL now exits 2 — reject (planned change, AC2).
 - blame-history #5: render_check's `startsWith` assumes the console text starts with the viewer's message — reject (false: the observed text is `embedpdf: failed to render sample.pdf [object ResponseException]`, and a planted wrong kind failed the run).
 - prior-review #1: the `--missing-pdfs` checks were never shown to fail — reject (false: T4 and T5 work-log lines record planted wrong kinds failing in Chromium and on the iPhone).
-- prior-review #2: "Still unverified" lacks the missing-PDF state on a real phone — fix now (same as diff-bug #11).
+- prior-review #2: "Still unverified" lacks the missing-PDF state on a real phone — fix now, fixed 35af9db (same as diff-bug #11).
 - prior-review #3: no subfolder page runs through a browser — reject (planned change: AC1 names helper cases, and docs/ has no subfolder page).
-- prior-review #4: no end-before-start range case for serveRemote — fix now (add the case).
+- prior-review #4: no end-before-start range case for serveRemote — fix now, fixed 35af9db (add the case).
 - ripple #1: ROADMAP row "Remote check gaps" still lists the closed gaps — reject (planned change: post-merge hygiene graduates the row).
-- ripple #2: the serveRemote mode table omits OPTIONS and Expose-Headers — fix now (same as blame-history #1).
-- ripple #3: the ios_check "Exits 0 only when" paragraph omits `--missing-pdfs` — fix now (same as diff-bug #9).
+- ripple #2: the serveRemote mode table omits OPTIONS and Expose-Headers — fix now, fixed 35af9db (same as blame-history #1).
+- ripple #3: the ios_check "Exits 0 only when" paragraph omits `--missing-pdfs` — fix now, fixed 35af9db (same as diff-bug #9).
 - ripple #4: CLAUDE.md's general "exits 0" sentence does not name `--missing-pdfs` — reject (false: the sentence stays true, and the flag's own paragraph states its conditions, as for `--remote`).
-- ripple #5: ios_check `--expect-name` header names only `--remote` — fix now.
-- ripple #6: the `serveDocs` signature line omits `missingPdfs` — fix now (same as diff-bug #9).
-- ripple #7: ios_check `--expect-text` header says "skipped under --remote" — fix now (same as diff-bug #9).
-- ripple #8: helpers_test header names only the ink rule and the docs/ server — fix now.
-- ripple #9: row "Large PDF range check" names only serveDocs as answering ranges — fix now (row edit).
+- ripple #5: ios_check `--expect-name` header names only `--remote` — fix now, fixed 35af9db.
+- ripple #6: the `serveDocs` signature line omits `missingPdfs` — fix now, fixed 35af9db (same as diff-bug #9).
+- ripple #7: ios_check `--expect-text` header says "skipped under --remote" — fix now, fixed 35af9db (same as diff-bug #9).
+- ripple #8: helpers_test header names only the ink rule and the docs/ server — fix now, fixed 35af9db.
+- ripple #9: row "Large PDF range check" names only serveDocs as answering ranges — fix now, fixed 35af9db (row edit).
 - ripple #10: row "Remote rewrite quoting" matches the diff — reject (false: no disagreement).
+- Re-verify after 35af9db: helpers_test `85 passed, 0 failed`; both AC2 refusals exit 2; 48 of 48 runs exit 0. Planting one extra required line failed the new count check in Chromium and on the iPhone (Safari logged 10 lines for 10 embeds). `--missing-pdfs --expect-failed 0` and ios_check `--expect-embeds 0` exit 2; a `?x=1` target no longer skips the AC2 refusal.
+- Tally: 31 findings: 19 fix now (all in 35af9db), 2 follow-up (rows "Remote rewrite quoting" and "Large PDF range check"), 10 reject (5 false, 4 planned change, 1 style). Diff-bug #1 counts as fix now; its `--remote` part went to new row "Remote failure line count". No amendments.
