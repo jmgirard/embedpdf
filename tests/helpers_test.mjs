@@ -91,6 +91,10 @@ try {
   const b5 = Buffer.from(await r5.arrayBuffer());
   check("server: a range that ends before it starts gets the whole file", r5.status === 200 && b5.equals(pdf), String(r5.status));
 
+  const r6 = await fetch(base + "sample.pdf", { headers: { Range: `bytes=${size + 100}-100` } });
+  await r6.arrayBuffer();
+  check("server: an invalid range past the end gets the whole file, not 416", r6.status === 200, String(r6.status));
+
   const r3 = await fetch(base + "sample.pdf", { headers: { Range: `bytes=${size}-${size + 10}` } });
   await r3.arrayBuffer();
   check("server: range past the end is 416", r3.status === 416, String(r3.status));

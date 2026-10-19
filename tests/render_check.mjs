@@ -101,10 +101,10 @@
 // transparent nor white, read over every pixel and channel).
 //
 // Exits non-zero if the page does not load or no embed is hydrated, if a
-// PDF.js embed has no pages or has a page whose canvas is missing or has no
-// ink, if an expected count does
-// not match, or if an --expect-text check fails. Exits 2 on a bad argument,
-// or when --plant finds nothing to plant in.
+// PDF.js embed has no pages or has a page whose canvas is missing, has no
+// ink, or cannot be read, if an expected count does not match, or if an
+// --expect-text or --expect-name check fails. Exits 2 on a bad argument,
+// when a server cannot start, or when --plant finds nothing to plant in.
 
 import fs from "node:fs";
 import os from "node:os";
@@ -624,17 +624,6 @@ try {
     );
     const native = document.querySelectorAll(".embedpdf-native").length;
     const pdfjs = pdfjsPages.length;
-    const objects = [];
-    for (const o of document.querySelectorAll(".embedpdf-native object")) {
-      const entry = { scheme: String(o.data).split(":")[0], pdf: false };
-      try {
-        const buf = new Uint8Array(await (await fetch(o.data)).arrayBuffer());
-        entry.pdf = String.fromCharCode(...buf.slice(0, 4)) === "%PDF";
-      } catch (err) {
-        entry.error = String(err);
-      }
-      objects.push(entry);
-    }
     const links = [...document.querySelectorAll(".embedpdf-download, .embedpdf object a[download], a.embedpdf-btn")].map(
       (a) => (a.getAttribute("href") || "").split(":")[0]
     );
@@ -660,6 +649,19 @@ try {
         !links.some((a) => a.textContent.trim() === "Download PDF file.");
       (ok ? failed : malformed).push({ index: i + 1, href: open ? open.href : null, expected, target: open ? open.target : null });
     });
+    // the native objects' bytes, fetched last: every DOM read above is one
+    // snapshot, taken before the first await
+    const objects = [];
+    for (const o of document.querySelectorAll(".embedpdf-native object")) {
+      const entry = { scheme: String(o.data).split(":")[0], pdf: false };
+      try {
+        const buf = new Uint8Array(await (await fetch(o.data)).arrayBuffer());
+        entry.pdf = String.fromCharCode(...buf.slice(0, 4)) === "%PDF";
+      } catch (err) {
+        entry.error = String(err);
+      }
+      objects.push(entry);
+    }
     return {
       userAgent: navigator.userAgent,
       pdfViewerEnabled: navigator.pdfViewerEnabled,
@@ -731,13 +733,6 @@ try {
     for (const f of text.failures) console.error("render_check: " + f);
     if (text.failures.length) process.exitCode = 1;
   }
-  if (INK_PLANTS.includes(plant) && !res.inkPlanted) {
-    console.error(`render_check: --plant ${plant} found nothing to plant in`);
-    await browser.close();
-    server?.close();
-    remoteServer?.close();
-    process.exit(2);
-  }
   // each PDF.js embed must have pages, and each page a canvas with ink
   let ok = true;
   res.pdfjsPages.forEach((pages, i) => {
@@ -751,6 +746,15 @@ try {
       ok = false;
     }
   });
+  // after the page failures are printed, so a real defect that left nothing
+  // to plant in is still named
+  if (INK_PLANTS.includes(plant) && !res.inkPlanted) {
+    console.error(`render_check: --plant ${plant} found nothing to plant in`);
+    await browser.close();
+    server?.close();
+    remoteServer?.close();
+    process.exit(2);
+  }
   if (res.native + res.pdfjs + res.failed.length === 0) {
     // a wrong page, or viewer JS that never loaded, must not pass as "no PDF.js blocks"
     console.error("render_check: no embed was hydrated");

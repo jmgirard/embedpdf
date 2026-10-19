@@ -46,12 +46,14 @@ function sendData(req, res, data, headers) {
   const m = /^bytes=(\d+)-(\d*)$/.exec(req.headers.range || "");
   if (m) {
     const start = Number(m[1]);
-    const end = m[2] === "" ? size - 1 : Math.min(Number(m[2]), size - 1);
-    if (start >= size) {
+    const last = m[2] === "" ? Infinity : Number(m[2]);
+    const end = Math.min(last, size - 1);
+    // a range whose end is before its start is invalid, so it is ignored
+    if (last >= start && start >= size) {
       res.writeHead(416, { ...headers, "Content-Range": `bytes */${size}` }).end();
       return;
     }
-    if (end >= start) {
+    if (last >= start) {
       res.writeHead(206, {
         ...headers,
         "Accept-Ranges": "bytes",

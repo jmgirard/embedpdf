@@ -19,7 +19,8 @@
 //   --expect-embeds <n>    embeds not set to renderer=native (default 10)
 //   --expect-pages <n>     pages per PDF.js embed (default 2: sample.pdf)
 //   --port <n>             server port on 127.0.0.1 (default: a free port the
-//                          system picks); a port in use exits 2
+//                          system picks); a port in use, or any server that
+//                          cannot start, exits 2 with a message
 //   --timeout <s>          seconds to wait for the report (default 180)
 //   --screenshot <file>    save a simulator screenshot, taken with the first
 //                          renderer=native embed scrolled into view
