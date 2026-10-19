@@ -4,7 +4,8 @@
 // server listens with a backlog of 5, and a browser opening many connections
 // at once can get some of them reset, so the viewer JS sometimes never loads.
 //
-// serveDocs({ port, transformHtml, routes, root }) resolves to the listening server.
+// serveDocs({ port, transformHtml, routes, root }) resolves to the listening
+// server, or rejects on a listen error. It answers single byte ranges.
 //   port           0 picks a free port (server.address().port)
 //   root           directory to serve (default docs/)
 //   transformHtml  optional (html) => html applied to every .html response
@@ -29,7 +30,55 @@ const TYPES = {
   ".json": "application/json",
   ".woff": "font/woff",
   ".woff2": "font/woff2",
+  ".ttf": "font/ttf",
+  ".eot": "application/vnd.ms-fontobject",
+  ".map": "application/json",
+  ".yml": "text/yaml",
 };
+
+// Send `data` whole (200) or, for a single "bytes=a-b" or "bytes=a-" Range
+// header, only those bytes (206); a range that starts past the end gets 416.
+// Any other Range form is ignored and the whole file is sent, as RFC 9110
+// allows. Content-Length and Accept-Ranges let PDF.js load a large PDF by
+// ranges, as it does from a static web host.
+function sendData(req, res, data, headers) {
+  const size = data.length;
+  const m = /^bytes=(\d+)-(\d*)$/.exec(req.headers.range || "");
+  if (m) {
+    const start = Number(m[1]);
+    const last = m[2] === "" ? Infinity : Number(m[2]);
+    const end = Math.min(last, size - 1);
+    // a range whose end is before its start is invalid, so it is ignored
+    if (last >= start && start >= size) {
+      res.writeHead(416, { ...headers, "Content-Range": `bytes */${size}` }).end();
+      return;
+    }
+    if (last >= start) {
+      res.writeHead(206, {
+        ...headers,
+        "Accept-Ranges": "bytes",
+        "Content-Range": `bytes ${start}-${end}/${size}`,
+        "Content-Length": end - start + 1,
+      });
+      res.end(data.subarray(start, end + 1));
+      return;
+    }
+  }
+  res.writeHead(200, { ...headers, "Accept-Ranges": "bytes", "Content-Length": size });
+  res.end(data);
+}
+
+// resolves to the server once it listens; rejects on a listen error (such as
+// EADDRINUSE for a port that another process holds)
+function listen(server, port) {
+  return new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(port, "127.0.0.1", () => {
+      server.off("error", reject);
+      resolve(server);
+    });
+  });
+}
 
 export function serveDocs({ port = 0, transformHtml = null, routes = {}, root = DOCS } = {}) {
   root = path.resolve(root);
@@ -49,12 +98,11 @@ export function serveDocs({ port = 0, transformHtml = null, routes = {}, root = 
     }
     const ext = path.extname(file);
     let data = fs.readFileSync(file);
-    if (ext === ".html" && transformHtml) data = transformHtml(data.toString("utf8"));
+    if (ext === ".html" && transformHtml) data = Buffer.from(transformHtml(data.toString("utf8")), "utf8");
     // no-store: the browser must load the viewer build under test, not a cached one
-    res.writeHead(200, { "Content-Type": TYPES[ext] || "application/octet-stream", "Cache-Control": "no-store" });
-    res.end(data);
+    sendData(req, res, data, { "Content-Type": TYPES[ext] || "application/octet-stream", "Cache-Control": "no-store" });
   });
-  return new Promise((resolve) => server.listen(port, "127.0.0.1", () => resolve(server)));
+  return listen(server, port);
 }
 
 // A second origin for remote-PDF checks: serves docs/ on its own port, which
@@ -80,7 +128,7 @@ export function serveRemote(mode, { port = 0 } = {}) {
     res.writeHead(200, headers);
     res.end(fs.readFileSync(file));
   });
-  return new Promise((resolve) => server.listen(port, "127.0.0.1", () => resolve(server)));
+  return listen(server, port);
 }
 
 // Point each relative .pdf in a double-quoted data-src or href at the remote

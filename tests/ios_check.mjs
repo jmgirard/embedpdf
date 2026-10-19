@@ -5,7 +5,9 @@
 // every HTML response, opens the page in the simulator's Safari with `simctl openurl`, and
 // waits for the probe to POST a per-embed report: which renderer each embed
 // used, how many .embedpdf-page containers it has, and whether each page's
-// canvas has ink. No dependencies beyond Node and Xcode's simctl.
+// canvas has ink, by the rule in tests/ink.mjs (some pixel neither transparent
+// nor white, read over every pixel and channel). No dependencies beyond Node
+// and Xcode's simctl.
 //
 // Setup (once): install Xcode, run its first-launch setup, download the iOS
 // platform (xcodebuild -downloadPlatform iOS), and create a simulator, e.g.
@@ -16,7 +18,9 @@
 //   --page <path>          page under docs/ to open (default example.html)
 //   --expect-embeds <n>    embeds not set to renderer=native (default 10)
 //   --expect-pages <n>     pages per PDF.js embed (default 2: sample.pdf)
-//   --port <n>             server port on 127.0.0.1 (default 8766)
+//   --port <n>             server port on 127.0.0.1 (default: a free port the
+//                          system picks); a port in use, or any server that
+//                          cannot start, exits 2 with a message
 //   --timeout <s>          seconds to wait for the report (default 180)
 //   --screenshot <file>    save a simulator screenshot, taken with the first
 //                          renderer=native embed scrolled into view
@@ -69,6 +73,7 @@ import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { serveDocs, serveRemote, pointPdfsAt, DOCS } from "./serve_docs.mjs";
+import { inkInPixels } from "./ink.mjs";
 
 const args = process.argv.slice(2);
 const FLAGS = ["device", "page", "expect-embeds", "expect-pages", "expect-text", "expect-name", "port", "timeout", "screenshot", "shot-embed", "plant", "alone", "remote"];
@@ -86,7 +91,13 @@ const device = opt("device", "");
 const pagePath = opt("page", "example.html");
 const expectEmbeds = Number(opt("expect-embeds", "10"));
 const expectPages = Number(opt("expect-pages", "2"));
-const port = Number(opt("port", "8766"));
+// 0: the system picks a free port
+const portArg = opt("port", "0");
+const port = Number(portArg);
+if (!/^\d+$/.test(portArg) || port > 65535) {
+  console.error("ios_check: --port must be a port number from 0 to 65535");
+  process.exit(2);
+}
 const timeoutS = Number(opt("timeout", "180"));
 const screenshot = opt("screenshot", "");
 const plant = opt("plant", "");
@@ -262,10 +273,11 @@ const PROBE = `<script>
     }
   }
 
+  // the ink rule of tests/ink.mjs, inlined from its source text
+  const inkInPixels = ${inkInPixels.toString()};
   const hasInk = (c) => {
     try {
-      const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data;
-      for (let i = 0; i < d.length; i += 400) if (d[i] < 128 && d[i + 3] > 0) return true;
+      return inkInPixels(c.getContext("2d").getImageData(0, 0, c.width, c.height).data);
     } catch (e) { errors.push("ink: " + e); }
     return false;
   };
@@ -337,7 +349,12 @@ if (alone === "yes") {
   fs.copyFileSync(source, path.join(aloneDir, servedPath));
 }
 
-const remoteServer = remote ? await serveRemote(remote) : null;
+const remoteServer = remote
+  ? await serveRemote(remote).catch((err) => {
+      console.error(`ios_check: cannot start the remote server: ${err.message}`);
+      process.exit(2);
+    })
+  : null;
 const remoteBase = remoteServer ? `http://127.0.0.1:${remoteServer.address().port}/` : null;
 
 const server = await serveDocs({
@@ -362,12 +379,19 @@ const server = await serveDocs({
       });
     },
   },
+}).catch((err) => {
+  console.error(
+    err.code === "EADDRINUSE"
+      ? `ios_check: port ${port} is in use; pass another --port, or none for a free port`
+      : `ios_check: cannot start the docs server: ${err.message}`
+  );
+  process.exit(2);
 });
 
 let exitCode = 1;
 try {
   simctl("bootstatus", dev.udid, "-b");
-  const target = `http://127.0.0.1:${port}/${servedPath}?run=${runId}${plant ? "&plant=" + plant : ""}${phrases ? "&text=1" : ""}${shotEmbed ? "&shot=" + shotEmbed : ""}`;
+  const target = `http://127.0.0.1:${server.address().port}/${servedPath}?run=${runId}${plant ? "&plant=" + plant : ""}${phrases ? "&text=1" : ""}${shotEmbed ? "&shot=" + shotEmbed : ""}`;
   simctl("openurl", dev.udid, target);
 
   const timer = new Promise((_, rej) =>

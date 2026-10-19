@@ -61,8 +61,8 @@ checks that each PDF.js embed is a group named "PDF: <file name>", and in
 render_check that each toolbar control's name is its tooltip and is not
 repeated as its description.
 `name_test.html` shows `files/sample copy.pdf` by a path with a space and by
-one with `%20`. `--plant` in both scripts plants one defect so you can see a
-check fail.
+one with `%20`. `--plant` in each script plants one defect so you can see a
+check fail. The two scripts have different plant lists (see each header).
 
 Self-contained pages (`embed-resources: true`): `--alone http|file` (render_check)
 and `--alone yes` (ios_check) load a copy of the page with no other file beside it.
@@ -102,7 +102,8 @@ node tests/ios_check.mjs --device "embedpdf iPad" --remote blocked
 ```
 
 `render_check.mjs` serves `docs/` itself with `tests/serve_docs.mjs`. If every
-PDF.js canvas has ink and the counts match, it exits 0. If Google Chrome is not
+page of every PDF.js embed has a canvas with ink and the counts match, it exits
+0. Both scripts use the ink rule in `tests/ink.mjs`. If Google Chrome is not
 installed, set `CHROME_PATH` to another Chrome or Chromium binary. Do not serve
 `docs/` with `python3 -m http.server`. It resets some of the browser's parallel
 connections, and then no embed loads.
@@ -115,6 +116,13 @@ two simulators, which you create once:
 ```
 xcrun simctl create "embedpdf iPhone" "iPhone 17" com.apple.CoreSimulator.SimRuntime.iOS-27-0
 xcrun simctl create "embedpdf iPad" "iPad Air 11-inch (M4)" com.apple.CoreSimulator.SimRuntime.iOS-27-0
+```
+
+**After any change to `tests/ink.mjs` or `tests/serve_docs.mjs`**, run the
+helper tests (Node only, no browser), then the browser checks above:
+
+```
+node tests/helpers_test.mjs              # must print "N passed, 0 failed"
 ```
 
 **After doc/example changes** — `quarto render` and confirm it completes with no
