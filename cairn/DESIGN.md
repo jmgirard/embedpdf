@@ -173,10 +173,10 @@ load on the same queue, and a text task runs only when no page render waits
   not checked (corrected M001) — observed 2026-10-18.
 - GitHub releases stop at v0.5.0 while tags reach v1.0.2, so the README
   version badge shows 0.5.0 — observed 2026-10-18.
-- In Safari, a PDF.js embed of a PDF from another site fails when an
-  `<object>` on the same page shows the same PDF, even with
-  `Access-Control-Allow-Origin: *` — observed 2026-10-18 (iOS 27.0 iPhone
-  simulator).
+- Safari refuses a read of a PDF from another site that an `<object>` on the
+  page loaded. So a PDF.js embed of that PDF reads it with `embedpdf=pdfjs`
+  added to its query (corrected M014). A real site's answer to that address
+  is not checked, only the local test servers — observed 2026-10-19.
 - An inlined PDF whose `data:` address the browser cannot decode shows "This
   PDF cannot be shown here." with no link. IP2's usable fallback is not met
   there. Before M011 the embed kept a link to a file the page does not ship.

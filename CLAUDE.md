@@ -16,12 +16,13 @@ Key files:
   example used by `example.qmd`.
 - `name_test.qmd`, `name_edge_test.qmd`, `percent_test.qmd`,
   `selfcontained_test.qmd`, `selfcontained_slides_test.qmd`,
-  `selfcontained_failed_test.qmd`, and `large_test.qmd` are test pages, also
+  `selfcontained_failed_test.qmd`, `large_test.qmd`, and `shared_test.qmd` are test pages, also
   rendered into `docs/`. `files/` holds copies of `sample.pdf` under the names
   they test, and `inlined-sample.md`, the hand-written embed that
   `name_edge_test.qmd` includes. It also holds `broken.pdf` and
   `undecodable-embeds.md` for `selfcontained_failed_test.qmd`, and
-  `large.pdf` and `large-2.pdf` for `large_test.qmd`.
+  `large.pdf` and `large-2.pdf` for `large_test.qmd`. `shared_test.qmd` shows
+  `large.pdf` too.
 
 ## Verify before finishing — you are the test runner (no CI)
 
@@ -158,8 +159,15 @@ node tests/ios_check.mjs --device "embedpdf iPad" --page selfcontained_failed_te
 PDFs on another site: `--remote blocked|cors|missing` serves the PDFs from a
 second server on another port (no `Access-Control-Allow-Origin` header, `*`, or
 HTTP 404). `--expect-failed` counts embeds that show "This PDF cannot be shown
-here." and the "Open the PDF" link. Run the desktop line also with
-`--device mac-safari` and `--device windows-touch`:
+here." and the "Open the PDF" link. Run each desktop line (no `--device`)
+also with `--device mac-safari` and `--device windows-touch`. ios_check takes
+`blocked` and `cors`, and safari_check takes `cors`. With `cors`, both also
+check each native embed's `<object>`. Its address must be on the second
+server, and that server's log must hold a GET for it with no Origin
+header. A native
+viewer's read sends none, and a CORS read such as PDF.js's sends one.
+On `example.html` the native embeds and the PDF.js embeds show one PDF. So
+the `cors` lines check the case that Safari refuses (see the gotcha below):
 
 ```
 node tests/render_check.mjs example.html --remote blocked --device iphone --expect-native 1 --expect-pdfjs 0 --expect-failed 10
@@ -170,8 +178,12 @@ node tests/render_check.mjs revealjs_test.html --remote blocked --device iphone 
 node tests/render_check.mjs example.html --remote cors --device iphone --expect-native 1 --expect-pdfjs 10 --expect-pages 2 --expect-failed 0
 node tests/render_check.mjs example.html --remote cors --device android --expect-native 1 --expect-pdfjs 10 --expect-pages 2 --expect-failed 0
 node tests/render_check.mjs example.html --remote blocked --expect-native 9 --expect-pdfjs 0 --expect-failed 2
+node tests/render_check.mjs example.html --remote cors --expect-native 9 --expect-pdfjs 2 --expect-pages 2 --expect-failed 0
 node tests/ios_check.mjs --device "embedpdf iPhone" --remote blocked
 node tests/ios_check.mjs --device "embedpdf iPad" --remote blocked
+node tests/ios_check.mjs --device "embedpdf iPhone" --remote cors --expect-native 1
+node tests/ios_check.mjs --device "embedpdf iPad" --remote cors --expect-native 1
+node tests/safari_check.mjs --target mac --remote cors --expect-native 9 --expect-pdfjs 2 --expect-name sample.pdf
 ```
 
 A PDF missing from the page's own site: `--missing-pdfs` (no value) makes the
@@ -196,10 +208,16 @@ send each whole `.pdf` file over 128 KB slowly. On a local server PDF.js
 otherwise often gets the whole file before it asks for a range. The run then
 fails unless that server answered at least one byte-range request (HTTP 206)
 for each PDF.js embed's address. With `--remote cors`, that server is the
-second one. If a PDF.js embed's PDF is not over 128 KB, or another embed
-loads the same address, the run exits 2. `--plant noranges` makes that
-server ignore every Range header, and the run must then fail. The text repeats every two pages, so these lines
-take no `--expect-text`:
+second one. There only answers to requests with an Origin header count, so
+a native embed of the same address is counted apart. That server then sends
+slowly only to requests with an Origin header, so a native viewer's read
+ends before PDF.js reads the PDF. If a PDF.js embed's PDF is not over 128 KB,
+or another embed loads the same address, the run exits 2. With `--remote
+cors`, only another PDF.js embed counts here. `--plant noranges` makes that
+server ignore every Range header, and the run must then fail.
+`shared_test.html` shows `large.pdf` in a native embed and then in a PDF.js
+embed. The text repeats every two pages, so these lines take no
+`--expect-text`:
 
 ```
 node tests/render_check.mjs large_test.html --expect-ranges --expect-native 1 --expect-pdfjs 1 --expect-pages 14 --expect-name "large.pdf|large-2.pdf"
@@ -209,6 +227,12 @@ node tests/render_check.mjs large_test.html --expect-ranges --remote cors --devi
 node tests/render_check.mjs large_test.html --expect-ranges --remote cors --device android --expect-native 0 --expect-pdfjs 2 --expect-pages 14 --expect-name "large.pdf|large-2.pdf"
 node tests/ios_check.mjs --device "embedpdf iPhone" --page large_test.html --expect-ranges --expect-embeds 2 --expect-pages 14 --expect-name "large.pdf|large-2.pdf"
 node tests/ios_check.mjs --device "embedpdf iPad" --page large_test.html --expect-ranges --expect-embeds 2 --expect-pages 14 --expect-name "large.pdf|large-2.pdf"
+node tests/render_check.mjs shared_test.html --remote cors --expect-ranges --device iphone --expect-native 1 --expect-pdfjs 1 --expect-pages 14
+node tests/render_check.mjs shared_test.html --remote cors --expect-ranges --device android --expect-native 1 --expect-pdfjs 1 --expect-pages 14
+node tests/ios_check.mjs --device "embedpdf iPhone" --page shared_test.html --remote cors --expect-native 1 --expect-embeds 1 --expect-pages 14
+node tests/ios_check.mjs --device "embedpdf iPad" --page shared_test.html --remote cors --expect-native 1 --expect-embeds 1 --expect-pages 14
+node tests/ios_check.mjs --device "embedpdf iPhone" --page shared_test.html --remote cors --expect-ranges --expect-native 1 --expect-embeds 1 --expect-pages 14
+node tests/ios_check.mjs --device "embedpdf iPad" --page shared_test.html --remote cors --expect-ranges --expect-native 1 --expect-embeds 1 --expect-pages 14
 ```
 
 `render_check.mjs` serves `docs/` itself with `tests/serve_docs.mjs`. If every
@@ -262,10 +286,14 @@ errors.
   `text/x-embedpdf-worker` scripts: their `src` on a normal page, their text
   when inlined. Quarto inlines each PDF into `data-src` but leaves `<a href>`
   links at the file, so the viewer points the download links at the inlined PDF.
-- In Safari, once an `<object>` on the page loads a PDF from another origin, a
-  PDF.js `getDocument` of the same URL fails ("Load failed"), even with
-  `Access-Control-Allow-Origin: *`. So `ios_check.mjs` has no `--remote cors`:
-  `example.html`'s `renderer=native` embed shows the same PDF.
+- In Safari, once an `<object>` on the page loads a PDF from another origin,
+  every CORS read of the same URL fails ("Load failed") with no request sent,
+  even with `Access-Control-Allow-Origin: *`. This was seen in desktop Safari
+  27.0.1 and iOS 27.0 on 2026-10-19. fetch options such as `cache` or `credentials` do not
+  help. A read of the URL with an added query works. So for such a PDF the viewer gives
+  PDF.js the address with `embedpdf=pdfjs` added (`pdfjsAddress` in
+  `embedpdf-viewer.js`). Safari refuses only after the `<object>` read ends,
+  so a check of this case must let the native read end first.
 - `quarto render` renders only `*.qmd` (`_quarto.yml`), so `cairn/` stays out
   of `docs/`.
 - The viewer serializes rendering (one page at a time, shared PDF.js worker) and
@@ -281,11 +309,14 @@ errors.
 - Self-contained RevealJS slides in Safari on iPhone and iPad (checked only in
   Chromium).
 - A PDF from another site on a real phone, with or without
-  `Access-Control-Allow-Origin`. Safari is checked only with no header, in the
-  iOS 27.0 simulators.
+  `Access-Control-Allow-Origin`. Safari is checked in the iOS 27.0
+  simulators, with no header and with `*`, and in desktop Safari 27.0.1 with
+  `*`. A real site's answer to the `embedpdf=pdfjs` query that the viewer adds
+  next to a native embed of the same PDF is not checked.
 - A large PDF that PDF.js loads by byte ranges, on GitHub Pages or on a real
   phone. It is checked only on the local test servers, with a slow
-  whole-file answer, in Chromium and in the iOS 27.0 simulators.
+  whole-file answer, in Chromium and in the iOS 27.0 simulators. Desktop
+  Safari is not checked for byte ranges.
 - A PDF missing from the page's own site (HTTP 404) on a real phone. It is
   checked only in Chromium and in the iOS 27.0 simulators.
 - A self-contained embed that cannot show its PDF gives a "Download the PDF"

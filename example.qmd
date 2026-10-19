@@ -138,9 +138,11 @@ On 2026-10-18, `curl -I` showed `access-control-allow-origin: *` for [https://jm
 
 To avoid the problem, put the PDF in your Quarto project and list it under `resources` in the YAML header. Then give the shortcode its relative path, for example `{{{< pdf cv.pdf >}}}`. If a script makes the PDF somewhere else, copy it into the project before you render.
 
-In Safari, a PDF.js embed of a PDF from another site can fail even with the header. The cause is an embed with `renderer=native` on the same page that shows the same PDF. This was seen once, on 2026-10-18, in an iOS 27.0 iPhone simulator.
+A page can show one PDF from another site in two embeds, one with `renderer=native` and one with PDF.js. Safari refuses the PDF.js read of an address that a native embed on the page loaded, even with the header. So in this case only, the PDF.js embed reads the PDF at the same address with `embedpdf=pdfjs` added to its query. The site must answer that address with the same PDF. This was checked only on the local test servers.
 
-These cases were checked on 2026-10-18 in Chromium with an emulated iPhone and an emulated Android phone. Android was checked by emulation in Chromium, not on a device. iPhone and iPad were checked only in Safari in iOS 27.0 simulators, with a site that sends no header.
+These cases were checked on 2026-10-18 in Chromium with an emulated iPhone and an emulated Android phone. Android was checked by emulation in Chromium, not on a device. iPhone and iPad were checked only in Safari in iOS 27.0 simulators. The site sent no header on 2026-10-18 and sent `*` on 2026-10-19.
+
+The case of a native embed and a PDF.js embed of one PDF was checked on 2026-10-19 with a site that sends `*`. It was checked in Safari in iOS 27.0 iPhone and iPad simulators, in desktop Safari 27.0.1, and in Chromium. A PDF of 14 pages and 171 KB then loaded in parts (by byte ranges). This was checked in the iOS simulators, and in Chromium with an emulated iPhone and Android phone. Desktop Safari was not checked for byte ranges.
 
 ## When JavaScript is Disabled
 
