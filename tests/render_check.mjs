@@ -141,13 +141,13 @@
 //                       data-toolbar="false". Each toolbar's text in the
 //                       tree must read "Page 1 of <pages>" with the pages at
 //                       the top, and no "i / n" text; on the page it must
-//                       show a visible "1 / <pages>" ("2 / <pages>" after
-//                       the scroll to page 2) and keep "Page 1 of <pages>" in a
-//                       1px, overflow-hidden, absolute box clipped by
-//                       clip-path: inset(50%). The first embed whose
-//                       pages can scroll page 1 above the middle of their
-//                       frame then scrolls to page 2 and must read "Page 2
-//                       of <pages>"; the report names it as page2Checked.
+//                       show a visible "1 / <pages>" and keep "Page 1 of
+//                       <pages>" in a 1px, overflow-hidden, absolute box
+//                       clipped by clip-path: inset(50%). The first embed
+//                       whose pages can scroll page 1 above the middle of
+//                       their frame then scrolls to page 2 and must read
+//                       "Page 2 of <pages>" and show the text "2 /
+//                       <pages>"; the report names it as page2Checked.
 //                       On a page with no slides, the run fails when an
 //                       embed with a toolbar and 2 or more pages exists and
 //                       none could be read at page 2.
