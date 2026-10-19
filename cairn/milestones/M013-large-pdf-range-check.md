@@ -174,3 +174,4 @@ Pass 1 (2026-10-19) found AC4 short (no remote whole-file case, no header checks
 - blame-history #3: the 8.4 s slow answer is not measured against the scripts' waits — reject (false: the plant runs, where every PDF answer is slow, pass every ink and page check).
 - blame-history #4: helpers_test aborts at load if docs/ lacks the new files — reject (false premise, as diff-bug #6).
 - ripple #1: ROADMAP row "Large PDF range check" still says every test PDF is under 128 KB — reject (planned change: post-merge hygiene graduates and removes the row).
+- After the fixes (cc80dbf): helpers_test 115 passed, 0 failed; all 57 `node tests/…` lines in CLAUDE.md's fenced blocks exit 0, the 7 AC3 lines among them; the 3 `--plant noranges` runs exit 1 naming each address. The guard exits 2 on name_test.html (render_check and "embedpdf iPhone") and example.html, naming the shared address and the 21,118-byte size.
