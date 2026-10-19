@@ -1,13 +1,13 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-18 (M002 done and archived; "Self-contained embeds" row graduated; "Self-contained native checks" row added)_
+_Last hygiene check: 2026-10-18 (M003 done and archived; rows "Safari shared remote URL", "Remote check gaps", "Inlined PDF failure link" added)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M003 | Remote PDFs on phones | review | — | normal | milestones/M003-remote-pdfs-on-phones.md |
+| M003 | Remote PDFs on phones | done | — | normal | milestones/archive/M003-remote-pdfs-on-phones.md |
 | M002 | Self-contained embeds | done | — | high | milestones/archive/M002-self-contained-embeds.md |
 | M001 | iOS Safari check | done | — | high | milestones/archive/M001-ios-safari-check.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
