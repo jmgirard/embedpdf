@@ -67,6 +67,7 @@ When a self-contained page cannot show an inlined PDF, the embed says so, and wh
 - 2026-10-19: T6 done: a script in the session scratchpad ran every `node tests/…` and `pandoc lua` line in CLAUDE.md "Verify before finishing", each `--alone file` line again with `--alone http`, the selfcontained_test desktop lines with mac-safari and windows-touch and its iphone line with ipad, and the remote-blocked and missing-pdfs desktop lines with mac-safari and windows-touch: 68 runs, 0 failed (Chromium 155, iOS 27.0 simulators, Safari 27.0.1); after the claim-audit fixes and `quarto render`, the same 68 runs again, 0 failed. test_shortcode 40 passed, helpers_test 91 passed, name_rule_test 32 passed.
 - 2026-10-19: deviation: the version bump and the ROADMAP status edit used `sed`, not the Edit tool; both were read back.
 - 2026-10-19: status review.
+- 2026-10-19: step-7 approval: m011-inlined-pdf-failure approved for merge
 
 ## Decisions
 
