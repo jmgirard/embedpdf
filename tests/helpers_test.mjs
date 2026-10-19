@@ -148,6 +148,26 @@ try {
   server.close();
 }
 
+// --- docs/ server with missingPdfs --------------------------------------------
+{
+  const missing = await serveDocs({ missingPdfs: true });
+  const at = `http://127.0.0.1:${missing.address().port}/`;
+  try {
+    for (const p of ["sample.pdf", "files/sample%20copy.pdf", "sample.pdf?x=1"]) {
+      const r = await fetch(at + p);
+      await r.arrayBuffer();
+      check(`missing: /${p} is 404`, r.status === 404, String(r.status));
+    }
+    // the files exist, so the 404s come from the option
+    check("missing: sample.pdf exists in docs/", fs.existsSync(path.join(DOCS, "sample.pdf")) && fs.existsSync(path.join(DOCS, "files", "sample copy.pdf")));
+    const page = await fetch(at + "example.html");
+    await page.arrayBuffer();
+    check("missing: /example.html is 200", page.status === 200, String(page.status));
+  } finally {
+    missing.close();
+  }
+}
+
 // --- remote server ------------------------------------------------------------
 {
   const pdf = fs.readFileSync(path.join(DOCS, "sample.pdf"));

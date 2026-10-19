@@ -89,7 +89,7 @@ Close the gaps that the M003 review found in the remote-PDF checks of `tests/ser
       cases (a self-contained page, a normal page with none left). Run both scripts on `selfcontained_test.html`.
 - [x] T3: `serveRemote` sends file bodies through `sendData` (ranges) and answers OPTIONS with 204 and the mode's CORS
       headers. Add the AC3 cases to `tests/helpers_test.mjs`.
-- [ ] T4: `serveDocs({ missingPdfs })` answers 404 for a path ending in `.pdf`. `render_check.mjs --missing-pdfs`:
+- [x] T4: `serveDocs({ missingPdfs })` answers 404 for a path ending in `.pdf`. `render_check.mjs --missing-pdfs`:
       needs `--expect-failed`, cannot be combined with `--remote` or `--alone`, checks the own-origin URL and the
       `ResponseException` line. Add the AC4 helper cases. Before trusting the new check, see it fail once on a
       changed expectation (for example a wrong error kind), then restore it. Run the AC4 lines and the
@@ -118,6 +118,7 @@ Close the gaps that the M003 review found in the remote-PDF checks of `tests/ser
 - 2026-10-18: T1 done: `pointPdfsAt(html, base, page)` matches `<div>` start tags whose class holds `embedpdf` and `<a>` tags with a `download` attribute name, resolves against the page URL, keeps `?`/`#`; 13 helper cases (50 passed, 0 failed); a planted root-relative resolve failed the subfolder case; the 10 Chromium `--remote` runs exit 0.
 - 2026-10-18: T2 done: `embedSrcsOffRemote(html, base, page)` in serve_docs.mjs; both scripts exit 2 on `selfcontained_test.html --remote blocked` with the three `data:` values cut to 40 characters, before Chromium or the simulator opens; 5 helper cases (55 passed); example.html and revealjs_test.html `--remote blocked` on iphone still exit 0.
 - 2026-10-18: T3 done: `serveRemote` sends through `sendData`, answers OPTIONS 204 (cors and missing allow GET/HEAD/OPTIONS and `Range`), and in cors and missing modes adds `Access-Control-Expose-Headers: Accept-Ranges, Content-Range, Content-Length` so a cross-origin reader sees the range headers (implement choice, not in AC3); 15 helper cases (70 passed); planting the old whole-file send failed 6; 5 Chromium `--remote` lines exit 0.
+- 2026-10-18: T4 done: `serveDocs({ missingPdfs })` 404s a path ending in `.pdf` (5 helper cases, 75 passed); render_check `--missing-pdfs` is a flag with no value (new `BOOL_FLAGS`), needs `--expect-failed`, refuses `--remote`, `--alone`, and a URL (each exits 2). The viewer's "failed to render" line names the `data-src` as written (`sample.pdf`), not the absolute URL, so each failed entry now carries `src` and the check matches on it. A planted wrong kind (`UnknownErrorException`) failed the run; the 3 AC4 lines and the mac-safari and windows-touch variants exit 0, and `--remote missing --device iphone` still exits 0.
 
 ## Decisions
 

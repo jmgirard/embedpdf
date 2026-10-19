@@ -10,6 +10,8 @@
 //   root           directory to serve (default docs/)
 //   transformHtml  optional (html) => html applied to every .html response
 //   routes         optional { "/path": (req, res) => void } handlers
+//   missingPdfs    true: answer 404 for every path that ends in .pdf, so each
+//                  PDF the page names is missing from its own origin
 // serveRemote(mode) and pointPdfsAt(html, base, page) put the PDFs on another
 // origin.
 
@@ -81,11 +83,15 @@ function listen(server, port) {
   });
 }
 
-export function serveDocs({ port = 0, transformHtml = null, routes = {}, root = DOCS } = {}) {
+export function serveDocs({ port = 0, transformHtml = null, routes = {}, root = DOCS, missingPdfs = false } = {}) {
   root = path.resolve(root);
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, "http://127.0.0.1");
     if (routes[url.pathname]) return routes[url.pathname](req, res);
+    if (missingPdfs && /\.pdf$/i.test(url.pathname)) {
+      res.writeHead(404).end();
+      return;
+    }
     let file;
     try {
       file = path.join(root, decodeURIComponent(url.pathname));
