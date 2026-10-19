@@ -21,7 +21,7 @@
 //   --port <n>             server port on 127.0.0.1 (default: a free port the
 //                          system picks); a port in use, or any server that
 //                          cannot start, exits 2 with a message
-//   --timeout <s>          seconds to wait for the report (default 180, or 240
+//   --timeout <s>          seconds to wait for the report (default 180, or 300
 //                          with --slow-text)
 //   --screenshot <file>    save a simulator screenshot, taken with the first
 //                          renderer=native embed scrolled into view
@@ -60,8 +60,9 @@
 //                          filled and put it back one page every <ms> ms
 //                          while that wait runs again; the restoring stops
 //                          when that wait ends. The run must still pass when
-//                          <ms> is under 10000 and pages × <ms> is under
-//                          60000.
+//                          <ms> is at most 9000 and pages × <ms> is at most
+//                          50000, which leaves room for late timers under the
+//                          10 s and 60 s limits.
 //   --expect-name "<file name>"
 //                          fail unless each PDF.js embed has role="group" and
 //                          aria-label "PDF: <file name>" in the DOM (Safari's
@@ -143,9 +144,10 @@ if (!/^\d+$/.test(portArg) || port > 65535) {
   console.error("ios_check: --port must be a port number from 0 to 65535");
   process.exit(2);
 }
-// --slow-text runs the text wait twice (up to 60 s each) before the 90 s
-// scroll loop, so its default is longer
-const timeoutS = Number(opt("timeout", "slow-text" in parsed ? "240" : "180"));
+// --slow-text runs the text wait twice (up to 60 s each) before the scroll
+// loop (90 s, plus the pass that is running then) and the page load, so its
+// default is longer
+const timeoutS = Number(opt("timeout", "slow-text" in parsed ? "300" : "180"));
 const screenshot = opt("screenshot", "");
 const plant = opt("plant", "");
 const shotEmbed = opt("shot-embed", "");
@@ -188,7 +190,7 @@ if (phrases && (remote || missingPdfs)) {
   process.exit(2);
 }
 const slowText = opt("slow-text", "");
-if (slowText && !(phrases && /^\d+$/.test(slowText) && Number(slowText) > 0)) {
+if ("slow-text" in parsed && !(phrases && /^\d+$/.test(slowText) && Number(slowText) > 0)) {
   console.error("ios_check: --slow-text needs --expect-text and a whole number of milliseconds above 0");
   process.exit(2);
 }

@@ -93,7 +93,9 @@
 //                       viewer filled and put it back one page every <ms> ms
 //                       while that wait runs again; the restoring stops when
 //                       that wait ends. The run must still pass when <ms> is
-//                       under 10000 and pages × <ms> is under 60000.
+//                       at most 9000 and pages × <ms> is at most 50000, which
+//                       leaves room for late timers under the 10 s and 60 s
+//                       limits.
 //   --plant notext|swap|visible|gone|inert|cvhidden|nolabel|canvas|noname|detach|unhydrated|norender
 //                       plant a defect in the first PDF.js embed before the
 //                       --expect-text checks measure it; the run must then
@@ -421,7 +423,8 @@ function waitForText(page) {
       }, slowMs);
     }
     const waitedMs = await wait();
-    // no text changes after the wait, so every slide reads the same state
+    // the aid restores no text after the wait (the viewer can still fill a
+    // block whose read was late, when the wait ended on a limit)
     clearInterval(timer);
     return { waitedMs, slowPages, unhydrated: unhydrated(), planted };
   }, slowText, plant);
@@ -563,12 +566,13 @@ async function treeFailures(page, slide) {
   for (const [i, embed] of embeds.entries()) {
     const at = `PDF.js embed ${i + 1}${where}`;
     const pages = await embed.$$(".embedpdf-page");
-    // each canvas with its page, read together: the viewer keeps a page's
-    // element and swaps only its canvas
+    // each canvas with its page and page number, read together: the viewer
+    // keeps a page's element and swaps only its canvas. A canvas is named by
+    // its page's number.
     const canvases = [];
-    for (const p of pages) {
+    for (const [k, p] of pages.entries()) {
       const c = await p.$("canvas");
-      if (c) canvases.push([p, c]);
+      if (c) canvases.push([p, c, k + 1]);
     }
     if (canvases.length !== pages.length) out.push(`${at}: ${canvases.length} canvases for ${pages.length} pages`);
     for (const [j, p] of pages.entries()) {
@@ -585,7 +589,7 @@ async function treeFailures(page, slide) {
     // viewer swaps a page's canvas when it renders the page again, so a canvas
     // that left the page is replaced by the page's current canvas, once.
     const isFirst = await embed.evaluate((e) => e === document.querySelector(".embedpdf-pdfjs"));
-    for (const [j, [holder, found]] of canvases.entries()) {
+    for (const [j, [holder, found, n]] of canvases.entries()) {
       if (plant === "detach" && isFirst && j === canvases.length - 1) {
         await found.evaluate((c) => c.remove());
         planted = plant;
@@ -595,12 +599,12 @@ async function treeFailures(page, slide) {
         const c = await holder.$("canvas");
         r = c ? await snapCanvas(c) : null;
         if (!r || (!r.node && !(await connected(c)))) {
-          out.push(`${at}: canvas ${j + 1} left the page during the accessibility check`);
+          out.push(`${at}: canvas ${n} left the page during the accessibility check`);
           continue;
         }
       }
-      if (r.error) out.push(`${at}: canvas ${j + 1} snapshot failed (${r.error})`);
-      else if (r.node) out.push(`${at}: canvas ${j + 1} is in the accessibility tree (role ${r.node.role})`);
+      if (r.error) out.push(`${at}: canvas ${n} snapshot failed (${r.error})`);
+      else if (r.node) out.push(`${at}: canvas ${n} is in the accessibility tree (role ${r.node.role})`);
     }
     const toolbar = await embed.$(".embedpdf-toolbar");
     if (toolbar) {

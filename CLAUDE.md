@@ -70,7 +70,8 @@ one with `%20`. `percent_test.html` is self-contained. It shows
 `files/100%.pdf` by `files/100%25.pdf` and by a bare `%`.
 `--plant` in each script plants one defect so you can see a
 check fail. The two scripts have different plant lists (see each header).
-With `--expect-text`, both scripts wait once for the page's text. When every
+With `--expect-text`, both scripts wait once for the page's text, or twice
+with `--slow-text`. When every
 embed is hydrated and every page has text, the wait ends. While something is
 missing, it ends after 10 s with no change, or after 60 s in all. If an embed
 is still not hydrated then, the run fails at once. `--slow-text <ms>` puts the
