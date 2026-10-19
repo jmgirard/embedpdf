@@ -116,6 +116,7 @@ CLAUDE.md and script header updates.
 - 2026-10-18: re-audit: AC4 (reduced) — on the reader-fixed draft: clause 2 still quantifies over every `<n>` (0, leading zeros, ports below 1024, dual-stack sockets) and every other option, a demonstration family; suggested one concrete run with the EADDRINUSE branch cited. Second re-audit line on AC4: the wording goes to the user.
 - 2026-10-18: amendment return: AC4 — "Without `--port`, `ios_check.mjs` passes 0 to `serveDocs`, so the system picks the port: `node tests/ios_check.mjs --device "embedpdf iPhone"`, run while another process holds `net.createServer().listen(8766, "127.0.0.1")`, exits 0. `node tests/ios_check.mjs --device "embedpdf iPhone" --port 8766`, with no other option and the same holder, exits 2 with "ios_check: port 8766 is in use" and no stack trace." (wording chosen by the user at the stop: one concrete run; no further reader, per the second re-audit line)
 - 2026-10-18: amendment done; status review.
+- 2026-10-18: step-7 approval: m006-check-script-gaps approved for merge
 
 ## Decisions
 
