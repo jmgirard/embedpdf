@@ -31,32 +31,32 @@ CLAUDE.md and script header updates.
 
 ## Acceptance criteria
 
-- [ ] AC1: `render_check.mjs` checks each `.embedpdf-page` of each PDF.js embed on its own, with or without
+- [x] AC1: `render_check.mjs` checks each `.embedpdf-page` of each PDF.js embed on its own, with or without
       `--expect-pages`: a page whose canvas is missing or has no ink, or a PDF.js embed with no pages, makes it exit 1
       and name that embed. `--plant blank` (paints the last page's canvas of the first PDF.js embed white),
       `--plant nocanvas` (removes that canvas), and `--plant nopages` (removes every page of that embed) show it on
       `example.html` in Chrome and with `--device iphone`; each run exits 1 and names embed 1.
-- [ ] AC2: Each `getImageData` call that `grep -n getImageData` finds in `render_check.mjs` and `ios_check.mjs` passes
+- [x] AC2: Each `getImageData` call that `grep -n getImageData` finds in `render_check.mjs` and `ios_check.mjs` passes
       its data to the ink rule exported by `tests/ink.mjs` and to no other test. The rule finds ink when at least one
       pixel has alpha above 0 and a red, green, or blue value below 250. It finds no ink in all-white pixels,
       all-transparent pixels, or a single gray-252 pixel, and finds ink in a single (255, 0, 0) pixel and in a single
       black pixel at an index that is not a multiple of 100. `node tests/helpers_test.mjs` shows each case.
-- [ ] AC3: For each file name extension that a walk of `docs/` finds, `serveDocs` sends a `Content-Type` other than
+- [x] AC3: For each file name extension that a walk of `docs/` finds, `serveDocs` sends a `Content-Type` other than
       `application/octet-stream`; files with no extension are outside this criterion. On `docs/sample.pdf` it sends
       `Content-Length` and `Accept-Ranges: bytes` with the full file, answers `Range: bytes=a-b` with status 206, a
       matching `Content-Range`, and a body equal to bytes a through b of the file on disk, and answers a range that
       starts past the end of the file with 416. `node tests/helpers_test.mjs` shows each case, and fails when its walk
       finds no extension.
-- [ ] AC4: Without `--port`, `ios_check.mjs` passes 0 to `serveDocs`, so the system picks the port:
+- [x] AC4: Without `--port`, `ios_check.mjs` passes 0 to `serveDocs`, so the system picks the port:
       `node tests/ios_check.mjs --device "embedpdf iPhone"`, run while another process holds
       `net.createServer().listen(8766, "127.0.0.1")`, exits 0. `node tests/ios_check.mjs --device "embedpdf iPhone"
       --port 8766`, with no other option and the same holder, exits 2 with "ios_check: port 8766 is in use" and no
       stack trace.
-- [ ] AC5: Every `node tests/render_check.mjs` line in CLAUDE.md "Verify before finishing", as the section reads at
+- [x] AC5: Every `node tests/render_check.mjs` line in CLAUDE.md "Verify before finishing", as the section reads at
       the milestone branch head, exits 0, and `node tests/helpers_test.mjs` prints `N passed, 0 failed`.
-- [ ] AC6: Every `node tests/ios_check.mjs` line in that section, as it reads at the branch head, exits 0 on the
+- [x] AC6: Every `node tests/ios_check.mjs` line in that section, as it reads at the branch head, exits 0 on the
       "embedpdf iPhone" and "embedpdf iPad" simulators.
-- [ ] AC7: CLAUDE.md "Verify before finishing" names `node tests/helpers_test.mjs`. The `--plant` usage lines of
+- [x] AC7: CLAUDE.md "Verify before finishing" names `node tests/helpers_test.mjs`. The `--plant` usage lines of
       `render_check.mjs` list blank, nocanvas, and nopages; the `--port` line of `ios_check.mjs` says the default is a
       free port; and the header of each script names `tests/ink.mjs` as its ink rule.
 
@@ -179,3 +179,14 @@ CLAUDE.md and script header updates.
 - ripple #1: row "Large PDF range check" names 128 KB, though the chunk size is 64 KB — reject, false: PDF.js turns ranges on only above 2 × 65536 bytes (`validateRangeRequestCapabilities`), which is 128 KiB.
 - ripple #2: the three "see "Check script gaps"" pointers — same as diff-bug #6, re-pointed at hygiene.
 - ripple #3: render_check header exit 2 list — fix now (same as diff-bug #3), fixed a4f7453.
+
+### Evidence (2026-10-18, head a4f7453; Chromium via `CHROME_PATH`, simulators "embedpdf iPhone" and "embedpdf iPad")
+
+- AC1: `node tests/render_check.mjs example.html [--device iphone] [--plant P]`: with no plant, exit 0 in Chrome and iphone; `--plant blank` exit 1 "PDF.js embed 1: page 2 no ink", `--plant nocanvas` exit 1 "PDF.js embed 1: page 2 no canvas", `--plant nopages` exit 1 "PDF.js embed 1 has no pages", the same three in Chrome and with `--device iphone`; none of these runs passes `--expect-pages`.
+- AC2: `grep -n getImageData tests/render_check.mjs tests/ios_check.mjs` finds two calls (render_check.mjs:591, ios_check.mjs:280), each passing its data only to `inkInPixels` from `tests/ink.mjs`; `node tests/helpers_test.mjs` (37 passed, 0 failed) passes the cases all white, all transparent, one gray-252 pixel (no ink), one (255, 0, 0) pixel, and one black pixel at index 999 of 1000 (ink).
+- AC3: the same `node tests/helpers_test.mjs` run walks `docs/`, finds extensions (the non-empty check passes), and gets a non-octet-stream type for each; on `docs/sample.pdf` it passes Content-Length and Accept-Ranges on the full file, 206 with `bytes 100-199/21118` and matching bytes for `bytes=100-199`, and 416 with `bytes */21118` for a range starting at the file size.
+- AC4: with a second process holding `net.createServer().listen(8766, "127.0.0.1")`, `node tests/ios_check.mjs --device "embedpdf iPhone"` exits 0 (served on 127.0.0.1:57175), and `node tests/ios_check.mjs --device "embedpdf iPhone" --port 8766` exits 2 printing only "ios_check: port 8766 is in use; pass another --port, or none for a free port" (no stack trace); `--port` defaults to "0", passed to `serveDocs` (ios_check.mjs `opt("port", "0")`).
+- AC5: all 21 `node tests/render_check.mjs` lines in CLAUDE.md "Verify before finishing" at a4f7453 exit 0, run verbatim from the file by `grep -E '^node tests/(render_check|ios_check)\.mjs' CLAUDE.md`; `node tests/helpers_test.mjs` prints "37 passed, 0 failed".
+- AC6: all 8 `node tests/ios_check.mjs` lines in that section at a4f7453 (the four example/name_test lines, the two `--alone yes` lines, the two `--remote blocked` lines) exit 0 on "embedpdf iPhone" and "embedpdf iPad", in the same run.
+- AC7: CLAUDE.md:125 names `node tests/helpers_test.mjs`; render_check.mjs:22 is the `--plant blank|nocanvas|nopages` usage line; ios_check.mjs:21 says "default: a free port the system picks"; render_check.mjs:100 and ios_check.mjs:8 name `tests/ink.mjs` as the ink rule.
+- Consistency gate (pass 2): `cairn_validate.py` exit 0; no principle changed; generic profile, no toolchain checks.
