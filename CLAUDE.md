@@ -15,10 +15,12 @@ Key files:
   (GitHub Pages). `dummy*.pdf` are blank test files; `sample.pdf` is the realistic
   example used by `example.qmd`.
 - `name_test.qmd`, `name_edge_test.qmd`, `percent_test.qmd`,
-  `selfcontained_test.qmd`, and `selfcontained_slides_test.qmd` are test
-  pages, also rendered into `docs/`. `files/` holds copies of `sample.pdf`
-  under the names they test, and `inlined-sample.md`, the hand-written
-  embed that `name_edge_test.qmd` includes.
+  `selfcontained_test.qmd`, `selfcontained_slides_test.qmd`, and
+  `selfcontained_failed_test.qmd` are test pages, also rendered into
+  `docs/`. `files/` holds copies of `sample.pdf` under the names they test,
+  and `inlined-sample.md`, the hand-written embed that `name_edge_test.qmd`
+  includes. It also holds `broken.pdf` and `undecodable-embeds.md` for
+  `selfcontained_failed_test.qmd`.
 
 ## Verify before finishing — you are the test runner (no CI)
 
@@ -126,6 +128,28 @@ node tests/ios_check.mjs --device "embedpdf iPhone" --page selfcontained_test.ht
 node tests/ios_check.mjs --device "embedpdf iPad" --page selfcontained_test.html --alone yes --expect-embeds 2 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
 ```
 
+A self-contained page whose embeds cannot show their PDF:
+`selfcontained_failed_test.html` holds `files/broken.pdf`, a text file that
+PDF.js cannot load. It also holds two hand-written embeds
+(`files/undecodable-embeds.md`). Their `data:` address holds `@`, and
+Chromium and Safari do not decode it.
+`--expect-download "<path>|-|…"` gives one entry per failed embed with an
+inlined PDF, in page order. A path from the repo root means a "Download the
+PDF" link to a `blob:` URL with no target. Its download name is the path's
+file name. In render_check, a click on it must save that file in Chromium. `-`
+means an address that did not decode and no link. Both scripts also count one
+"embedpdf: failed to render an inlined PDF" error per such embed. In
+render_check, `--expect-failed` also counts the inlined embeds that pass
+`--expect-download`. Run each `--alone file` line below again with `--alone
+http`:
+
+```
+node tests/render_check.mjs selfcontained_failed_test.html --alone file --expect-native 0 --expect-pdfjs 0 --expect-failed 3 --expect-download "files/broken.pdf|-|-"
+node tests/render_check.mjs selfcontained_failed_test.html --alone file --device iphone --expect-native 0 --expect-pdfjs 0 --expect-failed 3 --expect-download "files/broken.pdf|-|-"
+node tests/ios_check.mjs --device "embedpdf iPhone" --page selfcontained_failed_test.html --alone yes --expect-embeds 2 --expect-download "files/broken.pdf|-|-"
+node tests/ios_check.mjs --device "embedpdf iPad" --page selfcontained_failed_test.html --alone yes --expect-embeds 2 --expect-download "files/broken.pdf|-|-"
+```
+
 PDFs on another site: `--remote blocked|cors|missing` serves the PDFs from a
 second server on another port (no `Access-Control-Allow-Origin` header, `*`, or
 HTTP 404). `--expect-failed` counts embeds that show "This PDF cannot be shown
@@ -231,6 +255,10 @@ errors.
   iOS 27.0 simulators.
 - A PDF missing from the page's own site (HTTP 404) on a real phone. It is
   checked only in Chromium and in the iOS 27.0 simulators.
+- A self-contained embed that cannot show its PDF gives a "Download the PDF"
+  link. Only Chromium saves the file in a check. No check saves it in Safari
+  (desktop or iOS) or Firefox. In the iOS 27.0 simulators only the link's text,
+  `blob:` address, download name, and missing target are checked.
 - A real screen reader (VoiceOver, TalkBack) reading a PDF.js embed's hidden
   page text, its group name ("PDF: <file name>", numbered or "PDF"), its toolbar controls'
   `title`-only names, and the page indicator's "Page i of n". All of these are

@@ -61,7 +61,38 @@
 //                       data-src with target _blank, no "Download PDF
 //                       file." link, and no aria-label or group role (a PDF
 //                       that does not load gets no name). Without it, any
-//                       embed in that state fails the run.
+//                       embed in that state fails the run. An embed whose
+//                       PDF was inlined (no data-src left, or a data-src
+//                       that is still a data: address) is held to
+//                       --expect-download instead of the link rule here,
+//                       and n also counts each such embed that passes it.
+//   --expect-download "<path>|-|…"
+//                       one entry per embed in the load-failure state whose
+//                       PDF was inlined, in page order. A path (from the
+//                       repo root, such as files/broken.pdf): the viewer
+//                       decoded the data: address (it removed data-src),
+//                       and the embed holds exactly one link, "Download the
+//                       PDF", whose href is a blob: URL, whose download
+//                       attribute is the path's file name, and which has no
+//                       target; a click on it in Chromium saves exactly one
+//                       file, with that name and the bytes of that path.
+//                       "-": data-src is still a data: address (it did not
+//                       decode), and the embed holds no link. Without this
+//                       flag, any such embed fails the run. On every run,
+//                       the console must show one "embedpdf: failed to
+//                       render an inlined PDF" line per such embed.
+//   --plant dltarget|dlnoname|dlwrongname|dlhref|dlsecond|dltext|dlbytes|decodelink|extralog
+//                       with --expect-download, plant a defect; the run must
+//                       then fail. The dl plants act on the link of the
+//                       first decoded failed embed: dltarget sets target
+//                       _blank, dlnoname removes download, dlwrongname sets
+//                       download to "wrong.pdf", dlhref sets href to
+//                       files/broken.pdf, dlsecond adds a copy of the link,
+//                       dltext sets its text to "Open the PDF", dlbytes
+//                       points it at a blob: URL of other bytes.
+//                       decodelink adds a link to the first embed whose
+//                       data: address did not decode. extralog logs one more
+//                       "failed to render an inlined PDF" line.
 //   --expect-text "<p1>|<p2>|…"
 //                       phrase i is a phrase of page i's text. First, once
 //                       for the whole page (before any slide is shown or
@@ -187,8 +218,11 @@
 //
 // Exits non-zero if the page does not load or no embed is hydrated, if a
 // PDF.js embed has no pages or has a page whose canvas is missing, has no
-// ink, or cannot be read, if an expected count does not match, or if an
-// --expect-text or --expect-name check fails. Exits 2 on a bad argument,
+// ink, or cannot be read, if an expected count does not match, if an
+// --expect-text, --expect-name, or --expect-download check fails, if an
+// embed with an inlined PDF is in the load-failure state without
+// --expect-download, or if the "failed to render an inlined PDF" lines do not
+// number one per such embed. Exits 2 on a bad argument,
 // when a server cannot start, or when --plant finds nothing to plant in.
 
 import fs from "node:fs";
@@ -252,12 +286,13 @@ const DEVICES = {
 // one optional page or URL, plus flags that each take a value and flags that
 // take none; anything else (a misspelled flag, --flag=value) is an error
 // rather than silently ignored
-const FLAGS = ["device", "expect-native", "expect-pdfjs", "expect-pages", "expect-links", "expect-failed", "expect-text", "expect-name", "plant", "alone", "remote", "slow-text"];
+const FLAGS = ["device", "expect-native", "expect-pdfjs", "expect-pages", "expect-links", "expect-failed", "expect-download", "expect-text", "expect-name", "plant", "alone", "remote", "slow-text"];
 const BOOL_FLAGS = ["missing-pdfs"];
 const TEXT_PLANTS = ["notext", "swap", "visible", "gone", "inert", "cvhidden"];
 const TREE_PLANTS = ["nolabel", "canvas", "noname", "detach"];
 const NAME_PLANTS = ["wrongname", "dupdesc", "duplink", "norole", "notoolbar", "nonumber", "rawindicator", "staleindicator", "showindicator", "tallframe", "hideshown", "staleshown"];
 const INK_PLANTS = ["blank", "nocanvas", "nopages", "namefailed"];
+const DOWNLOAD_PLANTS = ["dltarget", "dlnoname", "dlwrongname", "dlhref", "dlsecond", "dltext", "dlbytes", "decodelink", "extralog"];
 // planted before the text wait (unhydrated) or before the page loads (norender)
 const WAIT_PLANTS = ["unhydrated", "norender"];
 const args = process.argv.slice(2);
@@ -318,16 +353,25 @@ if (expectNames && expectNames.length === 1 && !/^\d+$/.test(expectPdfjs ?? ""))
 }
 // the full names, numbered where they repeat, as the viewer numbers them
 const expectLabels = expectNames && expectedNames(expectNames, Number(expectPdfjs));
+// one entry per failed embed whose PDF was inlined, in page order: the path of
+// the PDF file from the repo root, or "-" for an inlined PDF that did not decode
+const expectDownloads = flags["expect-download"] === undefined ? null : flags["expect-download"].split("|");
+const REPO = path.dirname(DOCS);
+if (expectDownloads && expectDownloads.some((d) => !d || (d !== "-" && !fs.existsSync(path.resolve(REPO, d))))) {
+  console.error("render_check: --expect-download needs, for each entry, \"-\" or the path of an existing file from the repo root");
+  process.exit(2);
+}
 if (
   plant &&
   !(
     INK_PLANTS.includes(plant) ||
     (phrases && [...TEXT_PLANTS, ...TREE_PLANTS, ...WAIT_PLANTS].includes(plant)) ||
-    (expectName && NAME_PLANTS.includes(plant))
+    (expectName && NAME_PLANTS.includes(plant)) ||
+    (expectDownloads && DOWNLOAD_PLANTS.includes(plant))
   )
 ) {
   console.error(
-    `render_check: --plant must be ${INK_PLANTS.join(", ")}, or ${[...TEXT_PLANTS, ...TREE_PLANTS, ...WAIT_PLANTS].join(", ")} with --expect-text, or ${NAME_PLANTS.join(", ")} with --expect-name`
+    `render_check: --plant must be ${INK_PLANTS.join(", ")}, or ${[...TEXT_PLANTS, ...TREE_PLANTS, ...WAIT_PLANTS].join(", ")} with --expect-text, or ${NAME_PLANTS.join(", ")} with --expect-name, or ${DOWNLOAD_PLANTS.join(", ")} with --expect-download`
   );
   process.exit(2);
 }
@@ -1050,6 +1094,43 @@ try {
         inkPlanted = plant;
       }
     }
+    // An embed whose PDF was inlined: the viewer removes data-src once the
+    // data: address decodes, and one whose data-src still holds a data:
+    // address did not decode. Download plants go into the first of each kind
+    // that is in the load-failure state.
+    const failedEls = [...document.querySelectorAll("div.embedpdf")].filter((el) =>
+      el.textContent.includes("This PDF cannot be shown here.")
+    );
+    const decoded = failedEls.find((el) => !el.hasAttribute("data-src"));
+    const undecoded = failedEls.find((el) => /^\s*data:/i.test(el.getAttribute("data-src") || ""));
+    const dlLink = decoded && decoded.querySelector("a");
+    if (dlLink) {
+      const edits = {
+        dltarget: () => dlLink.setAttribute("target", "_blank"),
+        dlnoname: () => dlLink.removeAttribute("download"),
+        dlwrongname: () => dlLink.setAttribute("download", "wrong.pdf"),
+        dlhref: () => dlLink.setAttribute("href", "files/broken.pdf"),
+        dlsecond: () => dlLink.after(dlLink.cloneNode(true)),
+        dltext: () => (dlLink.textContent = "Open the PDF"),
+        dlbytes: () => dlLink.setAttribute("href", URL.createObjectURL(new Blob(["planted bytes"], { type: "application/pdf" }))),
+      };
+      if (edits[plant]) {
+        edits[plant]();
+        inkPlanted = plant;
+      }
+    }
+    if (plant === "decodelink" && undecoded) {
+      const a = document.createElement("a");
+      a.href = "files/broken.pdf";
+      a.textContent = "Download the PDF";
+      undecoded.querySelector("p").appendChild(a);
+      inkPlanted = plant;
+    }
+    if (plant === "extralog" && failedEls.length) {
+      console.error("embedpdf: failed to render an inlined PDF (planted)");
+      inkPlanted = plant;
+    }
+    const inlinedFailed = [];
     document.querySelectorAll("div.embedpdf").forEach((el, i) => {
       if (!el.textContent.includes("This PDF cannot be shown here.")) return;
       // a PDF that does not load gets no name for screen readers
@@ -1058,6 +1139,21 @@ try {
         return;
       }
       const links = [...el.querySelectorAll("a")];
+      const dataSrc = el.getAttribute("data-src");
+      if (dataSrc === null || /^\s*data:/i.test(dataSrc)) {
+        // judged against --expect-download after this snapshot
+        inlinedFailed.push({
+          index: i + 1,
+          decoded: dataSrc === null,
+          links: links.map((a) => ({
+            text: a.textContent.trim(),
+            href: a.getAttribute("href") || "",
+            download: a.getAttribute("download"),
+            target: a.getAttribute("target"),
+          })),
+        });
+        return;
+      }
       const open = links.find((a) => a.textContent.trim() === "Open the PDF");
       const expected = new URL(el.dataset.src || "", document.baseURI).href;
       const ok =
@@ -1092,6 +1188,7 @@ try {
       objects,
       links,
       failed,
+      inlinedFailed,
       malformed,
       srcs,
       inkPlanted,
@@ -1202,7 +1299,91 @@ try {
     remoteServer?.close();
     process.exit(2);
   }
-  if (res.native + res.pdfjs + res.failed.length === 0) {
+  // Each failed embed whose PDF was inlined, against its --expect-download
+  // entry. "-": the data: address did not decode, and the embed holds no
+  // link. A path: the PDF decoded, and the embed holds one "Download the PDF"
+  // link to a blob: URL, with that file's name as its download name and no
+  // target; a click on it saves one file with that name and that file's bytes.
+  const cdp = expectDownloads ? await browser.target().createCDPSession() : null;
+  const downloadFrom = async (index) => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "embedpdf-download-"));
+    try {
+      await cdp.send("Browser.setDownloadBehavior", { behavior: "allow", downloadPath: dir });
+      await page.evaluate((i) => document.querySelectorAll("div.embedpdf")[i - 1].querySelector("a").click(), index);
+      for (let t = 0; t < 100; t++) {
+        await new Promise((r) => setTimeout(r, 100));
+        const names = fs.readdirSync(dir);
+        if (names.length && !names.some((n) => n.endsWith(".crdownload"))) {
+          // a second file, if the click saves one, has time to start
+          await new Promise((r) => setTimeout(r, 500));
+          const all = fs.readdirSync(dir);
+          if (all.length !== 1) return { error: `the click saved ${all.length} files: ${all.join(", ")}` };
+          return { name: all[0], bytes: fs.readFileSync(path.join(dir, all[0])) };
+        }
+      }
+      return { error: "the click saved no file within 10 s" };
+    } finally {
+      // no later download goes to the folder removed here
+      await cdp.send("Browser.setDownloadBehavior", { behavior: "default" }).catch(() => {});
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  };
+  const inlinedOk = [];
+  if (res.inlinedFailed.length && !expectDownloads) {
+    console.error(`render_check: ${res.inlinedFailed.length} embeds with an inlined PDF are in the load-failure state; pass --expect-download`);
+    ok = false;
+  }
+  if (expectDownloads && expectDownloads.length !== res.inlinedFailed.length) {
+    console.error(`render_check: --expect-download gives ${expectDownloads.length} entries for ${res.inlinedFailed.length} failed embeds with an inlined PDF`);
+    ok = false;
+  }
+  for (const [k, f] of res.inlinedFailed.entries()) {
+    const want = expectDownloads ? expectDownloads[k] : undefined;
+    if (want === undefined) continue;
+    const problems = [];
+    if (want === "-") {
+      if (f.decoded) problems.push("its PDF decoded, expected a data: address that did not");
+      if (f.links.length) problems.push(`${f.links.length} links, expected none`);
+    } else {
+      const name = path.basename(want);
+      if (!f.decoded) problems.push("its data: address did not decode");
+      if (f.links.length !== 1) problems.push(`${f.links.length} links, expected one`);
+      const a = f.links[0];
+      if (a) {
+        if (a.text !== "Download the PDF") problems.push(`link text "${a.text}", expected "Download the PDF"`);
+        if (!a.href.startsWith("blob:")) problems.push(`link href "${a.href}" is not a blob: URL`);
+        if (a.download !== name) problems.push(`download name ${JSON.stringify(a.download)}, expected "${name}"`);
+        if (a.target !== null) problems.push(`link target "${a.target}", expected none`);
+        const saved = await downloadFrom(f.index);
+        if (saved.error) problems.push(saved.error);
+        else {
+          if (saved.name !== name) problems.push(`the click saved "${saved.name}", expected "${name}"`);
+          if (!saved.bytes.equals(fs.readFileSync(path.resolve(REPO, want)))) problems.push(`the saved bytes differ from ${want}`);
+        }
+      }
+    }
+    if (problems.length) {
+      console.error(`render_check: failed embed ${f.index} with an inlined PDF: ${problems.join("; ")}`);
+      ok = false;
+    } else inlinedOk.push(f.index);
+  }
+  // the viewer logs one "failed to render an inlined PDF" line per such embed
+  if (plant === "extralog") await new Promise((r) => setTimeout(r, 300));
+  const inlinedLines = consoleErrors.filter((t) => t.startsWith("embedpdf: failed to render an inlined PDF")).length;
+  if (inlinedLines !== res.inlinedFailed.length) {
+    console.error(`render_check: ${inlinedLines} "failed to render an inlined PDF" errors for ${res.inlinedFailed.length} failed embeds with an inlined PDF`);
+    ok = false;
+  }
+  // after the inlined failures are printed, so a real defect that left
+  // nothing to plant in is still named
+  if (DOWNLOAD_PLANTS.includes(plant) && !res.inkPlanted) {
+    console.error(`render_check: --plant ${plant} found nothing to plant in`);
+    await browser.close();
+    server?.close();
+    remoteServer?.close();
+    process.exit(2);
+  }
+  if (res.native + res.pdfjs + res.failed.length + res.inlinedFailed.length === 0) {
     // a wrong page, or viewer JS that never loaded, must not pass as "no PDF.js blocks"
     console.error("render_check: no embed was hydrated");
     ok = false;
@@ -1285,12 +1466,14 @@ try {
     console.error(`render_check: embeds with the failure text but not the failure state: ${JSON.stringify(res.malformed)}`);
     ok = false;
   }
-  if (expectFailed === null && res.failed.length) {
-    console.error(`render_check: ${res.failed.length} embeds are in the load-failure state; pass --expect-failed if that is expected`);
+  // embeds in the load-failure state that pass its rule, of either kind
+  const failedCount = res.failed.length + inlinedOk.length;
+  if (expectFailed === null && failedCount) {
+    console.error(`render_check: ${failedCount} embeds are in the load-failure state; pass --expect-failed if that is expected`);
     ok = false;
   }
-  if (expectFailed !== null && res.failed.length !== Number(expectFailed)) {
-    console.error(`render_check: expected ${expectFailed} embeds in the load-failure state, found ${res.failed.length}`);
+  if (expectFailed !== null && failedCount !== Number(expectFailed)) {
+    console.error(`render_check: expected ${expectFailed} embeds in the load-failure state, found ${failedCount}`);
     ok = false;
   }
   if (!ok) process.exitCode = 1;

@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Jeffrey Girard">
-<meta name="dcterms.date" content="2026-10-18">
+<meta name="dcterms.date" content="2026-10-19">
 
 <title>embedpdf</title>
 <style>
@@ -77,7 +77,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="example_files/libs/bootstrap/bootstrap.min.js"></script>
 <link href="example_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="example_files/libs/bootstrap/bootstrap-c2e55264ed47ce3b2e0326a2269f9400.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
-<link href="example_files/libs/quarto-contrib/embedpdf-1.2.2/embedpdf.css" rel="stylesheet">
+<link href="example_files/libs/quarto-contrib/embedpdf-1.2.3/embedpdf.css" rel="stylesheet">
 
 
 <link rel="stylesheet" href="styles.css">
@@ -138,7 +138,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">October 18, 2026</p>
+      <p class="date">October 19, 2026</p>
     </div>
   </div>
   
@@ -248,7 +248,7 @@ Note
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>Self-contained documents (<code>embed-resources: true</code>) need no other file. The PDF and, for <code>auto</code> and <code>pdfjs</code> embeds, PDF.js are inside the one HTML file. See <a href="selfcontained_test.html">selfcontained_test.html</a> for a self-contained page. The README “Known limitations” section lists where this was checked and what happens with JavaScript disabled.</p>
+<p>Self-contained documents (<code>embed-resources: true</code>) need no other file. The PDF and, for <code>auto</code> and <code>pdfjs</code> embeds, PDF.js are inside the one HTML file. See <a href="selfcontained_test.html">selfcontained_test.html</a> for a self-contained page. If a PDF.js embed in a self-contained document cannot show its PDF, it says so and gives a “Download the PDF” link. The link saves the PDF under its file name. If the browser cannot decode the PDF inside the page, the embed shows the message with no link, with any renderer. See <a href="selfcontained_failed_test.html">selfcontained_failed_test.html</a>. The README “Known limitations” section lists where this was checked and what happens with JavaScript disabled.</p>
 </div>
 </div>
 </section>
@@ -689,7 +689,7 @@ Note
 
 
 
-<script src="example_files/libs/quarto-contrib/embedpdf-1.2.2/embedpdf-viewer.js" type="module"></script>
-<script src="example_files/libs/quarto-contrib/embedpdf-pdfjs-1.2.2/pdf.min.mjs" type="text/x-embedpdf-pdfjs"></script>
-<script src="example_files/libs/quarto-contrib/embedpdf-pdfjs-1.2.2/pdf.worker.min.mjs" type="text/x-embedpdf-worker"></script>
+<script src="example_files/libs/quarto-contrib/embedpdf-1.2.3/embedpdf-viewer.js" type="module"></script>
+<script src="example_files/libs/quarto-contrib/embedpdf-pdfjs-1.2.3/pdf.min.mjs" type="text/x-embedpdf-pdfjs"></script>
+<script src="example_files/libs/quarto-contrib/embedpdf-pdfjs-1.2.3/pdf.worker.min.mjs" type="text/x-embedpdf-worker"></script>
 </body></html>
