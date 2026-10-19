@@ -35,16 +35,16 @@ one PDF in a subfolder, named with a space once and percent-encoded once. Checks
 
 ## Acceptance criteria
 
-- [ ] AC1: Each PDF.js embed on `example.html`, `selfcontained_test.html`, and `name_test.html` is a group named
+- [x] AC1: Each PDF.js embed on `example.html`, `selfcontained_test.html`, and `name_test.html` is a group named
       "PDF: " plus its file name. `render_check.mjs` checks the name in Chromium's accessibility tree on the desktop
       and iphone devices: "PDF: sample.pdf" on `example.html` and on `selfcontained_test.html` opened with
       `--alone file`, and "PDF: sample copy.pdf" for both embeds on `name_test.html`. `ios_check.mjs` checks in the
       "embedpdf iPhone" and "embedpdf iPad" simulators that each PDF.js embed element on those three pages
       (`selfcontained_test.html` with `--alone yes`) carries `role="group"` and that `aria-label`.
-- [ ] AC2: In Chromium's accessibility tree, each zoom out, zoom in, and download control of each PDF.js embed on
+- [x] AC2: In Chromium's accessibility tree, each zoom out, zoom in, and download control of each PDF.js embed on
       `example.html` (desktop and iphone devices) has a non-empty name and no description equal to that name, and
       the control's `title` (its mouse tooltip) holds the same words as the name. `render_check.mjs` checks this.
-- [ ] AC3: After `quarto render`, every `render_check.mjs` and `ios_check.mjs` line in CLAUDE.md "Verify before
+- [x] AC3: After `quarto render`, every `render_check.mjs` and `ios_check.mjs` line in CLAUDE.md "Verify before
       finishing" exits 0. Those lines include `name_test.html` with `render_check.mjs` on the desktop and iphone
       devices and with `ios_check.mjs` in both simulators.
 - [x] AC4: `version:` in `_extensions/embedpdf/_extension.yml` and `VERSION` in `_extensions/embedpdf/embedpdf.lua`
@@ -101,4 +101,28 @@ one PDF in a subfolder, named with a space once and percent-encoded once. Checks
 - 2026-10-18 sync: branch level with `origin/main` (0 commits behind); Copilot round off (no `# Copilot review:` line in PROFILE.md).
 - AC4 evidence (2026-10-18): `grep` reads `version: 1.2.1` at `_extension.yml:3` and `local VERSION = "1.2.1"` at `embedpdf.lua:22`.
 - AC5 evidence (2026-10-18): README.md:89 states the name ("a group named "PDF: " and the PDF's file name, for example "PDF: sample.pdf""), that each toolbar control "has one name, which is also its tooltip", the date 2026-10-18, Chromium's accessibility tree, and Safari in iOS 27.0 iPhone and iPad simulators (attributes only).
+- AC3 evidence (2026-10-18, at 68a93b5): `pandoc lua tests/test_shortcode.lua` 40 passed, 0 failed; `quarto render` exit 0; all 29 `render_check.mjs`/`ios_check.mjs` lines in CLAUDE.md "Verify before finishing" exited 0 (Chromium 155 via `CHROME_PATH`; iOS 27.0 "embedpdf iPhone" and "embedpdf iPad"), the 2 `name_test.html` render_check lines and the 2 `name_test.html` ios_check lines among them. After the fix-now commit 75e0496 (test scripts only), the 11 render_check lines carrying `--expect-name` exited 0 again; the ios_check change only refuses `--expect-name` with `--remote`, which no CLAUDE.md line passes.
+- AC1 evidence (2026-10-18): in the AC3 run, render_check `--expect-name` passed "PDF: sample.pdf" on `example.html` (desktop, iphone) and `selfcontained_test.html --alone file` (desktop, iphone), and "PDF: sample copy.pdf" on `name_test.html` (desktop, iphone), re-passed after 75e0496; ios_check `--expect-name` passed in both simulators on `example.html`, `selfcontained_test.html --alone yes`, and `name_test.html` (2 embeds). `--plant wrongname` fails both scripts naming the embed and the wrong label (T2 log; render_check again at 75e0496).
+- AC2 evidence (2026-10-18): render_check `--expect-name` on `example.html` (desktop, iphone) passed the toolbar check (non-empty tree name, no description equal to it, `title` equal to it) in the AC3 run and again after 75e0496; `--plant dupdesc` fails with "zoom in control: description repeats the name "Zoom in""; `--plant notoolbar` fails with "no toolbar, and toolbar=false is not set".
 - Consistency gate (2026-10-18): `cairn_validate.py` all checks passed; no IP/GP line changed in DESIGN.md, so `cairn_impact.py` skipped; profile `generic` names no toolchain checks.
+- spawned: diff-bug, blame-history, prior-review (user-facing tier, full fan-out). 20 findings: 5 fix now, 11 follow-up, 4 rejected. None shows a criterion failing, so no return.
+- diff-bug #1: ios_check skips `--expect-name` under `--remote` with no error — fix now, fixed 75e0496 (usage error, exit 2).
+- diff-bug #2: the scripts disagree under `--remote` (render_check fails with a count message) — fix now, fixed 75e0496 (ios_check now refuses the pair; render_check already fails loudly).
+- diff-bug #3: the toolbar check passes when every toolbar is gone — fix now, fixed 75e0496 (fails unless the embed has `data-toolbar="false"`; `--plant notoolbar` added).
+- diff-bug #4: `dupdesc` plants only in zoom-in, and no plant removes `role="group"` — follow-up, row "Name check gaps".
+- diff-bug #5: `revealjs_test.html` (several PDFs) gets no `--expect-name` line — follow-up, row "Name check gaps".
+- diff-bug #6: a query-style URL or bare host gives a misleading name — follow-up, row "Embed name gaps".
+- diff-bug #7: self-contained fallback "document.pdf" (unreachable today) and a possible base64 name if Quarto inlined `href` — follow-up, row "Embed name gaps".
+- diff-bug #8: literal and malformed `%` in file names untested — follow-up, row "Name check gaps".
+- diff-bug #9: a `title`-only name is unchecked in Safari and VoiceOver, and touch devices show no tooltip — follow-up, row "Embed name gaps"; CLAUDE.md "Still unverified" now names it (4bb975a).
+- diff-bug #10: the page indicator "1 / 2" has no label (code unchanged) — follow-up, row "Embed name gaps".
+- blame-history #1: the toolbar's M004 `aria-label` reversed, verified only in Chromium — follow-up, row "Embed name gaps"; CLAUDE.md "Still unverified" updated (4bb975a).
+- blame-history #2: the `noname` plant still fails after the change — rejected, false: no defect (it reports a confirmation).
+- blame-history #3: the self-contained `role="img"` removal still runs before `role="group"` — rejected, false: no defect.
+- blame-history #4: a malformed `%` falls back to the raw segment, untested — follow-up, row "Name check gaps".
+- blame-history #5: a trailing slash gives plain "PDF" — rejected, planned change (T1 work-log line).
+- blame-history #6: `files/sample copy.pdf` duplicates `sample.pdf` — rejected, planned change (the fixture needs a copy in a subfolder with a space).
+- blame-history #7: CLAUDE.md "Still unverified" did not name the embed and toolbar names — fix now, fixed 4bb975a.
+- prior-review #1: `--expect-name` silent under `--remote`, the M004 flag-silence pattern — fix now, fixed 75e0496 (same fix as diff-bug #1).
+- prior-review #2: two embeds of one file get identical names and page groups (partial close of an M004 finding) — follow-up, row "Embed name gaps".
+- prior-review #3: on a slide without `--expect-text`, the name check runs with no hydration wait — follow-up, row "Name check gaps".
