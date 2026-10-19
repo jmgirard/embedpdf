@@ -5,7 +5,9 @@
 // every HTML response, opens the page in the simulator's Safari with `simctl openurl`, and
 // waits for the probe to POST a per-embed report: which renderer each embed
 // used, how many .embedpdf-page containers it has, and whether each page's
-// canvas has ink. No dependencies beyond Node and Xcode's simctl.
+// canvas has ink, by the rule in tests/ink.mjs (some pixel neither transparent
+// nor white, read over every pixel and channel). No dependencies beyond Node
+// and Xcode's simctl.
 //
 // Setup (once): install Xcode, run its first-launch setup, download the iOS
 // platform (xcodebuild -downloadPlatform iOS), and create a simulator, e.g.
@@ -16,7 +18,8 @@
 //   --page <path>          page under docs/ to open (default example.html)
 //   --expect-embeds <n>    embeds not set to renderer=native (default 10)
 //   --expect-pages <n>     pages per PDF.js embed (default 2: sample.pdf)
-//   --port <n>             server port on 127.0.0.1 (default 8766)
+//   --port <n>             server port on 127.0.0.1 (default: a free port the
+//                          system picks); a port in use exits 2
 //   --timeout <s>          seconds to wait for the report (default 180)
 //   --screenshot <file>    save a simulator screenshot, taken with the first
 //                          renderer=native embed scrolled into view
@@ -87,7 +90,12 @@ const device = opt("device", "");
 const pagePath = opt("page", "example.html");
 const expectEmbeds = Number(opt("expect-embeds", "10"));
 const expectPages = Number(opt("expect-pages", "2"));
-const port = Number(opt("port", "8766"));
+// 0: the system picks a free port
+const port = Number(opt("port", "0"));
+if (!Number.isInteger(port) || port < 0 || port > 65535) {
+  console.error("ios_check: --port must be a port number from 0 to 65535");
+  process.exit(2);
+}
 const timeoutS = Number(opt("timeout", "180"));
 const screenshot = opt("screenshot", "");
 const plant = opt("plant", "");
@@ -364,12 +372,19 @@ const server = await serveDocs({
       });
     },
   },
+}).catch((err) => {
+  console.error(
+    err.code === "EADDRINUSE"
+      ? `ios_check: port ${port} is in use; pass another --port, or none for a free port`
+      : `ios_check: cannot serve on port ${port}: ${err.message}`
+  );
+  process.exit(2);
 });
 
 let exitCode = 1;
 try {
   simctl("bootstatus", dev.udid, "-b");
-  const target = `http://127.0.0.1:${port}/${servedPath}?run=${runId}${plant ? "&plant=" + plant : ""}${phrases ? "&text=1" : ""}${shotEmbed ? "&shot=" + shotEmbed : ""}`;
+  const target = `http://127.0.0.1:${server.address().port}/${servedPath}?run=${runId}${plant ? "&plant=" + plant : ""}${phrases ? "&text=1" : ""}${shotEmbed ? "&shot=" + shotEmbed : ""}`;
   simctl("openurl", dev.udid, target);
 
   const timer = new Promise((_, rej) =>
