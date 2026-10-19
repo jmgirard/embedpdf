@@ -7,7 +7,7 @@ _Last hygiene check: 2026-10-18 (M004 done and archived; row "Screen-reader text
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M005 | Screen-reader names | in-progress | — | normal | milestones/M005-screen-reader-names.md |
+| M005 | Screen-reader names | review | — | normal | milestones/M005-screen-reader-names.md |
 | M004 | Screen-reader text | done | — | normal | milestones/archive/M004-screen-reader-text.md |
 | M003 | Remote PDFs on phones | done | — | normal | milestones/archive/M003-remote-pdfs-on-phones.md |
 | M002 | Self-contained embeds | done | — | high | milestones/archive/M002-self-contained-embeds.md |

@@ -2,7 +2,7 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M005: Screen-reader names
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -71,9 +71,9 @@ one PDF in a subfolder, named with a space once and percent-encoded once. Checks
 - [x] T3: Make each toolbar control's name come from its `title` alone: drop the duplicate `aria-label` and mark
       the glyph `aria-hidden` (`embedpdf-viewer.js:278-296`). Add a tree check of name, description, and `title` to
       `render_check.mjs` under `--expect-name`, and plant a duplicate description to see it fail.
-- [ ] T4: Bump the version to 1.2.1 in both places, `quarto render`, add `--expect-name` to the existing CLAUDE.md
+- [x] T4: Bump the version to 1.2.1 in both places, `quarto render`, add `--expect-name` to the existing CLAUDE.md
       lines for `example.html` and `selfcontained_test.html`, add the `name_test.html` lines, and run every line.
-- [ ] T5: Update README's screen-reader note (README.md:89) and DESIGN.md Architecture from what T4's runs showed.
+- [x] T5: Update README's screen-reader note (README.md:89) and DESIGN.md Architecture from what T4's runs showed.
 
 ## Work log
 
@@ -92,6 +92,7 @@ one PDF in a subfolder, named with a space once and percent-encoded once. Checks
 - 2026-10-18: T3 done: each toolbar control holds its glyph in an `aria-hidden` span and has `title` only. `--expect-name` also checks the three controls; green on `example.html` (desktop, iphone, with `--expect-text`); `--plant dupdesc` fails with "description repeats the name"; the existing `--plant noname` now removes `title` and still fails.
 - 2026-10-18: checkpoint (T4, T5 in progress): version 1.2.1 in both places; CLAUDE.md lines gain `--expect-name` and four `name_test.html` lines; README note and DESIGN.md Architecture drafted; full verify run (38 lines) and claim audit running.
 - 2026-10-18: claim audit: 48 claims read, 4 corrected — README.md (Safari checked attributes only, not toolbar controls), name_test.qmd (no screen reader used), CLAUDE.md (toolbar check wording), tests/ios_check.mjs (`--expect-name` skipped under `--remote`).
+- 2026-10-18: T4, T5 done: `pandoc lua tests/test_shortcode.lua` 40 passed, 0 failed; `quarto render` clean; every CLAUDE.md check line plus its `--alone http`, desktop-device, `ipad`, and remote-desktop variants (38 runs, Chromium 155 and the iOS 27.0 "embedpdf iPhone" and "embedpdf iPad" simulators) exited 0; after the claim-audit text change, the 4 `name_test.html` lines exited 0 again. Status → review.
 
 ## Decisions
 
