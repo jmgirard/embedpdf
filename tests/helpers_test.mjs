@@ -1,12 +1,13 @@
 // Unit tests for the helpers the browser checks share: the ink rule
-// (tests/ink.mjs) and the docs/ server (tests/serve_docs.mjs). No browser.
+// (tests/ink.mjs), and in tests/serve_docs.mjs the docs/ server, the remote
+// server, pointPdfsAt, embedSrcsOffRemote, and docsFile. No browser.
 //
 // Usage:  node tests/helpers_test.mjs      # must print "N passed, 0 failed"
 
 import fs from "node:fs";
 import path from "node:path";
 import { inkInPixels } from "./ink.mjs";
-import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, REMOTE_MODES, DOCS } from "./serve_docs.mjs";
+import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, docsFile, REMOTE_MODES, DOCS } from "./serve_docs.mjs";
 
 let passed = 0;
 let failed = 0;
@@ -65,6 +66,18 @@ const word = '<a href="x.pdf" title="download">a PDF</a>';
 check("point: download only in a value unchanged", point(word) === word, point(word));
 const inlined = div("data:application/pdf;base64,JVBERi0=");
 check("point: data: URL unchanged", point(inlined) === inlined, point(inlined));
+
+// the page path is read as a URL path, as the scripts put it in the page URL
+check("point: %20 in the page folder is kept", point(div("x.pdf"), "a%20b/p.html") === div(R + "a%20b/x.pdf"), point(div("x.pdf"), "a%20b/p.html"));
+check("point: a ?query on the page does not move the folder", point(div("x.pdf"), "p.html?q=a/b") === div(R + "x.pdf"), point(div("x.pdf"), "p.html?q=a/b"));
+
+// --- docsFile -------------------------------------------------------------------
+check("docsFile: a page", docsFile("example.html") === path.join(DOCS, "example.html"), String(docsFile("example.html")));
+check("docsFile: ?query and #fragment removed", docsFile("example.html?x=1#y") === path.join(DOCS, "example.html"), String(docsFile("example.html?x=1#y")));
+check("docsFile: %20 decoded", docsFile("files/sample%20copy.pdf") === path.join(DOCS, "files", "sample copy.pdf"), String(docsFile("files/sample%20copy.pdf")));
+check("docsFile: a directory is null", docsFile("files") === null, String(docsFile("files")));
+check("docsFile: outside docs/ is null", docsFile("../README.md") === null, String(docsFile("../README.md")));
+check("docsFile: a missing file is null", docsFile("nope.html") === null, String(docsFile("nope.html")));
 
 // --- embedSrcsOffRemote -------------------------------------------------------
 const read = (f) => fs.readFileSync(path.join(DOCS, f), "utf8");
@@ -183,9 +196,11 @@ try {
       const a = await get("bytes=0-99");
       const b = await get("bytes=100-");
       const c = await get(`bytes=${size + 10}-`);
+      const d = await get("bytes=200-100");
       if (mode === "missing") {
-        check("remote missing: ranges get 404", [a, b, c].every((r) => r.status === 404), [a, b, c].map((r) => r.status).join(" "));
+        check("remote missing: ranges get 404", [a, b, c, d].every((r) => r.status === 404), [a, b, c, d].map((r) => r.status).join(" "));
       } else {
+        check(`remote ${mode}: a range that ends before it starts gets the whole file`, d.status === 200 && d.body.equals(pdf), String(d.status));
         check(`remote ${mode}: bytes=0-99 is 206 with those bytes`, a.status === 206 && a.body.equals(pdf.subarray(0, 100)), `${a.status} ${a.body.length}`);
         check(`remote ${mode}: bytes=100- is 206 to the end`, b.status === 206 && b.body.equals(pdf.subarray(100)), `${b.status} ${b.body.length}`);
         check(`remote ${mode}: a start past the end is 416`, c.status === 416, String(c.status));

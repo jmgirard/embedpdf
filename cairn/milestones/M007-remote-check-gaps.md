@@ -139,7 +139,7 @@ Pass 1, 2026-10-18, branch head ca784ed, main f1ab6f8 (not moved). Chromium via 
 - AC6 evidence: helpers_test `75 passed, 0 failed`; 48 of 48 runs exited 0: the 34 `node tests/...` check lines in the CLAUDE.md code blocks, the 4 `--alone http` reruns, the self-contained mac-safari, windows-touch (file and http), and ipad (file and http) runs, and the mac-safari and windows-touch runs of the remote and missing desktop lines.
 - Gate: `cairn_validate.py` all checks passed; no principle changed (no `cairn_impact` run); the generic profile names no toolchain checks.
 - spawned: diff-bug, blame-history, prior-review, ripple
-- diff-bug #1: the `--missing-pdfs` checks pass every embed if any one console line names its shared `data-src`, so nine of ten embeds sharing `sample.pdf` could fail another way — fix now (count lines per `data-src`).
+- diff-bug #1: the `--missing-pdfs` checks pass every embed if any one console line names its shared `data-src`, so nine of ten embeds sharing `sample.pdf` could fail another way — fix now (count lines per `data-src`); the same pre-existing gap in the `--remote` checks — follow-up (new row "Remote failure line count").
 - diff-bug #2: ios_check sets `missingPdfs` with `args.includes`, so `--page --missing-pdfs` turns the mode on — fix now (set it in the parse loop).
 - diff-bug #3: `--missing-pdfs --expect-failed 0` checks nothing — fix now (exit 2 unless `--expect-failed` is above 0).
 - diff-bug #4: the cut value is 41 characters with the cut mark — reject (false: the value is given by its first 40 characters, and "…" marks the cut).

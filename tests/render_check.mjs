@@ -48,8 +48,9 @@
 //                       404 for every path that ends in .pdf; fail unless
 //                       each failed embed's data-src is on that server and
 //                       the console shows the viewer's "failed to render"
-//                       line for it with PDF.js ResponseException. Needs
-//                       --expect-failed; not with --remote or --alone.
+//                       line for it with PDF.js ResponseException (one
+//                       line per embed). Needs --expect-failed above 0; not
+//                       with --remote or --alone.
 //   --expect-failed <n> fail unless exactly n embeds show the load-failure
 //                       state: the text "This PDF cannot be shown here.", an
 //                       "Open the PDF" link to the same absolute URL as
@@ -119,7 +120,7 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import puppeteer from "puppeteer-core";
-import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, REMOTE_MODES, DOCS } from "./serve_docs.mjs";
+import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, docsFile, REMOTE_MODES, DOCS } from "./serve_docs.mjs";
 import { inkInPixels } from "./ink.mjs";
 
 // For iphone and ipad, userAgent, maxTouchPoints, and pdfViewerEnabled are what
@@ -258,8 +259,8 @@ if (missingPdfs && (remote || alone || /^https?:/.test(target))) {
   console.error("render_check: --missing-pdfs needs a page under docs/, without --remote or --alone");
   process.exit(2);
 }
-if (missingPdfs && expectFailed === null) {
-  console.error("render_check: --missing-pdfs needs --expect-failed");
+if (missingPdfs && !(Number(expectFailed) > 0)) {
+  console.error("render_check: --missing-pdfs needs --expect-failed with a number above 0");
   process.exit(2);
 }
 if (alone && /^https?:/.test(target)) {
@@ -297,12 +298,14 @@ const cannotServe = (what) => (err) => {
 };
 const remoteServer = remote ? await serveRemote(remote).catch(cannotServe("remote")) : null;
 const remoteBase = remoteServer ? `http://127.0.0.1:${remoteServer.address().port}/` : null;
-// --remote on a page whose embeds keep their PDF on the page (a self-contained
-// page) would check nothing remote, so it stops here, before the browser opens
-if (remoteBase && fs.existsSync(path.join(DOCS, target))) {
-  const off = embedSrcsOffRemote(fs.readFileSync(path.join(DOCS, target), "utf8"), remoteBase, target);
+// --remote on a page with an embed whose PDF stays off the remote server (such
+// as the inlined PDFs of a self-contained page) would check nothing remote for
+// it, so the run stops here, before the browser opens
+const targetFile = remoteBase ? docsFile(target) : null;
+if (targetFile) {
+  const off = embedSrcsOffRemote(fs.readFileSync(targetFile, "utf8"), remoteBase, target);
   if (off.length) {
-    console.error(`render_check: --remote: ${target} has embeds whose PDF cannot be moved to the remote server (a self-contained page holds its PDFs inline): ${off.join(", ")}`);
+    console.error(`render_check: --remote: ${target} has embeds whose PDF is not a relative .pdf URL that can move to the remote server (a self-contained page holds its PDFs inline as data: URLs): ${off.join(", ")}`);
     process.exit(2);
   }
 }
@@ -858,15 +861,16 @@ try {
   if (missingPdfs) {
     // each failed embed must name a PDF on the page's own server, and the
     // viewer must log PDF.js's ResponseException (the 404) for it; the viewer
-    // names the PDF by its data-src as written
+    // names the PDF by its data-src as written, one line per embed, so embeds
+    // that share a data-src need as many lines
     const own = `http://127.0.0.1:${server.address().port}/`;
+    const lines = (src) =>
+      consoleErrors.filter((t) => t.startsWith("embedpdf: failed to render " + src + " ") && t.includes("ResponseException")).length;
     const wrong = res.failed.filter(
-      (f) =>
-        !f.expected.startsWith(own) ||
-        !consoleErrors.some((t) => t.startsWith("embedpdf: failed to render " + f.src + " ") && t.includes("ResponseException"))
+      (f) => !f.expected.startsWith(own) || lines(f.src) < res.failed.filter((g) => g.src === f.src).length
     );
     if (wrong.length) {
-      console.error(`render_check: --missing-pdfs: not a "ResponseException" error for a PDF on ${own}: ${wrong.map((f) => f.expected).join(", ")}`);
+      console.error(`render_check: --missing-pdfs: fewer "ResponseException" errors than failed embeds, or a PDF not on ${own}: ${wrong.map((f) => f.expected).join(", ")}`);
       ok = false;
     }
   }

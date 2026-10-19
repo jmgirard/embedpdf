@@ -184,6 +184,8 @@ errors.
 - A PDF from another site on a real phone, with or without
   `Access-Control-Allow-Origin`. Safari is checked only with no header, in the
   iOS 27.0 simulators.
+- A PDF missing from the page's own site (HTTP 404) on a real phone. It is
+  checked only in Chromium and in the iOS 27.0 simulators.
 - A real screen reader (VoiceOver, TalkBack) reading a PDF.js embed's hidden
   page text, its "PDF: <file name>" group name, and its toolbar controls'
   `title`-only names. Checked only in Chromium's accessibility tree and in

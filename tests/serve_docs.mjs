@@ -4,7 +4,7 @@
 // server listens with a backlog of 5, and a browser opening many connections
 // at once can get some of them reset, so the viewer JS sometimes never loads.
 //
-// serveDocs({ port, transformHtml, routes, root }) resolves to the listening
+// serveDocs({ port, transformHtml, routes, root, missingPdfs }) resolves to the listening
 // server, or rejects on a listen error. It answers single byte ranges.
 //   port           0 picks a free port (server.address().port)
 //   root           directory to serve (default docs/)
@@ -116,20 +116,22 @@ export function serveDocs({ port = 0, transformHtml = null, routes = {}, root = 
 // makes it another origin than the page's server.
 //   mode blocked  no Access-Control-Allow-Origin header, so PDF.js cannot read it
 //   mode cors     Access-Control-Allow-Origin: *
-//   mode missing  HTTP 404 for every path, with Access-Control-Allow-Origin: *
+//   mode missing  HTTP 404 for every GET, with Access-Control-Allow-Origin: *
 //                 so that the 404 itself, not CORS, is what PDF.js meets
-// A file is sent whole or by a single byte range, as serveDocs sends it. An
-// OPTIONS request (a CORS preflight) gets 204; in modes cors and missing it
-// allows GET and the Range header, and in mode blocked it allows nothing.
+// A file is sent whole or by a single byte range, as serveDocs sends it. In
+// modes cors and missing, Access-Control-Expose-Headers lets a cross-origin
+// reader see Accept-Ranges and Content-Range. An OPTIONS request (a CORS
+// preflight) gets 204 in every mode; in modes cors and missing it allows GET
+// and the Range header, and in mode blocked it sends no Access-Control-
+// header.
 export const REMOTE_MODES = ["blocked", "cors", "missing"];
 export function serveRemote(mode, { port = 0 } = {}) {
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, "http://127.0.0.1");
     // Expose-Headers lets a cross-origin reader see the range headers
+    // (Content-Length is exposed already)
     const cors =
-      mode === "blocked"
-        ? {}
-        : { "Access-Control-Allow-Origin": "*", "Access-Control-Expose-Headers": "Accept-Ranges, Content-Range, Content-Length" };
+      mode === "blocked" ? {} : { "Access-Control-Allow-Origin": "*", "Access-Control-Expose-Headers": "Accept-Ranges, Content-Range" };
     if (req.method === "OPTIONS") {
       const allow = mode === "blocked" ? {} : { "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS", "Access-Control-Allow-Headers": "Range" };
       res.writeHead(204, { ...cors, ...allow }).end();
@@ -165,10 +167,11 @@ const isRelativePdf = (v) => !/^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(v) && /^[^?#]
 // Point each relative PDF URL of the shortcode's attributes at the remote
 // origin `base` (e.g. "http://127.0.0.1:9000/"), so each embed, fallback link,
 // and button link names the remote PDF. `page` is the page's path under docs/
-// (e.g. "sub/p.html"): a URL resolves against the page's folder on `base`,
-// and keeps its ?query or #fragment. Other links are left as they are.
+// (e.g. "sub/p.html"), read as a URL path as the scripts read it: a URL
+// resolves against the page's folder on `base`, and keeps its ?query or
+// #fragment. Other links are left as they are.
 export function pointPdfsAt(html, base, page = "") {
-  const pageUrl = new URL(page.split("/").map(encodeURIComponent).join("/"), base);
+  const pageUrl = new URL(page, base);
   const point = (attr) => (tag) =>
     tag.replace(new RegExp(`(\\s${attr}=")([^"]*)"`, "i"), (m, pre, v) => (isRelativePdf(v) ? `${pre}${new URL(v, pageUrl).href}"` : m));
   return html
@@ -186,4 +189,18 @@ export function embedSrcsOffRemote(html, base, page = "") {
     if (m && !m[1].startsWith(base)) off.push(m[1].length > 40 ? m[1].slice(0, 40) + "…" : m[1]);
   }
   return off;
+}
+
+// The file under docs/ that a page path or URL path names (any ?query or
+// #fragment removed), or null when it is not a file there. The --remote
+// preflight reads this file.
+export function docsFile(page) {
+  try {
+    // decoded as serveDocs decodes a request path
+    const file = path.resolve(DOCS, decodeURIComponent(page.replace(/[?#].*$/, "")));
+    if (!file.startsWith(DOCS + path.sep)) return null;
+    return fs.statSync(file).isFile() ? file : null;
+  } catch {
+    return null;
+  }
 }
