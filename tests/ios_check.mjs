@@ -82,12 +82,13 @@
 //                          <pages>" and a shown "i / <pages>" that is
 //                          aria-hidden, and no other node; an embed with no
 //                          indicator fails unless data-toolbar="false".
-//   --plant wrongname|nativename|norole|nonumber|rawindicator|noindicator|strayindicator
+//   --plant wrongname|nativename|nativetitle|norole|nonumber|rawindicator|noindicator|strayindicator
 //                          with --expect-name: change the first PDF.js
 //                          embed's aria-label to "PDF: wrong.pdf"
 //                          (wrongname); change the first native embed's
 //                          <object> aria-label to "PDF: wrong.pdf"
-//                          (nativename); in the first PDF.js embed, remove
+//                          (nativename), or give it a title equal to its
+//                          aria-label (nativetitle); in the first PDF.js embed, remove
 //                          its role attribute (norole),
 //                          remove the " (k of n)" from its aria-label
 //                          (nonumber), remove aria-hidden from its shown
@@ -252,7 +253,7 @@ if ("slow-text" in parsed && !(phrases && /^\d+$/.test(slowText) && Number(slowT
   process.exit(2);
 }
 const TEXT_PLANTS = ["notext", "swap", "visible", "inert", "cvhidden"];
-const NAME_PLANTS = ["wrongname", "nativename", "norole", "nonumber", "rawindicator", "noindicator", "strayindicator"];
+const NAME_PLANTS = ["wrongname", "nativename", "nativetitle", "norole", "nonumber", "rawindicator", "noindicator", "strayindicator"];
 // planted before the text wait; needs --expect-text
 const WAIT_PLANTS = ["unhydrated"];
 // planted in a failed embed whose PDF was inlined; needs --expect-download
@@ -460,10 +461,11 @@ const PROBE = `<script>
   }
 
   let namePlanted = "";
-  if (plant === "nativename") {
+  if (plant === "nativename" || plant === "nativetitle") {
     const first = embeds().find((el) => kind(el) === "native");
     const object = first && first.querySelector("object");
-    if (object) { object.setAttribute("aria-label", "PDF: wrong.pdf"); namePlanted = plant; }
+    if (object && plant === "nativename") { object.setAttribute("aria-label", "PDF: wrong.pdf"); namePlanted = plant; }
+    if (object && plant === "nativetitle") { object.setAttribute("title", object.getAttribute("aria-label") || "PDF"); namePlanted = plant; }
   }
   if (plant === "wrongname") {
     const first = embeds().find((el) => kind(el) === "pdfjs");

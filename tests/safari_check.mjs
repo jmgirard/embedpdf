@@ -32,7 +32,8 @@
 // --plant rawindicator|nonumber plants a defect in the first PDF.js embed, as
 // in render_check (removes aria-hidden from its shown "i / n", or the " (k of
 // n)" from its name); --plant nativename changes the first native <object>'s
-// aria-label to "PDF: wrong.pdf". The run must then fail.
+// aria-label to "PDF: wrong.pdf", and nativetitle gives it a title equal to
+// its aria-label. The run must then fail.
 //
 // --target page-script opens a probe page in Safari in the iOS simulator with
 // `xcrun simctl openurl` and reports whether a page script can read a
@@ -94,8 +95,8 @@ if (nameList.length > 1 && nameList.length !== named) {
 }
 const page = flags.page || "example.html";
 const plant = flags.plant || null;
-if (plant && (target === "page-script" || !["rawindicator", "nonumber", "nativename"].includes(plant))) {
-  console.error("safari_check: --plant must be rawindicator, nonumber, or nativename, with --target mac or simulator");
+if (plant && (target === "page-script" || !["rawindicator", "nonumber", "nativename", "nativetitle"].includes(plant))) {
+  console.error("safari_check: --plant must be rawindicator, nonumber, nativename, or nativetitle, with --target mac or simulator");
   process.exit(2);
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -258,10 +259,11 @@ try {
   if (await unhydrated()) failures.push("an embed is still not hydrated after 30 s");
   if (plant) {
     report.planted = await run(
-      `if (arguments[0] === "nativename") {
+      `if (arguments[0] === "nativename" || arguments[0] === "nativetitle") {
          const object = document.querySelector(".embedpdf-native object");
          if (!object) return null;
-         object.setAttribute("aria-label", "PDF: wrong.pdf");
+         if (arguments[0] === "nativename") object.setAttribute("aria-label", "PDF: wrong.pdf");
+         else object.setAttribute("title", object.getAttribute("aria-label") || "PDF");
          return arguments[0];
        }
        const first = document.querySelector(".embedpdf-pdfjs");
@@ -306,6 +308,8 @@ try {
     if (r.title !== null) failures.push(`${at}: <object> has a title, ${JSON.stringify(r.title)}`);
   }
   const embeds = await find(".embedpdf-pdfjs");
+  // an embed that hydrated between these reads would take another's name
+  if (embeds.length !== pdfjsAt.length) failures.push(`${embeds.length} PDF.js embeds now, ${pdfjsAt.length} when the names were matched`);
   report.embeds = [];
   for (const [i, id] of embeds.entries()) {
     const at = `PDF.js embed ${i + 1} (embed ${pdfjsAt[i] + 1})`;
