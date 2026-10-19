@@ -41,6 +41,9 @@ const ROWS = [
   ["https://example.com//a.pdf", "a.pdf"],
   ["//example.com//a.pdf", "a.pdf"],
   ["  files/sample.pdf ", "sample.pdf"],
+  ["\tsample.pdf\n", "sample.pdf"],
+  ["files/my%20report", "my report"],
+  ["files/report?", ""],
   [" data:application/pdf;base64,JVBERi0x", ""],
 ];
 
