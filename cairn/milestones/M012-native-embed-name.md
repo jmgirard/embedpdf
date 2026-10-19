@@ -164,21 +164,22 @@ Architecture, and CLAUDE.md "Still unverified" follow. Version 1.2.4, no tag.
 - AC5 evidence (same batch): all 68 lines (CLAUDE.md "Verify before finishing" lines, their `--alone http` reruns, and the extra `--device` runs CLAUDE.md names) exit 0; `git diff main -- CLAUDE.md` changes command lines only by adding `--expect-native` (4 ios_check lines, 1 safari_check line) and the two revealjs_test `--expect-name` lists, with no flag dropped and no count lowered; helpers_test 91 passed, 0 failed; test_shortcode 40 passed, 0 failed; `quarto render` exits 0 (one WARN, the known `files/100%.pdf` URI).
 - gate: `cairn_validate.py` all checks passed; the generic profile's consistency-gate slot names no toolchain checks; no DESIGN.md principle changed, so `cairn_impact` is skipped.
 - spawned: diff-bug, blame-history, prior-review, ripple
-- diff-bug #1: safari_check no longer compares the PDF.js `find` count with `pdfjsAt`, so an embed hydrating between its three reads goes unchecked or misnamed (only after the 30 s wait failed) — fix now
-- diff-bug #2: no plant isolates render_check's native tree-description check, since `nativetitle` is caught by the title check first — fix now (a `nativedesc` plant)
+- diff-bug #1: safari_check no longer compares the PDF.js `find` count with `pdfjsAt`, so an embed hydrating between its three reads goes unchecked or misnamed (only after the 30 s wait failed) — fix now, fixed f274a74
+- diff-bug #2: no plant isolates render_check's native tree-description check, since `nativetitle` is caught by the title check first — fix now (a `nativedesc` plant), fixed f274a74
 - diff-bug #3: the numbering counts failed embeds, which get no name, so a reader can hear "(2 of 3)" with two named — reject: planned change (AC2's n counts every embed, the M010 rule now applied to native embeds)
 - diff-bug #4: render_check and safari_check leave failed embeds out of the expected names while the viewer counts them, so a page mixing failed and good embeds would fail falsely under `--expect-name` — follow-up: candidate row "Native name check gaps" (no check line has such a page)
 - diff-bug #5: `if (opts.name)` leaves a nameless `<object>` where PDF.js falls back to "PDF" — reject: false, since every hydrated embed has a `data-src` and so a name from `embedNames()`
 - diff-bug #6: ios_check `--expect-native` without `--expect-name` counts `data-renderer` only — reject: planned change, as its help text states
-- diff-bug #7: render_check's one-name error message says `--expect-native` is needed "when the page has native embeds", which it does not check there — fix now (message wording)
-- diff-bug #8: README states the joint count before saying native embeds have names — fix now
-- diff-bug #9: DESIGN.md:143 "has the same name as its `aria-label`" reads as a comparison — fix now
+- diff-bug #7: render_check's one-name error message says `--expect-native` is needed "when the page has native embeds", which it does not check there — fix now (message wording), fixed f274a74
+- diff-bug #8: README states the joint count before saying native embeds have names — fix now, fixed bab65fc
+- diff-bug #9: DESIGN.md:143 "has the same name as its `aria-label`" reads as a comparison — fix now, fixed bab65fc
 - blame-history #1: joint numbering reverses M010's PDF.js-only numbering with no D-entry — reject: planned change, a milestone-local choice recorded in the work log with its falsifier; M010's numbering was not a D-entry either
 - blame-history #2: a native embed whose address names no file gets "PDF", untested — follow-up: candidate row "Native name check gaps" (the plan's Out item)
 - blame-history #3: a native embed whose inlined PDF does not decode counts in n and stays unnamed — reject: planned change (AC2)
 - blame-history #4: ios_check enforces the native count with `--expect-name` — reject: planned change (T4)
-- prior-review #1: the new `<object>` title checks in ios_check and safari_check have no plant (M010's rule: each new check has a plant) — fix now (`nativetitle` in both)
+- prior-review #1: the new `<object>` title checks in ios_check and safari_check have no plant (M010's rule: each new check has a plant) — fix now (`nativetitle` in both), fixed f274a74
 - prior-review #2: the native plants use the page-wide first native embed, the pattern of "Name plant slide target" — follow-up: candidate row "Native name check gaps"
 - prior-review #3: the `fileName()` gaps of "Embed name follow-ups" now reach native `<object>` names — follow-up: candidate row "Native name check gaps"
-- ripple #1: render_check.mjs:970 comment says name plants go to the first PDF.js embed — fix now
+- ripple #1: render_check.mjs:970 comment says name plants go to the first PDF.js embed — fix now, fixed f274a74
 - ripple #2: "Name plant slide target" describes only the PDF.js plants — follow-up: candidate row "Native name check gaps" (same as prior-review #2)
+- fix-now verification (2026-10-19, f274a74): render_check `nativedesc` exits 1 ("<object> description repeats the name"), `nativetitle` exits 1; ios_check `nativetitle` on the iPhone simulator exits 1 ("embed 10: <object> has a title"); safari_check `nativetitle` exits 1 ("<object> has a title"); the example.html lines of render_check, ios_check (iPhone), and safari_check and the revealjs_test.html desktop line exit 0; helpers_test 91 passed, 0 failed.
