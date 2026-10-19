@@ -128,8 +128,8 @@
 // Exits 0 only when every embed not set to renderer=native used PDF.js, has
 // exactly --expect-pages page containers, and every page canvas has ink, and
 // the number of such embeds equals --expect-embeds. With --expect-download,
-// every embed must instead show the inlined failure state that flag
-// describes. With --remote blocked or --missing-pdfs, each such embed must instead show the load-failure state:
+// every embed must show the inlined failure state that flag describes instead
+// of using PDF.js with ink (the --expect-embeds count still applies). With --remote blocked or --missing-pdfs, each such embed must instead show the load-failure state:
 // the text "This PDF cannot be shown here.", an "Open the PDF" link to the
 // same absolute URL as data-src with target _blank, and no "Download PDF
 // file." link. With --remote blocked its data-src must be on the remote

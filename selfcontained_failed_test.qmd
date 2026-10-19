@@ -21,8 +21,8 @@ link that saves the file as `broken.pdf`.
 
 These two embeds are written by hand, not by the shortcode. Each `data-src`
 is a `data:` address whose base64 holds `@`, which is not a base64
-character, so the browser cannot decode it. The first embed uses PDF.js and
-the second the browser's own viewer. Each shows "This PDF cannot be shown
-here." with no link.
+character, so the browser cannot decode it. The first embed is set to
+`renderer=pdfjs` and the second to `renderer=native`. Each shows "This PDF
+cannot be shown here." with no link.
 
 {{< include files/undecodable-embeds.md >}}

@@ -118,9 +118,9 @@ function hydrateNative(el, opts) {
   el.classList.add("embedpdf-native");
 }
 
-// PDF.js could not load the PDF, for example a PDF on another site that sends
-// no Access-Control-Allow-Origin header, or a missing file, or an inlined PDF
-// did not decode. Say so. A PDF that is not inlined gets a link that opens it
+// PDF.js could not load the PDF (for example a PDF on another site that sends
+// no Access-Control-Allow-Origin header, or a missing file), or an inlined PDF
+// did not decode (with any renderer). Say so. A PDF that is not inlined gets a link that opens it
 // in a new tab. An inlined PDF (opts.blob) gets a link that downloads it under
 // its file name, because its blob: URL names no file. An inlined PDF that did
 // not decode (no opts.href) gets no link, because there is no file to give.
@@ -527,8 +527,9 @@ async function hydrate(el, name) {
   }
 }
 
-// a PDF.js embed that cannot load its PDF shows the failure message
-// (showFailure); any other failure leaves the no-JS fallback content in place;
+// a PDF.js embed that cannot load its PDF, and an embed whose inlined PDF does
+// not decode, shows the failure message (showFailure); any other failure
+// leaves the no-JS fallback content in place;
 // one failure never stops the others
 const placeholders = [...document.querySelectorAll("div.embedpdf")];
 const names = embedNames(placeholders);

@@ -2325,7 +2325,7 @@ color: white;
 </section>
 <section id="inlined-pdfs-that-cannot-be-decoded" class="level2">
 <h2 class="anchored" data-anchor-id="inlined-pdfs-that-cannot-be-decoded">Inlined PDFs that cannot be decoded</h2>
-<p>These two embeds are written by hand, not by the shortcode. Each <code>data-src</code> is a <code>data:</code> address whose base64 holds <code>@</code>, which is not a base64 character, so the browser cannot decode it. The first embed uses PDF.js and the second the browser’s own viewer. Each shows “This PDF cannot be shown here.” with no link.</p>
+<p>These two embeds are written by hand, not by the shortcode. Each <code>data-src</code> is a <code>data:</code> address whose base64 holds <code>@</code>, which is not a base64 character, so the browser cannot decode it. The first embed is set to <code>renderer=pdfjs</code> and the second to <code>renderer=native</code>. Each shows “This PDF cannot be shown here.” with no link.</p>
 <div role="img" class="embedpdf" data-src="data:application/pdf;base64,@@@@" data-renderer="pdfjs"></div>
 <div role="img" class="embedpdf" data-src="data:application/pdf;base64,@@@@" data-renderer="native"></div>
 </section>

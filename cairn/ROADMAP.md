@@ -7,7 +7,7 @@ _Last hygiene check: 2026-10-19 (M010 done: graduated "Embed name gaps", added "
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M011 | Inlined PDF failure | in-progress | — | normal | milestones/M011-inlined-pdf-failure.md |
+| M011 | Inlined PDF failure | review | — | normal | milestones/M011-inlined-pdf-failure.md |
 | M010 | Embed name gaps | done | — | high | milestones/archive/M010-embed-name-gaps.md |
 | M009 | Text check gaps | done | — | high | milestones/archive/M009-text-check-gaps.md |
 | M008 | Name check gaps | done | — | high | milestones/archive/M008-name-check-gaps.md |

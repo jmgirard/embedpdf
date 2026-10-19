@@ -1,6 +1,6 @@
 # M011: Inlined PDF failure
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -44,7 +44,7 @@ When a self-contained page cannot show an inlined PDF, the embed says so, and wh
 - [x] T3: `ios_check.mjs`: the same failure-state rule with `--alone yes` and an expected count of failed embeds, with plants for the link axes.
 - [x] T4: Viewer. `showFailure()` builds the "Download the PDF" link when `opts.blob` is set; `hydrate()` wraps `inlinedPdf()` so a decode failure calls `showFailure()` with no link and still logs the "failed to render" line; failed embeds keep no name. Bump `VERSION` in `embedpdf.lua` and `version:` in `_extension.yml` to 1.2.3. Run T2 and T3 lines to green.
 - [x] T5: Docs. README "Known limitations" and `example.qmd` (AC5 wording, where it was checked); DESIGN.md Architecture (the failure link by kind of address) and a Known issues entry saying an inlined PDF that cannot be decoded shows the message with no link, so IP2's usable fallback is not met there (as before this milestone); CLAUDE.md lines for the new page and flags, the page in the test-page list, and Safari's `blob:` download in "Still unverified". `quarto render`.
-- [ ] T6: Run every line in CLAUDE.md "Verify before finishing", the new lines included, and record each result.
+- [x] T6: Run every line in CLAUDE.md "Verify before finishing", the new lines included, and record each result.
 
 ## Work log
 
@@ -63,6 +63,10 @@ When a self-contained page cannot show an inlined PDF, the embed says so, and wh
 - 2026-10-19: T3 done: ios_check `--expect-download` (every embed, renderer=native too, in the inlined failure state; link attributes and the line count, no saved file) and plants dltarget, dlnoname, dlwrongname, dlhref, dlsecond, dltext, decodelink, extralog; before the fix, on "embedpdf iPhone" (iOS 27.0), Safari logs "failed to render an inlined PDF TypeError: Load failed" for both `@@@@` embeds, so the iOS simulator rejects that address too.
 - 2026-10-19: T4 done: `showFailure()` gives an embed with `opts.blob` a "Download the PDF" link (`download` = `opts.filename`, no target) and gives no link when `opts.href` is null; `hydrate()` catches a failed `inlinedPdf()`, calls `showFailure()` with `opts.href = null`, and rethrows so the caller still logs; version 1.2.3. render_check on `selfcontained_failed_test.html` with `--expect-native 0 --expect-pdfjs 0 --expect-failed 3 --expect-download "files/broken.pdf|-|-"` exits 0 for `--alone http` and `--alone file`, desktop and `--device iphone` (Chromium 155); each of the 9 render_check plants exits 1 naming its defect. ios_check `--alone yes --expect-embeds 2` with the same `--expect-download` exits 0 on "embedpdf iPhone" and "embedpdf iPad"; each of the 8 ios_check plants exits 1 on "embedpdf iPhone" naming its defect. `pandoc lua tests/test_shortcode.lua`: 40 passed, 0 failed.
 - 2026-10-19: T5 done: README "Known limitations" and `example.qmd` self-contained paragraph (the link, the no-link case, where checked); DESIGN.md Architecture and a Known issues entry (IP2 not met for an undecodable inlined PDF; the `button` link); CLAUDE.md page list, a block with the new page's four lines and `--expect-download`, and a "Still unverified" entry for saving the file outside Chromium. Sentences reworded until the simple-english linter counts in README.md, example.qmd, CLAUDE.md, and DESIGN.md equal the counts before the branch. `quarto render` completes; its one WARN is the known `files/100%.pdf` line.
+- 2026-10-19: claim audit: 41 claims read, 6 corrected — README.md, example.qmd (the download link is for a PDF.js embed; no-link case is any renderer; iOS saved no file), CLAUDE.md (Still unverified wording; `--expect-failed` counts passing inlined embeds), selfcontained_failed_test.qmd (embeds are set to a renderer, decode fails before either runs), embedpdf-viewer.js comments (showFailure header, caller comment), ios_check.mjs exit-rule comment.
+- 2026-10-19: T6 done: a script in the session scratchpad ran every `node tests/…` and `pandoc lua` line in CLAUDE.md "Verify before finishing", each `--alone file` line again with `--alone http`, the selfcontained_test desktop lines with mac-safari and windows-touch and its iphone line with ipad, and the remote-blocked and missing-pdfs desktop lines with mac-safari and windows-touch: 68 runs, 0 failed (Chromium 155, iOS 27.0 simulators, Safari 27.0.1); after the claim-audit fixes and `quarto render`, the same 68 runs again, 0 failed. test_shortcode 40 passed, helpers_test 91 passed, name_rule_test 32 passed.
+- 2026-10-19: deviation: the version bump and the ROADMAP status edit used `sed`, not the Edit tool; both were read back.
+- 2026-10-19: status review.
 
 ## Decisions
 

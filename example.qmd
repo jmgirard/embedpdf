@@ -103,7 +103,7 @@ Set `renderer=native` to always use the browser's built-in viewer.
 In Safari on iPhone and iPad, `renderer=native` shows the PDF in Safari's own viewer. This was checked on 2026-10-18 in iOS 27.0 iPhone and iPad simulators and an iOS 27.1 iPhone simulator. In the iOS 27.1 iPhone simulator, a swipe inside the embed reached every page.
 
 ::: {.callout-note}
-Self-contained documents (`embed-resources: true`) need no other file. The PDF and, for `auto` and `pdfjs` embeds, PDF.js are inside the one HTML file. See [selfcontained_test.html](selfcontained_test.html) for a self-contained page. If an embed in a self-contained document cannot show its PDF, it says so and gives a "Download the PDF" link. The link saves the PDF under its file name. If the browser cannot decode the PDF inside the page, the embed shows the message with no link. See [selfcontained_failed_test.html](selfcontained_failed_test.html). The README "Known limitations" section lists where this was checked and what happens with JavaScript disabled.
+Self-contained documents (`embed-resources: true`) need no other file. The PDF and, for `auto` and `pdfjs` embeds, PDF.js are inside the one HTML file. See [selfcontained_test.html](selfcontained_test.html) for a self-contained page. If a PDF.js embed in a self-contained document cannot show its PDF, it says so and gives a "Download the PDF" link. The link saves the PDF under its file name. If the browser cannot decode the PDF inside the page, the embed shows the message with no link, with any renderer. See [selfcontained_failed_test.html](selfcontained_failed_test.html). The README "Known limitations" section lists where this was checked and what happens with JavaScript disabled.
 :::
 
 ### Hide the PDF.js toolbar
