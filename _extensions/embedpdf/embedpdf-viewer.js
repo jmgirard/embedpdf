@@ -272,9 +272,19 @@ async function hydratePdfjs(el, opts) {
     const toolbar = document.createElement("div");
     toolbar.className = "embedpdf-toolbar";
 
+    // shown as "1 / 2", read by screen readers as "Page 1 of 2"
     const indicator = document.createElement("span");
     indicator.className = "embedpdf-pageinfo";
-    indicator.textContent = `1 / ${doc.numPages}`;
+    const spoken = document.createElement("span");
+    spoken.className = "embedpdf-pageinfo-text";
+    const shown = document.createElement("span");
+    shown.setAttribute("aria-hidden", "true");
+    indicator.append(spoken, shown);
+    const showPage = (i) => {
+      spoken.textContent = `Page ${i} of ${doc.numPages}`;
+      shown.textContent = `${i} / ${doc.numPages}`;
+    };
+    showPage(1);
 
     // A control's title is its tooltip and its only name: the glyph is hidden
     // from screen readers, and no aria-label repeats the title (Chrome would
@@ -313,7 +323,7 @@ async function hydratePdfjs(el, opts) {
         for (let i = 0; i < state.pageEls.length; i++) {
           const rect = state.pageEls[i].getBoundingClientRect();
           if (rect.bottom > host.top + host.height / 2) {
-            indicator.textContent = `${i + 1} / ${doc.numPages}`;
+            showPage(i + 1);
             break;
           }
         }

@@ -71,13 +71,17 @@
 //                          stands for the --expect-embeds embeds; a "|" list
 //                          gives one name per embed in page order. "-" and
 //                          the " (k of n)" numbering work as in
-//                          render_check (tests/expect_names.mjs).
-//   --plant wrongname|norole|nonumber
+//                          render_check (tests/expect_names.mjs). Each
+//                          toolbar's page indicator must hold "Page i of
+//                          <pages>" and a shown "i / <pages>" that is
+//                          aria-hidden.
+//   --plant wrongname|norole|nonumber|rawindicator
 //                          with --expect-name: change the first PDF.js
 //                          embed's aria-label to "PDF: wrong.pdf"
 //                          (wrongname), remove its role attribute (norole),
-//                          or remove the " (k of n)" from its aria-label
-//                          (nonumber); the check must then fail
+//                          remove the " (k of n)" from its aria-label
+//                          (nonumber), or remove aria-hidden from its shown
+//                          "i / n" (rawindicator); the check must then fail
 //   --alone yes|no         yes: serve a copy of the page from an empty
 //                          temporary directory instead of docs/ (default no)
 //   --remote blocked       serve the PDFs from a second server on another port
@@ -200,7 +204,7 @@ if ("slow-text" in parsed && !(phrases && /^\d+$/.test(slowText) && Number(slowT
   process.exit(2);
 }
 const TEXT_PLANTS = ["notext", "swap", "visible", "inert", "cvhidden"];
-const NAME_PLANTS = ["wrongname", "norole", "nonumber"];
+const NAME_PLANTS = ["wrongname", "norole", "nonumber", "rawindicator"];
 // planted before the text wait; needs --expect-text
 const WAIT_PLANTS = ["unhydrated"];
 if (plant && !["blank", "missing", ...NAME_PLANTS, ...TEXT_PLANTS, ...WAIT_PLANTS].includes(plant)) {
@@ -396,6 +400,11 @@ const PROBE = `<script>
     const first = embeds().find((el) => kind(el) === "pdfjs");
     if (first) { first.removeAttribute("role"); namePlanted = plant; }
   }
+  if (plant === "rawindicator") {
+    const first = embeds().find((el) => kind(el) === "pdfjs");
+    const shown = first && first.querySelector(".embedpdf-pageinfo [aria-hidden]");
+    if (shown) { shown.removeAttribute("aria-hidden"); namePlanted = plant; }
+  }
   if (plant === "nonumber") {
     const first = embeds().find((el) => kind(el) === "pdfjs");
     const label = first ? first.getAttribute("aria-label") || "" : "";
@@ -461,6 +470,17 @@ const PROBE = `<script>
         text: text[i],
         role: el.getAttribute("role"),
         label: el.getAttribute("aria-label"),
+        indicator: (() => {
+          const info = el.querySelector(".embedpdf-toolbar .embedpdf-pageinfo");
+          if (!info) return null;
+          const spoken = info.querySelector(".embedpdf-pageinfo-text");
+          const shown = [...info.children].find((c) => c !== spoken);
+          return {
+            spoken: spoken ? spoken.textContent : null,
+            shown: shown ? shown.textContent : null,
+            shownHidden: !!shown && shown.getAttribute("aria-hidden") === "true",
+          };
+        })(),
         failure,
       };
     }),
@@ -598,6 +618,15 @@ try {
       const name = expectLabels[i];
       if (e.role !== "group") failures.push(`embed ${e.index}: role attribute is ${e.role}, not group`);
       if (e.label !== name) failures.push(`embed ${e.index}: aria-label is "${e.label}", not "${name}"`);
+      // the toolbar's page indicator: "Page i of n" for screen readers, and
+      // the shown "i / n" for the same page hidden from them
+      const ind = e.indicator;
+      if (ind) {
+        const m = /^Page (\d+) of (\d+)$/.exec(ind.spoken || "");
+        if (!m || Number(m[2]) !== e.pages) failures.push(`embed ${e.index}: indicator text is ${JSON.stringify(ind.spoken)}, not "Page i of ${e.pages}"`);
+        else if (ind.shown !== `${m[1]} / ${m[2]}`) failures.push(`embed ${e.index}: indicator shows ${JSON.stringify(ind.shown)}, not "${m[1]} / ${m[2]}"`);
+        if (!ind.shownHidden) failures.push(`embed ${e.index}: the shown indicator ${JSON.stringify(ind.shown)} is not aria-hidden`);
+      }
     }
     // --expect-text: the hidden text, read before the probe scrolled
     if (phrases && !remote && e.renderer === "pdfjs") {

@@ -132,8 +132,14 @@
 //                       has a non-empty tree name, no tree description equal
 //                       to that name, and a title equal to that name, and
 //                       unless each embed without a toolbar has
-//                       data-toolbar="false".
-//   --plant wrongname|dupdesc|duplink|norole|notoolbar|nonumber
+//                       data-toolbar="false". Each toolbar's text in the
+//                       tree must read "Page 1 of <pages>" with the pages at
+//                       the top, and no "i / n" text. The first embed whose
+//                       pages can scroll page 1 above the middle of their
+//                       frame then scrolls to page 2 and must read "Page 2
+//                       of <pages>"; the report names it as page2Checked
+//                       (null when no embed could).
+//   --plant wrongname|dupdesc|duplink|norole|notoolbar|nonumber|rawindicator|staleindicator
 //                       with --expect-name, plant a defect in the first
 //                       PDF.js embed; the run must then fail: wrongname
 //                       changes its aria-label to "PDF: wrong.pdf", dupdesc
@@ -142,7 +148,10 @@
 //                       norole removes its role attribute, notoolbar
 //                       removes its toolbar, nonumber removes the " (k of
 //                       n)" from its aria-label (nothing to plant in when it
-//                       has none).
+//                       has none), rawindicator removes aria-hidden from its
+//                       shown "i / n", staleindicator swaps its "Page i of
+//                       n" text for a "Page 1 of n" copy that the scroll does
+//                       not update.
 // Set CHROME_PATH to use another Chrome or Chromium binary.
 //
 // On a RevealJS page the check goes to each slide with Reveal.slide() and
@@ -225,7 +234,7 @@ const FLAGS = ["device", "expect-native", "expect-pdfjs", "expect-pages", "expec
 const BOOL_FLAGS = ["missing-pdfs"];
 const TEXT_PLANTS = ["notext", "swap", "visible", "gone", "inert", "cvhidden"];
 const TREE_PLANTS = ["nolabel", "canvas", "noname", "detach"];
-const NAME_PLANTS = ["wrongname", "dupdesc", "duplink", "norole", "notoolbar", "nonumber"];
+const NAME_PLANTS = ["wrongname", "dupdesc", "duplink", "norole", "notoolbar", "nonumber", "rawindicator", "staleindicator"];
 const INK_PLANTS = ["blank", "nocanvas", "nopages"];
 // planted before the text wait (unhydrated) or before the page loads (norender)
 const WAIT_PLANTS = ["unhydrated", "norender"];
@@ -667,6 +676,19 @@ async function nameFailures(page, slide, before) {
         link.setAttribute("aria-label", link.title);
       }
       if (plant === "norole") first.removeAttribute("role");
+      if (plant === "rawindicator") {
+        const shown = first.querySelector(".embedpdf-pageinfo [aria-hidden]");
+        if (!shown) return { planted: null, stuck };
+        shown.removeAttribute("aria-hidden");
+      }
+      if (plant === "staleindicator") {
+        // a copy the viewer does not hold, so the scroll never updates it
+        const spoken = first.querySelector(".embedpdf-pageinfo-text");
+        if (!spoken) return { planted: null, stuck };
+        const stale = spoken.cloneNode(true);
+        stale.textContent = spoken.textContent.replace(/^Page \d+/, "Page 1");
+        spoken.replaceWith(stale);
+      }
       if (plant === "nonumber") {
         const label = first.getAttribute("aria-label") || "";
         const bare = label.replace(/ \(\d+ of \d+\)$/, "");
@@ -741,10 +763,55 @@ async function nameFailures(page, slide, before) {
           if (title !== node.name) out.push(`${c}: title "${title}" is not the name "${node.name}"`);
         }
       }
+      // the page indicator: the tree reads "Page i of n", never the shown
+      // "i / n". At the top of the pages i is 1. Then, on the first embed
+      // whose pages can scroll page 1 above the middle of its frame (the line
+      // the viewer's indicator reads), the pages scroll to page 2.
+      const pages = await embed.$$eval(".embedpdf-page", (p) => p.length);
+      const toPage = async (k) => {
+        const moved = await embed.$eval(
+          ".embedpdf-pages",
+          (p, k) => {
+            const target = p.querySelectorAll(".embedpdf-page")[k - 1];
+            p.scrollTop += target.getBoundingClientRect().top - p.getBoundingClientRect().top;
+            p.dispatchEvent(new Event("scroll"));
+            const host = p.getBoundingClientRect();
+            return p.querySelector(".embedpdf-page").getBoundingClientRect().bottom <= host.top + host.height / 2;
+          },
+          k
+        );
+        await new Promise((r) => setTimeout(r, 300));
+        return { moved, text: await treeText(page, toolbar) };
+      };
+      const top = (await toPage(1)).text;
+      if (!top.includes(`Page 1 of ${pages}`)) out.push(`${at}: toolbar text is ${JSON.stringify(top)}, without "Page 1 of ${pages}"`);
+      const slash = top.filter((t) => /\d\s*\/\s*\d/.test(t));
+      if (slash.length) out.push(`${at}: toolbar text ${JSON.stringify(slash)} is read as "i / n"`);
+      if (pages >= 2 && !page2Checked) {
+        const second = await toPage(2);
+        if (second.moved) {
+          page2Checked = `${at}`;
+          if (!second.text.includes(`Page 2 of ${pages}`)) out.push(`${at}: after a scroll to page 2, toolbar text is ${JSON.stringify(second.text)}, without "Page 2 of ${pages}"`);
+        }
+      }
     }
   }
   return { planted, failures: out, embeds: embeds.length };
 }
+
+// the StaticText names under an element in Chrome's accessibility tree
+async function treeText(page, el) {
+  const texts = [];
+  const walk = (n) => {
+    if (!n) return;
+    if (n.role === "StaticText" && n.name) texts.push(n.name);
+    (n.children || []).forEach(walk);
+  };
+  walk(await page.accessibility.snapshot({ root: el, interestingOnly: false }));
+  return texts;
+}
+// the embed that the --expect-name check scrolled to page 2, if any
+let page2Checked = null;
 
 const browser = await puppeteer.launch({
   executablePath: CHROME,
@@ -967,6 +1034,7 @@ try {
         plant,
         planted: nameReports.map((r) => r.planted).find(Boolean) || null,
         embeds: nameReports.reduce((n, r) => n + r.embeds, 0),
+        page2Checked,
         failures: nameReports.flatMap((r) => r.failures),
       }
     : undefined;
