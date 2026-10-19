@@ -47,9 +47,9 @@ one PDF in a subfolder, named with a space once and percent-encoded once. Checks
 - [ ] AC3: After `quarto render`, every `render_check.mjs` and `ios_check.mjs` line in CLAUDE.md "Verify before
       finishing" exits 0. Those lines include `name_test.html` with `render_check.mjs` on the desktop and iphone
       devices and with `ios_check.mjs` in both simulators.
-- [ ] AC4: `version:` in `_extensions/embedpdf/_extension.yml` and `VERSION` in `_extensions/embedpdf/embedpdf.lua`
+- [x] AC4: `version:` in `_extensions/embedpdf/_extension.yml` and `VERSION` in `_extensions/embedpdf/embedpdf.lua`
       both read 1.2.1.
-- [ ] AC5: README's screen-reader note states the embed's name ("PDF: " plus the file name) and that each toolbar
+- [x] AC5: README's screen-reader note states the embed's name ("PDF: " plus the file name) and that each toolbar
       control has one name, with the date and the browsers in which AC1 and AC2 were checked.
 
 ## Coverage
@@ -97,3 +97,8 @@ one PDF in a subfolder, named with a space once and percent-encoded once. Checks
 ## Decisions
 
 ## Review
+
+- 2026-10-18 sync: branch level with `origin/main` (0 commits behind); Copilot round off (no `# Copilot review:` line in PROFILE.md).
+- AC4 evidence (2026-10-18): `grep` reads `version: 1.2.1` at `_extension.yml:3` and `local VERSION = "1.2.1"` at `embedpdf.lua:22`.
+- AC5 evidence (2026-10-18): README.md:89 states the name ("a group named "PDF: " and the PDF's file name, for example "PDF: sample.pdf""), that each toolbar control "has one name, which is also its tooltip", the date 2026-10-18, Chromium's accessibility tree, and Safari in iOS 27.0 iPhone and iPad simulators (attributes only).
+- Consistency gate (2026-10-18): `cairn_validate.py` all checks passed; no IP/GP line changed in DESIGN.md, so `cairn_impact.py` skipped; profile `generic` names no toolchain checks.
