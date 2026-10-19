@@ -1,6 +1,6 @@
 # M009: Text check gaps
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
@@ -109,7 +109,7 @@ slide's canvas wait runs out (render_check); the plants and the `--slow-text` ai
 - [x] T6: Docs and verify. Update both header comments (the text wait, now "at most 10 s" in render_check lines
       60-77 and ios_check lines 35-44, the new plants, `--slow-text`) and any CLAUDE.md note the change makes stale.
       Run every CLAUDE.md line that passes `--expect-text` (AC6), then the full `verify` slot.
-- [ ] T7: Review return 1. Fix pass 1's fix-now findings (Review section): each canvas's page read with the canvas
+- [x] T7: Review return 1. Fix pass 1's fix-now findings (Review section): each canvas's page read with the canvas
       query; a snapshot error on a connected canvas fails; the slow aid saves only filled blocks, stops with the wait,
       and its header claim names the 60 s cap; ios_check's timeout default fits two waits; `stopRun` reports console
       errors; `norender` counts as planted only where an embed was checked; the CLAUDE.md note, probe comment, and
@@ -142,6 +142,7 @@ slide's canvas wait runs out (render_check); the plants and the `--slow-text` ai
 - 2026-10-19: status review; all tasks done, verify slot green.
 - 2026-10-19: review return 1: AC2 — diff-bug #1, a canvas swapped before its page is looked up crashes the tree check (`holder.$` on a null `closest()`); fix with the 15 fix-now findings of pass 1 (Review section) and file row "Text check follow-ups".
 - 2026-10-19: T7 checkpoint (not done): fixes written, row "Text check follow-ups" filed, row "Name plant slide target" narrowed; probes on temporary copies show a swapped canvas passes the tree check and a thrown snapshot fails it ("canvas 1 snapshot failed (probe error)"); the AC and verify lines are running.
+- 2026-10-19: T7 done: the 10 AC1 to AC5 lines give their planned exits and lines (slow-text waits 30086 ms and 30154 ms over 20 pages); full verify slot green: shortcode 40 passed, helpers 85 passed, 54 check lines exit 0. Status review.
 
 ## Decisions
 
