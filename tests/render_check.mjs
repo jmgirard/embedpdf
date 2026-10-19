@@ -187,7 +187,7 @@ const DEVICES = {
 const FLAGS = ["device", "expect-native", "expect-pdfjs", "expect-pages", "expect-links", "expect-failed", "expect-text", "expect-name", "plant", "alone", "remote"];
 const BOOL_FLAGS = ["missing-pdfs"];
 const TEXT_PLANTS = ["notext", "swap", "visible", "gone", "inert", "cvhidden"];
-const TREE_PLANTS = ["nolabel", "canvas", "noname"];
+const TREE_PLANTS = ["nolabel", "canvas", "noname", "detach"];
 const NAME_PLANTS = ["wrongname", "dupdesc", "duplink", "norole", "notoolbar"];
 const INK_PLANTS = ["blank", "nocanvas", "nopages"];
 const args = process.argv.slice(2);
@@ -448,11 +448,12 @@ async function treeFailures(page, slide) {
       await new Promise((r) => setTimeout(r, 100));
     }
   }
-  const planted = await page.evaluate(
+  let planted = await page.evaluate(
     (slide, plant, treePlants) => {
       const root = slide === null ? document : window.Reveal.getSlides()[slide];
       const first = document.querySelector(".embedpdf-pdfjs");
-      if (!treePlants.includes(plant) || !first || !root.contains(first)) return null;
+      // detach is planted in the canvas loop below
+      if (!treePlants.includes(plant) || plant === "detach" || !first || !root.contains(first)) return null;
       const pages = first.querySelectorAll(".embedpdf-page");
       const last = pages[pages.length - 1];
       const target =
@@ -466,6 +467,9 @@ async function treeFailures(page, slide) {
     TREE_PLANTS
   );
   const snap = (el) => page.accessibility.snapshot({ root: el, interestingOnly: false });
+  // a snapshot of an element that left the page may throw; read it as null
+  const snapOrNull = (el) => snap(el).catch(() => null);
+  const connected = (el) => el.evaluate((e) => e.isConnected);
   const allText = (node) => (node ? [node.name || "", ...(node.children || []).map(allText)].join(" ") : "");
   const out = [];
   for (const [i, embed] of embeds.entries()) {
@@ -483,8 +487,26 @@ async function treeFailures(page, slide) {
         if (phrases[j] && !normalize(allText(node)).includes(phrases[j])) out.push(`${at}, page ${j + 1}: tree text lacks "${phrases[j]}"`);
       }
     }
-    for (const [j, c] of canvases.entries()) {
-      const node = await snap(c);
+    // a null snapshot means hidden only for a canvas still in the page. The
+    // viewer swaps a page's canvas when it renders the page again, so a canvas
+    // that left the page is replaced by the page's current canvas, once.
+    const isFirst = await embed.evaluate((e) => e === document.querySelector(".embedpdf-pdfjs"));
+    for (const [j, found] of canvases.entries()) {
+      const holder = await found.evaluateHandle((c) => c.closest(".embedpdf-page"));
+      if (plant === "detach" && isFirst && j === canvases.length - 1) {
+        await found.evaluate((c) => c.remove());
+        planted = plant;
+      }
+      let c = found;
+      let node = await snapOrNull(c);
+      if (!node && !(await connected(c))) {
+        c = await holder.$("canvas");
+        node = c ? await snapOrNull(c) : null;
+        if (!c || (!node && !(await connected(c)))) {
+          out.push(`${at}: canvas ${j + 1} left the page during the accessibility check`);
+          continue;
+        }
+      }
       if (node) out.push(`${at}: canvas ${j + 1} is in the accessibility tree (role ${node.role})`);
     }
     const toolbar = await embed.$(".embedpdf-toolbar");

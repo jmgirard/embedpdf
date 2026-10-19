@@ -94,7 +94,7 @@ slide's canvas wait runs out (render_check); the plants and the `--slow-text` ai
       inert ancestor leaves the block's `inert` property false) and computed `content-visibility`. Add the failure
       lines to `textFailures()` (line 392) and ios_check's text block (line 488). Add `inert` and `cvhidden` to both
       `TEXT_PLANTS` lists and plant blocks. Run the AC1 lines.
-- [ ] T2: Canvas snapshot. In `treeFailures()` (line 466), after a null snapshot read the canvas's `isConnected`;
+- [x] T2: Canvas snapshot. In `treeFailures()` (line 466), after a null snapshot read the canvas's `isConnected`;
       if false, re-query the page's canvas once and judge that one. Add `detach` to `TREE_PLANTS` with its hook
       between finding the canvases and the snapshot. Run the AC2 line.
 - [ ] T3: Whole-page wait in render_check. Move the wait out of `measureText()` into one call before the slide loop
@@ -127,6 +127,7 @@ slide's canvas wait runs out (render_check); the plants and the `--slow-text` ai
 - 2026-10-19: plan gate chose to stop the slide loop at the first canvas wait that runs out over going on, because the run already fails there; falsified by a deck where a later slide's failure lines are needed to find the cause.
 
 - 2026-10-19: T1 done: both scripts walk from each text block to `<html>` and fail on the `inert` attribute or computed `content-visibility: hidden`, naming the element; plants `inert`, `cvhidden`. AC1 runs: render_check both exit 1 with the line for embed 1 page 2; ios_check (iPhone) both exit 1 with that one `failures` entry; unplanted render_check desktop and ios_check iPhone text lines exit 0. ios_check plant lists were edited by a script, not the Edit tool (one slip).
+- 2026-10-19: T2 done: a null canvas snapshot counts as hidden only for a connected canvas; else one snapshot of the page's current canvas; a snapshot that throws reads as null. AC2 run exits 1 with "PDF.js embed 1: canvas 2 left the page during the accessibility check"; `--plant canvas` still exits 1; iphone text line exits 0. Probe (temporary copy, not committed): a canvas swapped for a clone passes the tree check, so the retry path is reached.
 
 ## Decisions
 
