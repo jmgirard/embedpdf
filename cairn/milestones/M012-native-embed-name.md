@@ -150,6 +150,7 @@ Architecture, and CLAUDE.md "Still unverified" follow. Version 1.2.4, no tag.
 - 2026-10-19: T5 done: the 68 check lines of CLAUDE.md "Verify before finishing" (with the `--alone http` reruns and the extra `--device` runs it names) all exit 0, desktop Safari 27.0.1 and the iOS 27.0 iPhone and iPad simulators included; helpers_test 91 passed, 0 failed. The three comment fixes above landed while the batch ran and change no behavior.
 - 2026-10-19: T6 done: README screen-reader paragraph, DESIGN.md Architecture, and a CLAUDE.md "Still unverified" item for the native name, written from the T2–T5 run output.
 - 2026-10-19: implement complete; status review.
+- 2026-10-19: step-7 approval: m012-native-embed-name approved for merge
 
 ## Decisions
 
