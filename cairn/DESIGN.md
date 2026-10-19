@@ -129,7 +129,11 @@ native path never download it. With `embed-resources: true`, Quarto inlines
 the viewer as a `data:` module, the PDF.js files as the scripts' text, and
 each PDF as a `data:` URL in `data-src`. The viewer then loads PDF.js from
 `blob:` URLs of that text, and gives the native `<object>` and the download
-links a `blob:` URL of the PDF (corrected M002). Page rendering goes through one queue shared
+links a `blob:` URL of the PDF (corrected M002). If PDF.js cannot load the PDF (its
+import, `getDocument`, or page 1 fails), the embed shows "This PDF cannot be
+shown here." and an "Open the PDF" link with `target="_blank"`. A PDF from
+another site that sends no `Access-Control-Allow-Origin` header ends there
+(D-004; corrected M003). Page rendering goes through one queue shared
 by every viewer on the page, and canvas size is capped at 8,000,000 pixels
 with device pixel ratio clamped to 2, for constrained mobile devices.
 
@@ -149,5 +153,9 @@ with device pixel ratio clamped to 2, for constrained mobile devices.
   not checked (corrected M001) — observed 2026-10-18.
 - GitHub releases stop at v0.5.0 while tags reach v1.0.2, so the README
   version badge shows 0.5.0 — observed 2026-10-18.
+- In Safari, a PDF.js embed of a PDF from another site fails when an
+  `<object>` on the same page shows the same PDF, even with
+  `Access-Control-Allow-Origin: *` — observed 2026-10-18 (iOS 27.0 iPhone
+  simulator).
 - First paint is fragile. v1.0.1 and v1.0.2 both fixed pages that never
   rendered on load, and the timer-based first paint may still miss cases.

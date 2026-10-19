@@ -85,7 +85,7 @@ blocks cross-site reads.
 - [x] T3: In `tests/ios_check.mjs` add `--remote blocked` (a second server on its own port, the same rewrite), and a
       probe report per embed of AC1's state. Run it with `--plant` style proof: against the v1.1.0 viewer it fails.
       Run the AC4 lines.
-- [ ] T4: Run `curl -I` on each site the docs name (for example GitHub Pages, nbviewer.org). Write the README
+- [x] T4: Run `curl -I` on each site the docs name (for example GitHub Pages, nbviewer.org). Write the README
       "Known limitations" line and the `example.qmd` section (code shown, no live remote embed). Add the AC1 to AC4
       lines to CLAUDE.md "Verify before finishing" and the failure state to DESIGN.md Architecture. `quarto render`.
 
@@ -110,6 +110,7 @@ blocks cross-site reads.
 - 2026-10-18: T3 done: ios_check `--remote blocked` (second server via `serveRemote`, probe reports AC1's state from text and links). AC4 lines exit 0 on iOS 27.0 "embedpdf iPhone" and "embedpdf iPad" (10/10 embeds); with the v1.1.0 viewer swapped into docs/ the iPhone line exits 1 (10 embeds not in the state, fallback link present). Safari's error is only "UnknownErrorException: Load failed".
 - 2026-10-18: failure identity in Safari, by scratch pages (not committed): PDF.js `getDocument` on a cross-port PDF succeeds with `Access-Control-Allow-Origin: *` and fails with no header (both with no `<object>` on the page), so AC4's failure is the header.
 - 2026-10-18: found in Safari (iOS 27.0 iPhone simulator): once an `<object>` on the page loads a cross-origin PDF, a PDF.js `getDocument` of the same URL fails with "Load failed" even with `Access-Control-Allow-Origin: *` (`disableStream`/`disableRange` makes a new URL and loads). So an `ios_check --remote cors` mode fails on example.html, whose `renderer=native` embed shows the same PDF; the mode was dropped. The fix goes to candidate row "Safari shared remote URL"; T4's docs state the limit.
+- 2026-10-18: T4 done: `curl -I` 2026-10-18: jmgirard.github.io/embedpdf/sample.pdf sends `access-control-allow-origin: *`; nbviewer.org/github/jhelvy/cv/blob/main/cv-jph.pdf sends none. README "Known limitations" bullet, `example.qmd` "PDFs on Another Site" section (code only, no live embed; example.html still has 11 embeds), CLAUDE.md remote check block and Safari gotcha, DESIGN.md Architecture and Known issues. `quarto render` exit 0. The simple-english lint hook flags README.md and CLAUDE.md; the added text was rewritten until the counts equal those of the files before this task (10 and 36).
 
 ## Decisions
 

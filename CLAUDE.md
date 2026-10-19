@@ -67,6 +67,23 @@ node tests/ios_check.mjs --device "embedpdf iPhone" --page selfcontained_test.ht
 node tests/ios_check.mjs --device "embedpdf iPad" --page selfcontained_test.html --alone yes --expect-embeds 2
 ```
 
+PDFs on another site: `--remote blocked|cors|missing` serves the PDFs from a
+second server on another port (no `Access-Control-Allow-Origin` header, `*`, or
+HTTP 404). `--expect-failed` counts embeds that show "This PDF cannot be shown
+here." and the "Open the PDF" link. Run each `--remote blocked` iphone line
+again with `--device android`, and again with `--remote missing`. Run the
+desktop line also with `--device mac-safari` and `--device windows-touch`:
+
+```
+node tests/render_check.mjs example.html --remote blocked --device iphone --expect-native 1 --expect-pdfjs 0 --expect-failed 10
+node tests/render_check.mjs revealjs_test.html --remote blocked --device iphone --expect-native 1 --expect-pdfjs 0 --expect-failed 2
+node tests/render_check.mjs example.html --remote cors --device iphone --expect-native 1 --expect-pdfjs 10 --expect-pages 2 --expect-failed 0
+node tests/render_check.mjs example.html --remote cors --device android --expect-native 1 --expect-pdfjs 10 --expect-pages 2 --expect-failed 0
+node tests/render_check.mjs example.html --remote blocked --expect-native 9 --expect-pdfjs 0 --expect-failed 2
+node tests/ios_check.mjs --device "embedpdf iPhone" --remote blocked
+node tests/ios_check.mjs --device "embedpdf iPad" --remote blocked
+```
+
 `render_check.mjs` serves `docs/` itself with `tests/serve_docs.mjs`. If every
 PDF.js canvas has ink and the counts match, it exits 0. If Google Chrome is not
 installed, set `CHROME_PATH` to another Chrome or Chromium binary. Do not serve
@@ -109,6 +126,10 @@ errors.
   `text/x-embedpdf-worker` scripts: their `src` on a normal page, their text
   when inlined. Quarto inlines each PDF into `data-src` but leaves `<a href>`
   links at the file, so the viewer points the download links at the inlined PDF.
+- In Safari, once an `<object>` on the page loads a PDF from another origin, a
+  PDF.js `getDocument` of the same URL fails ("Load failed"), even with
+  `Access-Control-Allow-Origin: *`. So `ios_check.mjs` has no `--remote cors`:
+  `example.html`'s `renderer=native` embed shows the same PDF.
 - `quarto render` renders only `*.qmd` (`_quarto.yml`), so `cairn/` stays out
   of `docs/`.
 - The viewer serializes rendering (one page at a time, shared PDF.js worker) and

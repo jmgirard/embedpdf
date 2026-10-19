@@ -109,6 +109,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#hide-the-pdf.js-toolbar" id="toc-hide-the-pdf.js-toolbar" class="nav-link" data-scroll-target="#hide-the-pdf.js-toolbar">Hide the PDF.js toolbar</a></li>
   <li><a href="#setting-defaults-for-the-whole-document-or-project" id="toc-setting-defaults-for-the-whole-document-or-project" class="nav-link" data-scroll-target="#setting-defaults-for-the-whole-document-or-project">Setting defaults for the whole document or project</a></li>
   </ul></li>
+  <li><a href="#pdfs-on-another-site" id="toc-pdfs-on-another-site" class="nav-link" data-scroll-target="#pdfs-on-another-site">PDFs on Another Site</a></li>
   <li><a href="#when-javascript-is-disabled" id="toc-when-javascript-is-disabled" class="nav-link" data-scroll-target="#when-javascript-is-disabled">When JavaScript is Disabled</a></li>
   </ul>
 </nav>
@@ -263,6 +264,17 @@ Note
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">renderer</span><span class="kw">:</span><span class="at"> pdfjs</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">height</span><span class="kw">:</span><span class="at"> </span><span class="dv">600</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
+</section>
+<section id="pdfs-on-another-site" class="level2">
+<h2 class="anchored" data-anchor-id="pdfs-on-another-site">PDFs on Another Site</h2>
+<p>You can give the shortcode the URL of a PDF on another site:</p>
+<p><code>{{&lt; pdf https://example.com/report.pdf &gt;}}</code></p>
+<p>This section is about pages that are not self-contained. On desktop, the browser’s built-in viewer shows such a PDF. PDF.js is different, because your page reads the PDF itself. To let your page read a PDF from another site, the browser needs the header <code>Access-Control-Allow-Origin: *</code> from that site with the PDF. This applies to every PDF.js embed: on iPhone, iPad, and Android, and wherever you set <code>renderer=pdfjs</code>.</p>
+<p>If the site does not send the header, the embed shows “This PDF cannot be shown here.” and an “Open the PDF” link. The link opens the PDF in a new tab.</p>
+<p>On 2026-10-18, GitHub Pages sent this header with a PDF (<a href="https://jmgirard.github.io/embedpdf/sample.pdf">sample.pdf</a>), and nbviewer.org did not.</p>
+<p>To avoid the problem, put the PDF in your Quarto project and list it under <code>resources</code> in the YAML header. Then give the shortcode its relative path, for example <code>{{&lt; pdf cv.pdf &gt;}}</code>. If a script makes the PDF somewhere else, copy it into the project before you render.</p>
+<p>In Safari, a PDF.js embed of a PDF from another site can fail even with the header. The cause is an embed with <code>renderer=native</code> on the same page that shows the same PDF. This was seen on 2026-10-18 in an iOS 27.0 iPhone simulator.</p>
+<p>These cases were checked on 2026-10-18 in Chromium with an emulated iPhone and an emulated Android phone. Android was checked by emulation in Chromium, not on a device. They were also checked in Safari in iOS 27.0 iPhone and iPad simulators, with a site that sends no header.</p>
 </section>
 <section id="when-javascript-is-disabled" class="level2">
 <h2 class="anchored" data-anchor-id="when-javascript-is-disabled">When JavaScript is Disabled</h2>
