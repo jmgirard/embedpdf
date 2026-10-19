@@ -63,17 +63,21 @@
 //                          <ms> is at most 9000 and pages × <ms> is at most
 //                          50000, which leaves room for late timers under the
 //                          10 s and 60 s limits.
-//   --expect-name "<file name>"
+//   --expect-name "<file name>" | "<name 1>|<name 2>|..."
 //                          fail unless each PDF.js embed has role="group" and
 //                          aria-label "PDF: <file name>" in the DOM (Safari's
 //                          accessibility tree is not read); cannot be
 //                          combined with --remote or --missing-pdfs. One name
-//                          for every embed: the "|" list is render_check's.
-//   --plant wrongname|norole
+//                          stands for the --expect-embeds embeds; a "|" list
+//                          gives one name per embed in page order. "-" and
+//                          the " (k of n)" numbering work as in
+//                          render_check (tests/expect_names.mjs).
+//   --plant wrongname|norole|nonumber
 //                          with --expect-name: change the first PDF.js
 //                          embed's aria-label to "PDF: wrong.pdf"
-//                          (wrongname), or remove its role attribute
-//                          (norole); the check must then fail
+//                          (wrongname), remove its role attribute (norole),
+//                          or remove the " (k of n)" from its aria-label
+//                          (nonumber); the check must then fail
 //   --alone yes|no         yes: serve a copy of the page from an empty
 //                          temporary directory instead of docs/ (default no)
 //   --remote blocked       serve the PDFs from a second server on another port
@@ -110,6 +114,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, docsFile, DOCS } from "./serve_docs.mjs";
 import { inkInPixels } from "./ink.mjs";
+import { expectedNames } from "./expect_names.mjs";
 
 const args = process.argv.slice(2);
 const FLAGS = ["device", "page", "expect-embeds", "expect-pages", "expect-text", "expect-name", "port", "timeout", "screenshot", "shot-embed", "plant", "alone", "remote", "slow-text"];
@@ -195,7 +200,7 @@ if ("slow-text" in parsed && !(phrases && /^\d+$/.test(slowText) && Number(slowT
   process.exit(2);
 }
 const TEXT_PLANTS = ["notext", "swap", "visible", "inert", "cvhidden"];
-const NAME_PLANTS = ["wrongname", "norole"];
+const NAME_PLANTS = ["wrongname", "norole", "nonumber"];
 // planted before the text wait; needs --expect-text
 const WAIT_PLANTS = ["unhydrated"];
 if (plant && !["blank", "missing", ...NAME_PLANTS, ...TEXT_PLANTS, ...WAIT_PLANTS].includes(plant)) {
@@ -203,10 +208,13 @@ if (plant && !["blank", "missing", ...NAME_PLANTS, ...TEXT_PLANTS, ...WAIT_PLANT
   process.exit(2);
 }
 const expectName = opt("expect-name", null);
-if (expectName === "") {
-  console.error("ios_check: --expect-name needs a file name");
+if (expectName !== null && expectName.split("|").some((n) => !n)) {
+  console.error("ios_check: --expect-name needs a non-empty file name for each embed");
   process.exit(2);
 }
+// the full names, numbered where they repeat, as the viewer numbers them; one
+// name stands for the --expect-embeds embeds
+const expectLabels = expectName === null ? null : expectedNames(expectName.split("|"), expectEmbeds);
 if (expectName && (remote || missingPdfs)) {
   console.error("ios_check: --expect-name cannot be combined with --remote or --missing-pdfs (no embed shows a PDF there)");
   process.exit(2);
@@ -388,6 +396,12 @@ const PROBE = `<script>
     const first = embeds().find((el) => kind(el) === "pdfjs");
     if (first) { first.removeAttribute("role"); namePlanted = plant; }
   }
+  if (plant === "nonumber") {
+    const first = embeds().find((el) => kind(el) === "pdfjs");
+    const label = first ? first.getAttribute("aria-label") || "" : "";
+    const bare = label.replace(/ \\(\\d+ of \\d+\\)$/, "");
+    if (bare !== label) { first.setAttribute("aria-label", bare); namePlanted = plant; }
+  }
 
   if (plant === "blank" || plant === "missing") {
     const first = embeds().find((el) => kind(el) === "pdfjs");
@@ -555,7 +569,10 @@ try {
   else if (checked.length !== expectEmbeds) {
     failures.push(`expected ${expectEmbeds} embeds not set to renderer=native, found ${checked.length}`);
   }
-  for (const e of report.stuck ? [] : checked) {
+  if (expectLabels && !report.stuck && expectLabels.length !== checked.length) {
+    failures.push(`--expect-name gives ${expectLabels.length} names for ${checked.length} embeds not set to renderer=native`);
+  }
+  for (const [i, e] of (report.stuck ? [] : checked).entries()) {
     if (remote) {
       // Safari names no cause beyond "Load failed"; it must be the fetch of
       // this embed's remote PDF that failed, not the PDF.js import
@@ -577,8 +594,8 @@ try {
     else if (e.pages !== expectPages) failures.push(`embed ${e.index}: ${e.pages} page containers, expected ${expectPages}`);
     else if (!e.ink.every(Boolean)) failures.push(`embed ${e.index}: pages without ink: ${e.ink.map((v, i) => (v ? null : i + 1)).filter(Boolean).join(", ")}`);
     // --expect-name: the embed's role and name, read from the DOM
-    if (expectName && !remote && e.renderer === "pdfjs") {
-      const name = "PDF: " + expectName;
+    if (expectLabels && !remote && e.renderer === "pdfjs") {
+      const name = expectLabels[i];
       if (e.role !== "group") failures.push(`embed ${e.index}: role attribute is ${e.role}, not group`);
       if (e.label !== name) failures.push(`embed ${e.index}: aria-label is "${e.label}", not "${name}"`);
     }

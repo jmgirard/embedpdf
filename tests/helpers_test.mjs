@@ -1,5 +1,5 @@
 // Unit tests for the helpers the browser checks share: the ink rule
-// (tests/ink.mjs), and in tests/serve_docs.mjs the docs/ server, the remote
+// (tests/ink.mjs), the expected embed names (tests/expect_names.mjs), and in tests/serve_docs.mjs the docs/ server, the remote
 // server, pointPdfsAt, embedSrcsOffRemote, and docsFile. No browser.
 //
 // Usage:  node tests/helpers_test.mjs      # must print "N passed, 0 failed"
@@ -7,6 +7,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { inkInPixels } from "./ink.mjs";
+import { expectedNames } from "./expect_names.mjs";
 import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, docsFile, REMOTE_MODES, DOCS } from "./serve_docs.mjs";
 
 let passed = 0;
@@ -41,6 +42,16 @@ check("ink: no pixels is no ink", inkInPixels(new Uint8ClampedArray(0)) === fals
 check("ink: rule runs from its source text", new Function("return " + inkInPixels.toString())()(pixels(10, WHITE, 3, [0, 0, 255, 255])) === true);
 // ios_check pastes the source into an HTML <script>, which "</script" or "<!--" would break
 check("ink: source text is safe inside a <script>", !/<\/script|<!--/i.test(inkInPixels.toString()));
+
+// --- expectedNames ----------------------------------------------------------
+const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const en = (values, count) => expectedNames(values, count);
+check("names: one name for one embed has no number", same(en(["a.pdf"], 1), ["PDF: a.pdf"]), JSON.stringify(en(["a.pdf"], 1)));
+check("names: one name for three embeds is numbered", same(en(["a.pdf"], 3), ["PDF: a.pdf (1 of 3)", "PDF: a.pdf (2 of 3)", "PDF: a.pdf (3 of 3)"]), JSON.stringify(en(["a.pdf"], 3)));
+check("names: distinct list names have no number", same(en(["b.pdf", "a.pdf"], 9), ["PDF: b.pdf", "PDF: a.pdf"]), JSON.stringify(en(["b.pdf", "a.pdf"], 9)));
+check("names: repeats in a list are numbered in list order", same(en(["a.pdf", "b.pdf", "a.pdf"], 3), ["PDF: a.pdf (1 of 2)", "PDF: b.pdf", "PDF: a.pdf (2 of 2)"]), JSON.stringify(en(["a.pdf", "b.pdf", "a.pdf"], 3)));
+check("names: - is the bare PDF", same(en(["a.pdf", "-"], 2), ["PDF: a.pdf", "PDF"]), JSON.stringify(en(["a.pdf", "-"], 2)));
+check("names: two - are numbered", same(en(["-"], 2), ["PDF (1 of 2)", "PDF (2 of 2)"]), JSON.stringify(en(["-"], 2)));
 
 // --- pointPdfsAt ------------------------------------------------------------
 const R = "http://127.0.0.1:9000/";

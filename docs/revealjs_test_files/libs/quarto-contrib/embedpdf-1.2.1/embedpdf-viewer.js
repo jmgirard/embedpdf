@@ -418,6 +418,35 @@ function embedName(el) {
   return name ? "PDF: " + name : "PDF";
 }
 
+function usesPdfjs(el) {
+  const renderer = el.dataset.renderer || "auto";
+  return !(renderer === "native" || (renderer === "auto" && nativeSupported()));
+}
+
+// Each embed's name, by placeholder. PDF.js embeds that share a name are
+// numbered "(k of n)" in document order (a RevealJS deck holds all its slides
+// in the document), so a screen reader can tell them apart. The count takes
+// each embed by the renderer it gets here, whether or not its PDF loads.
+function embedNames(placeholders) {
+  const names = new Map();
+  const total = new Map();
+  for (const el of placeholders) {
+    if (!el.dataset.src || !usesPdfjs(el)) continue;
+    const name = embedName(el);
+    names.set(el, name);
+    total.set(name, (total.get(name) || 0) + 1);
+  }
+  const seen = new Map();
+  for (const [el, name] of names) {
+    const n = total.get(name);
+    if (n < 2) continue;
+    const k = (seen.get(name) || 0) + 1;
+    seen.set(name, k);
+    names.set(el, `${name} (${k} of ${n})`);
+  }
+  return names;
+}
+
 async function hydrate(el, name) {
   const opts = {
     name,
@@ -458,8 +487,7 @@ async function hydrate(el, name) {
       a.setAttribute("download", opts.filename);
     }
   }
-  const useNative = opts.renderer === "native" || (opts.renderer === "auto" && nativeSupported());
-  if (useNative) {
+  if (!usesPdfjs(el)) {
     hydrateNative(el, opts);
   } else {
     await hydratePdfjs(el, opts);
@@ -469,7 +497,9 @@ async function hydrate(el, name) {
 // a PDF.js embed that cannot load its PDF shows the failure message
 // (showFailure); any other failure leaves the no-JS fallback content in place;
 // one failure never stops the others
-document.querySelectorAll("div.embedpdf").forEach((el) => {
+const placeholders = [...document.querySelectorAll("div.embedpdf")];
+const names = embedNames(placeholders);
+placeholders.forEach((el) => {
   const label = /^data:/i.test(el.dataset.src || "") ? "an inlined PDF" : el.dataset.src;
-  hydrate(el, embedName(el)).catch((err) => console.error("embedpdf: failed to render " + label, err));
+  hydrate(el, names.get(el)).catch((err) => console.error("embedpdf: failed to render " + label, err));
 });

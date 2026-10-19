@@ -119,23 +119,30 @@
 //                       embed has role="group" and aria-label "PDF: <file
 //                       name>" in the DOM, and Chrome's accessibility tree
 //                       gives it role group and that name. One name applies
-//                       to every PDF.js embed. A "|" list gives one name per
+//                       to as many PDF.js embeds as --expect-pdfjs gives,
+//                       which it then needs. A "|" list gives one name per
 //                       PDF.js embed, in page order (slide order on a
 //                       RevealJS page), and must name all of them, so a file
-//                       name that holds "|" cannot be given. Also fail unless
+//                       name that holds "|" cannot be given. A name "-"
+//                       stands for an embed named "PDF" alone. A name that
+//                       the expanded list holds n > 1 times is expected as
+//                       "PDF: <file name> (k of n)", k counting in list
+//                       order (tests/expect_names.mjs). Also fail unless
 //                       each toolbar control (zoom out, zoom in, download)
 //                       has a non-empty tree name, no tree description equal
 //                       to that name, and a title equal to that name, and
 //                       unless each embed without a toolbar has
 //                       data-toolbar="false".
-//   --plant wrongname|dupdesc|duplink|norole|notoolbar
+//   --plant wrongname|dupdesc|duplink|norole|notoolbar|nonumber
 //                       with --expect-name, plant a defect in the first
 //                       PDF.js embed; the run must then fail: wrongname
 //                       changes its aria-label to "PDF: wrong.pdf", dupdesc
 //                       gives its zoom-in button an aria-label equal to its
 //                       title, duplink does the same to its download link,
 //                       norole removes its role attribute, notoolbar
-//                       removes its toolbar.
+//                       removes its toolbar, nonumber removes the " (k of
+//                       n)" from its aria-label (nothing to plant in when it
+//                       has none).
 // Set CHROME_PATH to use another Chrome or Chromium binary.
 //
 // On a RevealJS page the check goes to each slide with Reveal.slide() and
@@ -160,6 +167,7 @@ import { pathToFileURL } from "node:url";
 import puppeteer from "puppeteer-core";
 import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, docsFile, REMOTE_MODES, DOCS } from "./serve_docs.mjs";
 import { inkInPixels } from "./ink.mjs";
+import { expectedNames } from "./expect_names.mjs";
 
 // For iphone and ipad, userAgent, maxTouchPoints, and pdfViewerEnabled are what
 // Safari reported in iOS 27.0 simulators (iPhone 17, iPad Air 11-inch M4) via
@@ -217,7 +225,7 @@ const FLAGS = ["device", "expect-native", "expect-pdfjs", "expect-pages", "expec
 const BOOL_FLAGS = ["missing-pdfs"];
 const TEXT_PLANTS = ["notext", "swap", "visible", "gone", "inert", "cvhidden"];
 const TREE_PLANTS = ["nolabel", "canvas", "noname", "detach"];
-const NAME_PLANTS = ["wrongname", "dupdesc", "duplink", "norole", "notoolbar"];
+const NAME_PLANTS = ["wrongname", "dupdesc", "duplink", "norole", "notoolbar", "nonumber"];
 const INK_PLANTS = ["blank", "nocanvas", "nopages"];
 // planted before the text wait (unhydrated) or before the page loads (norender)
 const WAIT_PLANTS = ["unhydrated", "norender"];
@@ -273,6 +281,12 @@ if (expectNames && expectNames.some((n) => !n)) {
   console.error("render_check: --expect-name needs a non-empty file name for each embed");
   process.exit(2);
 }
+if (expectNames && expectNames.length === 1 && !/^\d+$/.test(expectPdfjs ?? "")) {
+  console.error("render_check: --expect-name with one name needs --expect-pdfjs, the number of embeds it names");
+  process.exit(2);
+}
+// the full names, numbered where they repeat, as the viewer numbers them
+const expectLabels = expectNames && expectedNames(expectNames, Number(expectPdfjs));
 if (
   plant &&
   !(
@@ -624,8 +638,8 @@ async function treeFailures(page, slide) {
 }
 
 // --expect-name, after the pages scroll: each PDF.js embed under a root is a
-// group named "PDF: <file name>", in the DOM and in Chrome's accessibility
-// tree. The check waits at most 10 s for every embed under the root to be
+// group with its expected name (expectLabels), in the DOM and in Chrome's
+// accessibility tree. The check waits at most 10 s for every embed under the root to be
 // hydrated. A name plant goes into the page's first PDF.js embed, when it is
 // under the root. `before` is the number of PDF.js embeds on earlier slides,
 // so that embed i of the page takes name i of a "|" list.
@@ -653,6 +667,12 @@ async function nameFailures(page, slide, before) {
         link.setAttribute("aria-label", link.title);
       }
       if (plant === "norole") first.removeAttribute("role");
+      if (plant === "nonumber") {
+        const label = first.getAttribute("aria-label") || "";
+        const bare = label.replace(/ \(\d+ of \d+\)$/, "");
+        if (bare === label) return { planted: null, stuck };
+        first.setAttribute("aria-label", bare);
+      }
       if (plant === "notoolbar") {
         const toolbar = first.querySelector(".embedpdf-toolbar");
         if (!toolbar) return { planted: null, stuck };
@@ -681,12 +701,11 @@ async function nameFailures(page, slide, before) {
   if (stillStuck) out.push(`${stillStuck} embed(s)${where || " on the page"} still not hydrated after 10 s`);
   for (const [i, embed] of embeds.entries()) {
     const at = `PDF.js embed ${i + 1}${where}`;
-    const expected = expectNames.length === 1 ? expectNames[0] : expectNames[before + i];
-    if (expected === undefined) {
+    const name = expectLabels[before + i];
+    if (name === undefined) {
       out.push(`${at}: --expect-name gives no name for PDF.js embed ${before + i + 1} of the page`);
       continue;
     }
-    const name = "PDF: " + expected;
     const attrs = await embed.evaluate((el) => ({ role: el.getAttribute("role"), label: el.getAttribute("aria-label") }));
     if (attrs.role !== "group") out.push(`${at}: role attribute is ${attrs.role}, not group`);
     if (attrs.label !== name) out.push(`${at}: aria-label is "${attrs.label}", not "${name}"`);
@@ -967,9 +986,9 @@ try {
       console.error(`render_check: --expect-name checked ${names.embeds} embeds, of ${res.pdfjs} PDF.js embeds`);
       process.exitCode = 1;
     }
-    // a "|" list names each PDF.js embed, so it must name all of them
-    if (expectNames.length > 1 && expectNames.length !== names.embeds) {
-      console.error(`render_check: --expect-name gives ${expectNames.length} names for ${names.embeds} PDF.js embeds`);
+    // the names given must name every PDF.js embed checked
+    if (expectLabels.length !== names.embeds) {
+      console.error(`render_check: --expect-name gives ${expectLabels.length} names for ${names.embeds} PDF.js embeds`);
       process.exitCode = 1;
     }
     for (const f of names.failures) console.error("render_check: " + f);
