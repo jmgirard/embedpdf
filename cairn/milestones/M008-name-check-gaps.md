@@ -223,3 +223,7 @@ Pass 2, 2026-10-18, at 4471ba4 (code as of f04754f; later commits touch `cairn/`
   standing note "Run each `--alone file` line again with `--alone http`" covers it, as for the other
   self-contained lines).
 - ripple #2: row "Name plant slide target" names only exit 2 and a wrong plant — fix now (row reworded).
+- Fix-now commits of pass 2: diff-bug #1, #2, #3, #4, #6, #8, ripple #2, fixed c864245. Re-run at c864245: the 25
+  swept CLAUDE.md lines exit 0; plants duplink, norole, dupdesc, notoolbar, wrongname (percent_test), the swapped
+  revealjs list, and ios_check norole exit 1 with their failure lines; the never-hydrated probe exits 1 with "1
+  embed(s) on the page still not hydrated after 10 s".
