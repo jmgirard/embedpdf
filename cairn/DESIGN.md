@@ -133,7 +133,10 @@ links a `blob:` URL of the PDF (corrected M002). If PDF.js cannot load the PDF (
 import, `getDocument`, or page 1 fails), the embed shows "This PDF cannot be
 shown here." and an "Open the PDF" link with `target="_blank"`. A PDF from
 another site that sends no `Access-Control-Allow-Origin` header ends there
-(D-004; corrected M003). Page rendering goes through one queue shared
+(D-004; corrected M003). For an inlined PDF the link is instead "Download the
+PDF" to its `blob:` URL, with no target. Its `download` name is the file name.
+If an inlined PDF's `data:` address does not decode, either renderer shows the
+message with no link (M011). Page rendering goes through one queue shared
 by every viewer on the page, and canvas size is capped at 8,000,000 pixels
 with device pixel ratio clamped to 2, for constrained mobile devices. For
 screen readers, a PDF.js embed is a group named "PDF: " and its file name,
@@ -173,5 +176,9 @@ load on the same queue, and a text task runs only when no page render waits
   `<object>` on the same page shows the same PDF, even with
   `Access-Control-Allow-Origin: *` — observed 2026-10-18 (iOS 27.0 iPhone
   simulator).
+- An inlined PDF whose `data:` address the browser cannot decode shows "This
+  PDF cannot be shown here." with no link. IP2's usable fallback is not met
+  there. Before M011 the embed kept a link to a file the page does not ship.
+  Its `button` link still names that file (observed 2026-10-19).
 - First paint is fragile. v1.0.1 and v1.0.2 both fixed pages that never
   rendered on load, and the timer-based first paint may still miss cases.
