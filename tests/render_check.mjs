@@ -69,6 +69,13 @@
 //                       aria-label, canvas removes the last canvas's
 //                       aria-hidden, noname removes the zoom-out button's
 //                       aria-label. Needs --expect-text.
+//   --expect-name "<file name>"
+//                       after the pages are scrolled, fail unless each PDF.js
+//                       embed has role="group" and aria-label "PDF: <file
+//                       name>" in the DOM, and Chrome's accessibility tree
+//                       gives it role group and that name.
+//   --plant wrongname   with --expect-name: change the first PDF.js embed's
+//                       aria-label to "PDF: wrong.pdf"; the run must then fail.
 // Set CHROME_PATH to use another Chrome or Chromium binary.
 //
 // On a RevealJS page the check goes to each slide with Reveal.slide() and
@@ -137,9 +144,10 @@ const DEVICES = {
 
 // one optional page or URL, plus flags that each take a value; anything else
 // (a misspelled flag, --flag=value) is an error rather than silently ignored
-const FLAGS = ["device", "expect-native", "expect-pdfjs", "expect-pages", "expect-links", "expect-failed", "expect-text", "plant", "alone", "remote"];
+const FLAGS = ["device", "expect-native", "expect-pdfjs", "expect-pages", "expect-links", "expect-failed", "expect-text", "expect-name", "plant", "alone", "remote"];
 const TEXT_PLANTS = ["notext", "swap", "visible", "gone"];
 const TREE_PLANTS = ["nolabel", "canvas", "noname"];
+const NAME_PLANTS = ["wrongname"];
 const args = process.argv.slice(2);
 const flags = {};
 const positional = [];
@@ -175,8 +183,18 @@ if (phrases && phrases.some((p) => !p)) {
   console.error("render_check: --expect-text needs a non-empty phrase for each page");
   process.exit(2);
 }
-if (plant && (!phrases || ![...TEXT_PLANTS, ...TREE_PLANTS].includes(plant))) {
-  console.error(`render_check: --plant must be ${[...TEXT_PLANTS, ...TREE_PLANTS].join(", ")}, with --expect-text`);
+const expectName = flags["expect-name"] ?? null;
+if (expectName === "") {
+  console.error("render_check: --expect-name needs a file name");
+  process.exit(2);
+}
+if (
+  plant &&
+  !((phrases && [...TEXT_PLANTS, ...TREE_PLANTS].includes(plant)) || (expectName && NAME_PLANTS.includes(plant)))
+) {
+  console.error(
+    `render_check: --plant must be ${[...TEXT_PLANTS, ...TREE_PLANTS].join(", ")} with --expect-text, or ${NAME_PLANTS.join(", ")} with --expect-name`
+  );
   process.exit(2);
 }
 if (alone && alone !== "http" && alone !== "file") {
@@ -385,6 +403,43 @@ async function treeFailures(page, slide) {
   return { planted, failures: out, embeds: embeds.length };
 }
 
+// --expect-name, after the pages scroll: each PDF.js embed under a root is a
+// group named "PDF: <file name>", in the DOM and in Chrome's accessibility
+// tree. A name plant goes into the page's first PDF.js embed, when it is under
+// the root.
+async function nameFailures(page, slide) {
+  const where = slide === null ? "" : ` on slide ${slide + 1}`;
+  const root = slide === null ? page : (await page.evaluateHandle((k) => window.Reveal.getSlides()[k], slide)).asElement();
+  const planted = await page.evaluate(
+    (slide, plant, namePlants) => {
+      const root = slide === null ? document : window.Reveal.getSlides()[slide];
+      const first = document.querySelector(".embedpdf-pdfjs");
+      if (!namePlants.includes(plant) || !first || !root.contains(first)) return null;
+      first.setAttribute("aria-label", "PDF: wrong.pdf");
+      return plant;
+    },
+    slide,
+    plant,
+    NAME_PLANTS
+  );
+  const name = "PDF: " + expectName;
+  const embeds = await root.$$(".embedpdf-pdfjs");
+  const out = [];
+  for (const [i, embed] of embeds.entries()) {
+    const at = `PDF.js embed ${i + 1}${where}`;
+    const attrs = await embed.evaluate((el) => ({ role: el.getAttribute("role"), label: el.getAttribute("aria-label") }));
+    if (attrs.role !== "group") out.push(`${at}: role attribute is ${attrs.role}, not group`);
+    if (attrs.label !== name) out.push(`${at}: aria-label is "${attrs.label}", not "${name}"`);
+    const node = await page.accessibility.snapshot({ root: embed, interestingOnly: false });
+    if (!node) out.push(`${at}: not in the accessibility tree`);
+    else {
+      if (node.role !== "group") out.push(`${at}: tree role is ${node.role}, not group`);
+      if (node.name !== name) out.push(`${at}: tree name is "${node.name}", not "${name}"`);
+    }
+  }
+  return { planted, failures: out, embeds: embeds.length };
+}
+
 const browser = await puppeteer.launch({
   executablePath: CHROME,
   headless: "new",
@@ -431,6 +486,7 @@ try {
     }, slide);
   const textReports = [];
   const treeReports = [];
+  const nameReports = [];
   if (slides) {
     for (let k = 0; k < slides; k++) {
       await page.evaluate(async (k) => {
@@ -441,6 +497,7 @@ try {
       if (phrases) textReports.push(await measureText(page, k));
       await scrollPages(k);
       if (phrases) treeReports.push(await treeFailures(page, k));
+      if (expectName) nameReports.push(await nameFailures(page, k));
     }
   } else {
     if (phrases) textReports.push(await measureText(page, null));
@@ -455,6 +512,7 @@ try {
   }
   await new Promise((r) => setTimeout(r, 4000));
   if (phrases && !slides) treeReports.push(await treeFailures(page, null));
+  if (expectName && !slides) nameReports.push(await nameFailures(page, null));
 
   const res = await page.evaluate(async () => {
     const hasInk = (c) => {
@@ -536,9 +594,34 @@ try {
         failures: [...textReports.flatMap(textFailures), ...treeReports.flatMap((r) => r.failures)],
       }
     : undefined;
-  console.log(JSON.stringify({ device: deviceName || "chrome", alone, remote, ...res, text, consoleErrors }, null, 2));
+  const names = expectName
+    ? {
+        expectName,
+        plant,
+        planted: nameReports.map((r) => r.planted).find(Boolean) || null,
+        embeds: nameReports.reduce((n, r) => n + r.embeds, 0),
+        failures: nameReports.flatMap((r) => r.failures),
+      }
+    : undefined;
+  console.log(JSON.stringify({ device: deviceName || "chrome", alone, remote, ...res, text, names, consoleErrors }, null, 2));
+  if (names) {
+    if (plant && NAME_PLANTS.includes(plant) && !names.planted) {
+      console.error(`render_check: --plant ${plant} found nothing to plant in`);
+      await browser.close();
+      server?.close();
+      remoteServer?.close();
+      process.exit(2);
+    }
+    // every PDF.js embed must have been checked
+    if (names.embeds !== res.pdfjs || res.pdfjs === 0) {
+      console.error(`render_check: --expect-name checked ${names.embeds} embeds, of ${res.pdfjs} PDF.js embeds`);
+      process.exitCode = 1;
+    }
+    for (const f of names.failures) console.error("render_check: " + f);
+    if (names.failures.length) process.exitCode = 1;
+  }
   if (text) {
-    if (plant && !text.planted) {
+    if (plant && !NAME_PLANTS.includes(plant) && !text.planted) {
       console.error(`render_check: --plant ${plant} found nothing to plant in`);
       await browser.close();
       server?.close();

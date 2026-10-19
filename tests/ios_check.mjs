@@ -40,6 +40,13 @@
 //                          or an ancestor. Whitespace is collapsed first.
 //                          Checks only embeds not set to renderer=native,
 //                          and is skipped under --remote.
+//   --expect-name "<file name>"
+//                          fail unless each PDF.js embed has role="group" and
+//                          aria-label "PDF: <file name>" in the DOM (Safari's
+//                          accessibility tree is not read)
+//   --plant wrongname      with --expect-name: change the first PDF.js
+//                          embed's aria-label to "PDF: wrong.pdf"; the check
+//                          must then fail
 //   --alone yes|no         yes: serve a copy of the page from an empty
 //                          temporary directory instead of docs/ (default no)
 //   --remote blocked       serve the PDFs from a second server on another port
@@ -63,7 +70,7 @@ import { execFileSync } from "node:child_process";
 import { serveDocs, serveRemote, pointPdfsAt, DOCS } from "./serve_docs.mjs";
 
 const args = process.argv.slice(2);
-const FLAGS = ["device", "page", "expect-embeds", "expect-pages", "expect-text", "port", "timeout", "screenshot", "shot-embed", "plant", "alone", "remote"];
+const FLAGS = ["device", "page", "expect-embeds", "expect-pages", "expect-text", "expect-name", "port", "timeout", "screenshot", "shot-embed", "plant", "alone", "remote"];
 for (let i = 0; i < args.length; i += 2) {
   if (!FLAGS.includes(args[i].replace(/^--/, "")) || !args[i].startsWith("--") || i + 1 >= args.length) {
     console.error(`ios_check: unexpected argument "${args[i]}" (flags: --${FLAGS.join(", --")}, each with a value)`);
@@ -114,8 +121,17 @@ if (phrases && remote) {
   process.exit(2);
 }
 const TEXT_PLANTS = ["notext", "swap", "visible"];
-if (plant && !["blank", "missing", ...TEXT_PLANTS].includes(plant)) {
-  console.error("ios_check: --plant must be blank, missing, notext, swap, or visible");
+if (plant && !["blank", "missing", "wrongname", ...TEXT_PLANTS].includes(plant)) {
+  console.error("ios_check: --plant must be blank, missing, notext, swap, visible, or wrongname");
+  process.exit(2);
+}
+const expectName = opt("expect-name", null);
+if (expectName === "") {
+  console.error("ios_check: --expect-name needs a file name");
+  process.exit(2);
+}
+if (plant === "wrongname" && !expectName) {
+  console.error("ios_check: --plant wrongname needs --expect-name");
   process.exit(2);
 }
 if (TEXT_PLANTS.includes(plant) && !phrases) {
@@ -222,6 +238,12 @@ const PROBE = `<script>
   }
   await sleep(1000);
 
+  let namePlanted = "";
+  if (plant === "wrongname") {
+    const first = embeds().find((el) => kind(el) === "pdfjs");
+    if (first) { first.setAttribute("aria-label", "PDF: wrong.pdf"); namePlanted = plant; }
+  }
+
   if (plant === "blank" || plant === "missing") {
     const first = embeds().find((el) => kind(el) === "pdfjs");
     const pages = first ? first.querySelectorAll(".embedpdf-page") : [];
@@ -250,6 +272,7 @@ const PROBE = `<script>
     viewer: [...document.scripts].map((s) => s.src).find((s) => /embedpdf-viewer\\.js/.test(s)) || "",
     plant,
     textPlanted,
+    namePlanted,
     textWaitedMs,
     embeds: embeds().map((el, i) => {
       const pages = [...el.querySelectorAll(".embedpdf-page")];
@@ -271,6 +294,8 @@ const PROBE = `<script>
         pages: pages.length,
         ink: pages.map((p) => { const c = p.querySelector("canvas"); return !!c && hasInk(c); }),
         text: text[i],
+        role: el.getAttribute("role"),
+        label: el.getAttribute("aria-label"),
         failure,
       };
     }),
@@ -363,6 +388,12 @@ try {
     } else if (e.renderer !== "pdfjs") failures.push(`embed ${e.index}: renderer ${e.renderer}, expected pdfjs`);
     else if (e.pages !== expectPages) failures.push(`embed ${e.index}: ${e.pages} page containers, expected ${expectPages}`);
     else if (!e.ink.every(Boolean)) failures.push(`embed ${e.index}: pages without ink: ${e.ink.map((v, i) => (v ? null : i + 1)).filter(Boolean).join(", ")}`);
+    // --expect-name: the embed's role and name, read from the DOM
+    if (expectName && !remote && e.renderer === "pdfjs") {
+      const name = "PDF: " + expectName;
+      if (e.role !== "group") failures.push(`embed ${e.index}: role attribute is ${e.role}, not group`);
+      if (e.label !== name) failures.push(`embed ${e.index}: aria-label is "${e.label}", not "${name}"`);
+    }
     // --expect-text: the hidden text, read before the probe scrolled
     if (phrases && !remote && e.renderer === "pdfjs") {
       if (e.text.length !== phrases.length) failures.push(`embed ${e.index}: ${e.text.length} pages read for text, --expect-text gives ${phrases.length} phrases`);
@@ -396,7 +427,7 @@ try {
   console.log(JSON.stringify(out, null, 2));
   exitCode = failures.length === 0 ? 0 : 1;
   // a text plant that found nothing proves nothing about the check
-  if (TEXT_PLANTS.includes(plant) && !report.textPlanted) {
+  if ((TEXT_PLANTS.includes(plant) && !report.textPlanted) || (plant === "wrongname" && !report.namePlanted)) {
     console.error(`ios_check: --plant ${plant} found nothing to plant in`);
     exitCode = 2;
   }

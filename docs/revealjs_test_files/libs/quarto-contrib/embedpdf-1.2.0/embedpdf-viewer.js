@@ -156,6 +156,10 @@ async function hydratePdfjs(el, opts) {
 
   el.textContent = "";
   el.classList.add("embedpdf-pdfjs");
+  // a screen reader names the embed by its file, before its "Page i of n" groups
+  const name = opts.filename || fileName(opts.src);
+  el.setAttribute("role", "group");
+  el.setAttribute("aria-label", name ? "PDF: " + name : "PDF");
   if (opts.width) el.style.width = /^\d+$/.test(opts.width) ? opts.width + "px" : opts.width;
 
   const pagesEl = document.createElement("div");
