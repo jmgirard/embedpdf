@@ -1,8 +1,9 @@
-// Safari's accessible names for PDF.js embeds and their toolbars.
+// Safari's accessible names for native and PDF.js embeds and PDF.js toolbars.
 //
 // Usage:
 //   node tests/safari_check.mjs --target mac [--page example.html]
-//        --expect-pdfjs <n> --expect-name "<file name>" | "<name 1>|<name 2>|..."
+//        [--expect-native <n>] --expect-pdfjs <n>
+//        --expect-name "<file name>" | "<name 1>|<name 2>|..."
 //   node tests/safari_check.mjs --target simulator --device <name|udid> ...same...
 //   node tests/safari_check.mjs --target page-script --device <name|udid>
 //
@@ -13,21 +14,26 @@
 // Safari; simulator asks safaridriver for Safari in the iOS simulator
 // (safari:useSimulator), which also needs Remote Automation on in the
 // simulator's Safari settings. The page comes from docs/ (tests/serve_docs.mjs).
-// Each run fails unless every PDF.js embed's name is its --expect-name name
-// (numbered as in tests/expect_names.mjs), each toolbar control's name is its
+// Each run fails unless the page has --expect-native native embeds (0 when not
+// given), every native embed's <object> has no title, every PDF.js embed's
+// name and every native embed's <object> name is its --expect-name name in
+// document order (numbered
+// as in tests/expect_names.mjs), each toolbar control's name is its
 // title, which must be "Zoom out", "Zoom in", or "Download PDF" in that
 // order, and each toolbar's page indicator reads "Page 1 of <pages>" with the
 // pages at the top and "Page 2 of <pages>" after they scroll to page 2 (read
 // only where page 1 can scroll above the middle of the frame; the run fails
-// when no embed of 2 or more pages can). One --expect-name names
-// --expect-pdfjs embeds; a "|" list names each, so a file name that holds
-// "|" cannot be given.
+// when no embed of 2 or more pages can). One --expect-name names the
+// --expect-native plus --expect-pdfjs embeds; a "|" list names each, so a file
+// name that holds "|" cannot be given.
 // Get Computed Label gives a plain span no name, so to read the indicator the
 // check gives it role heading for the read, whose name Safari computes from
 // its content, and then removes the role.
 // --plant rawindicator|nonumber plants a defect in the first PDF.js embed, as
 // in render_check (removes aria-hidden from its shown "i / n", or the " (k of
-// n)" from its name); the run must then fail.
+// n)" from its name); --plant nativename changes the first native <object>'s
+// aria-label to "PDF: wrong.pdf", and nativetitle gives it a title equal to
+// its aria-label. The run must then fail.
 //
 // --target page-script opens a probe page in Safari in the iOS simulator with
 // `xcrun simctl openurl` and reports whether a page script can read a
@@ -48,7 +54,7 @@ const args = process.argv.slice(2);
 const flags = {};
 for (let i = 0; i < args.length; i += 2) {
   const k = args[i];
-  if (!/^--(target|page|device|expect-pdfjs|expect-name|plant)$/.test(k) || args[i + 1] === undefined) {
+  if (!/^--(target|page|device|expect-native|expect-pdfjs|expect-name|plant)$/.test(k) || args[i + 1] === undefined) {
     console.error(`safari_check: bad argument ${k}`);
     process.exit(2);
   }
@@ -75,15 +81,22 @@ if (flags["expect-name"] && flags["expect-name"].split("|").some((n) => !n)) {
   console.error("safari_check: --expect-name needs a non-empty file name for each embed");
   process.exit(2);
 }
+if (flags["expect-native"] !== undefined && !/^\d+$/.test(flags["expect-native"])) {
+  console.error("safari_check: --expect-native needs a whole number");
+  process.exit(2);
+}
+const expectNative = Number(flags["expect-native"] || 0);
+// the embeds that --expect-name names: native and PDF.js, in document order
+const named = Number(flags["expect-pdfjs"]) + expectNative;
 const nameList = flags["expect-name"] ? flags["expect-name"].split("|") : [];
-if (nameList.length > 1 && nameList.length !== Number(flags["expect-pdfjs"])) {
-  console.error(`safari_check: --expect-name gives ${nameList.length} names, --expect-pdfjs ${flags["expect-pdfjs"]}`);
+if (nameList.length > 1 && nameList.length !== named) {
+  console.error(`safari_check: --expect-name gives ${nameList.length} names, --expect-native and --expect-pdfjs ${named} embeds`);
   process.exit(2);
 }
 const page = flags.page || "example.html";
 const plant = flags.plant || null;
-if (plant && (target === "page-script" || !["rawindicator", "nonumber"].includes(plant))) {
-  console.error("safari_check: --plant must be rawindicator or nonumber, with --target mac or simulator");
+if (plant && (target === "page-script" || !["rawindicator", "nonumber", "nativename", "nativetitle"].includes(plant))) {
+  console.error("safari_check: --plant must be rawindicator, nonumber, nativename, or nativetitle, with --target mac or simulator");
   process.exit(2);
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -246,7 +259,14 @@ try {
   if (await unhydrated()) failures.push("an embed is still not hydrated after 30 s");
   if (plant) {
     report.planted = await run(
-      `const first = document.querySelector(".embedpdf-pdfjs");
+      `if (arguments[0] === "nativename" || arguments[0] === "nativetitle") {
+         const object = document.querySelector(".embedpdf-native object");
+         if (!object) return null;
+         if (arguments[0] === "nativename") object.setAttribute("aria-label", "PDF: wrong.pdf");
+         else object.setAttribute("title", object.getAttribute("aria-label") || "PDF");
+         return arguments[0];
+       }
+       const first = document.querySelector(".embedpdf-pdfjs");
        if (!first) return null;
        if (arguments[0] === "rawindicator") {
          const shown = first.querySelector(".embedpdf-pageinfo [aria-hidden]");
@@ -267,14 +287,34 @@ try {
     }
   }
 
+  const want = expectedNames(flags["expect-name"].split("|"), named);
+  // each embed's kind in document order, the order of the names
+  const kinds = await run(
+    `return [...document.querySelectorAll(".embedpdf-pdfjs, .embedpdf-native")].map((e) => e.classList.contains("embedpdf-native") ? "native" : "pdfjs");`
+  );
+  if (kinds.length !== want.length) failures.push(`${kinds.length} native and PDF.js embeds, --expect-name gives ${want.length} names`);
+  const nativeAt = kinds.flatMap((k, j) => (k === "native" ? [j] : []));
+  const pdfjsAt = kinds.flatMap((k, j) => (k === "pdfjs" ? [j] : []));
+  if (nativeAt.length !== expectNative) failures.push(`${nativeAt.length} native embeds, not ${expectNative}`);
+  // a native embed's <object> carries its name as aria-label, with no title
+  const objects = await find(".embedpdf-native object");
+  if (objects.length !== nativeAt.length) failures.push(`${objects.length} native <object> elements for ${nativeAt.length} native embeds`);
+  report.native = [];
+  for (const [i, id] of objects.entries()) {
+    const at = `native embed ${i + 1} (embed ${nativeAt[i] + 1})`;
+    const r = { name: await label(id), title: await wd("GET", `${s}/element/${id}/attribute/title`) };
+    report.native.push(r);
+    if (r.name !== want[nativeAt[i]]) failures.push(`${at}: Safari's name is ${JSON.stringify(r.name)}, not ${JSON.stringify(want[nativeAt[i]])}`);
+    if (r.title !== null) failures.push(`${at}: <object> has a title, ${JSON.stringify(r.title)}`);
+  }
   const embeds = await find(".embedpdf-pdfjs");
-  const want = expectedNames(flags["expect-name"].split("|"), Number(flags["expect-pdfjs"]));
-  if (embeds.length !== want.length) failures.push(`${embeds.length} PDF.js embeds, --expect-name gives ${want.length} names`);
+  // an embed that hydrated between these reads would take another's name
+  if (embeds.length !== pdfjsAt.length) failures.push(`${embeds.length} PDF.js embeds now, ${pdfjsAt.length} when the names were matched`);
   report.embeds = [];
   for (const [i, id] of embeds.entries()) {
-    const at = `PDF.js embed ${i + 1}`;
+    const at = `PDF.js embed ${i + 1} (embed ${pdfjsAt[i] + 1})`;
     const r = { name: await label(id) };
-    if (r.name !== want[i]) failures.push(`${at}: Safari's name is ${JSON.stringify(r.name)}, not ${JSON.stringify(want[i])}`);
+    if (r.name !== want[pdfjsAt[i]]) failures.push(`${at}: Safari's name is ${JSON.stringify(r.name)}, not ${JSON.stringify(want[pdfjsAt[i]])}`);
     // the embed's own toolbar controls, by index among PDF.js embeds
     const mark = `safari-check-${i + 1}`;
     await run(`document.querySelectorAll(".embedpdf-pdfjs")[arguments[0]].setAttribute("data-safari-check", arguments[1]);`, i, mark);

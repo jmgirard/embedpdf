@@ -56,14 +56,14 @@ node tests/render_check.mjs name_test.html --expect-native 0 --expect-pdfjs 2 --
 node tests/render_check.mjs name_test.html --device iphone --expect-native 0 --expect-pdfjs 2 --expect-name "sample copy.pdf"
 node tests/render_check.mjs name_edge_test.html --expect-native 0 --expect-pdfjs 2 --expect-pages 2 --expect-name "sample.pdf|-" --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/render_check.mjs name_edge_test.html --device iphone --expect-native 0 --expect-pdfjs 2 --expect-pages 2 --expect-name "sample.pdf|-" --expect-text "On the Origin of Coastlines|Why It Matters"
-node tests/ios_check.mjs --device "embedpdf iPhone" --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
-node tests/ios_check.mjs --device "embedpdf iPad" --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/ios_check.mjs --device "embedpdf iPhone" --expect-native 1 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/ios_check.mjs --device "embedpdf iPad" --expect-native 1 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/ios_check.mjs --device "embedpdf iPhone" --page name_test.html --expect-embeds 2 --expect-name "sample copy.pdf"
 node tests/ios_check.mjs --device "embedpdf iPad" --page name_test.html --expect-embeds 2 --expect-name "sample copy.pdf"
 node tests/ios_check.mjs --device "embedpdf iPhone" --page name_edge_test.html --expect-embeds 2 --expect-name "sample.pdf|-" --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/ios_check.mjs --device "embedpdf iPad" --page name_edge_test.html --expect-embeds 2 --expect-name "sample.pdf|-" --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/name_rule_test.mjs
-node tests/safari_check.mjs --target mac --expect-pdfjs 2 --expect-name sample.pdf
+node tests/safari_check.mjs --target mac --expect-native 9 --expect-pdfjs 2 --expect-name sample.pdf
 ```
 
 `name_rule_test.mjs` checks the viewer's file-name rule over a table of
@@ -78,15 +78,19 @@ phrases come from `pdftotext sample.pdf`: phrase 1 is on page 1, phrase 2 on
 page 2. In render_check it also checks Chrome's accessibility tree.
 `revealjs_test.html` uses other PDFs and gets no text check. `--expect-name`
 checks that each PDF.js embed is a group with its expected name: "PDF:
-<file name>", numbered, or "PDF" alone, as below. In render_check it also
-checks that each toolbar control's name is its tooltip and is not
-repeated as its description. `--expect-name "a.pdf|b.pdf"`
-gives one name per PDF.js embed in page order, as on `revealjs_test.html`. The
-list must name every PDF.js embed, and it cannot hold a file name with `|`.
-One name stands for the `--expect-pdfjs` (render_check, safari_check) or
-`--expect-embeds` (ios_check) embeds. A name the list holds n > 1 times is expected as
-"PDF: <file name> (k of n)". The viewer numbers embeds that share a name in
-the same way. `-` stands for an embed named "PDF" alone.
+<file name>", numbered, or "PDF" alone, as below. It also checks that each
+native embed's `<object>` has that name as its `aria-label` and has no
+`title`. In render_check it also checks that each toolbar control's name is
+its tooltip and is not repeated as its description. `--expect-name
+"a.pdf|b.pdf"` gives one name per native or PDF.js embed in page order, as
+on `revealjs_test.html`. The list must name every such embed, and it cannot
+hold a file name with `|`. One name stands for the `--expect-native` plus
+`--expect-pdfjs` (render_check, safari_check) or `--expect-native` plus
+`--expect-embeds` (ios_check) embeds. When `--expect-native` is not given,
+it counts as 0. A name the list holds n > 1 times is expected as "PDF: <file
+name> (k of n)". The viewer numbers embeds that share a name in the same
+way, native and PDF.js embeds together. `-` stands for an embed named "PDF"
+alone.
 `name_test.html` shows `files/sample copy.pdf` by a path with a space and by
 one with `%20`. `name_edge_test.html` shows `sample.pdf` twice. The first
 embed uses the query-style address `files/get?file=sample.pdf`, and
@@ -117,15 +121,15 @@ node tests/render_check.mjs selfcontained_test.html --alone file --expect-native
 node tests/render_check.mjs selfcontained_test.html --alone file --device iphone --expect-native 1 --expect-pdfjs 2 --expect-pages 2 --expect-links 4 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/render_check.mjs selfcontained_slides_test.html --alone file --expect-native 2 --expect-pdfjs 1 --expect-pages 2 --expect-links 4 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/render_check.mjs selfcontained_slides_test.html --alone file --device iphone --expect-native 1 --expect-pdfjs 2 --expect-pages 2 --expect-links 4 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
-node tests/render_check.mjs revealjs_test.html --expect-native 2 --expect-pdfjs 1 --expect-name dummy2.pdf
-node tests/render_check.mjs revealjs_test.html --device iphone --expect-native 1 --expect-pdfjs 2 --expect-name "dummy2.pdf|dummy.pdf"
+node tests/render_check.mjs revealjs_test.html --expect-native 2 --expect-pdfjs 1 --expect-name "dummy.pdf|dummy2.pdf|dummy.pdf"
+node tests/render_check.mjs revealjs_test.html --device iphone --expect-native 1 --expect-pdfjs 2 --expect-name "dummy.pdf|dummy2.pdf|dummy.pdf"
 node tests/render_check.mjs percent_test.html --alone file --expect-native 0 --expect-pdfjs 2 --expect-pages 2 --expect-name "100%.pdf"
 node tests/render_check.mjs percent_test.html --alone http --expect-native 0 --expect-pdfjs 2 --expect-pages 2 --expect-name "100%.pdf"
 node tests/render_check.mjs percent_test.html --alone file --device iphone --expect-native 0 --expect-pdfjs 2 --expect-pages 2 --expect-name "100%.pdf"
 node tests/ios_check.mjs --device "embedpdf iPhone" --page percent_test.html --alone yes --expect-embeds 2 --expect-name "100%.pdf"
 node tests/ios_check.mjs --device "embedpdf iPad" --page percent_test.html --alone yes --expect-embeds 2 --expect-name "100%.pdf"
-node tests/ios_check.mjs --device "embedpdf iPhone" --page selfcontained_test.html --alone yes --expect-embeds 2 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
-node tests/ios_check.mjs --device "embedpdf iPad" --page selfcontained_test.html --alone yes --expect-embeds 2 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/ios_check.mjs --device "embedpdf iPhone" --page selfcontained_test.html --alone yes --expect-embeds 2 --expect-native 1 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/ios_check.mjs --device "embedpdf iPad" --page selfcontained_test.html --alone yes --expect-embeds 2 --expect-native 1 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
 ```
 
 A self-contained page whose embeds cannot show their PDF:
@@ -267,6 +271,10 @@ errors.
   the toolbar controls. In desktop Safari 27.0.1, `safari_check.mjs --target
   mac` checks the group name, toolbar controls, and indicator, but not the
   page text.
+- A real screen reader reading a native embed's name, the `aria-label` on its
+  `<object>`. It is checked in Chromium's accessibility tree, in desktop
+  Safari 27.0.1 by `safari_check.mjs --target mac`, and in Safari's page DOM
+  in the iOS simulators.
 - Safari's computed names in the iOS simulators. On 2026-10-19 with iOS 27.0,
   `safari_check.mjs --target simulator` got "Could not find any session hosts
   that match the requested capabilities" from safaridriver. The simulators'

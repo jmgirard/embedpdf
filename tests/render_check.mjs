@@ -155,9 +155,13 @@
 //                       embed has role="group" and its expected aria-label
 //                       ("PDF: <file name>", numbered or "PDF" as below) in
 //                       the DOM, and Chrome's accessibility tree gives it
-//                       role group and that name. One name applies
-//                       to as many PDF.js embeds as --expect-pdfjs gives,
-//                       which it then needs. A "|" list gives one name per
+//                       role group and that name, and unless each native
+//                       embed's <object> has that aria-label, no title, and
+//                       that tree name with no description equal to it.
+//                       One name applies to as many embeds as --expect-native
+//                       and --expect-pdfjs give together, so it needs
+//                       --expect-pdfjs (--expect-native counts as 0 when
+//                       not given). A "|" list gives one name per native or
 //                       PDF.js embed, in page order (slide order on a
 //                       RevealJS page), and must name all of them, so a file
 //                       name that holds "|" cannot be given. A name "-"
@@ -182,10 +186,15 @@
 //                       On a page with no slides, the run fails when an
 //                       embed with a toolbar and 2 or more pages exists and
 //                       none could be read at page 2.
-//   --plant wrongname|dupdesc|duplink|norole|notoolbar|nonumber|rawindicator|staleindicator|showindicator|tallframe|hideshown|staleshown
+//   --plant wrongname|nativename|nativetitle|nativedesc|dupdesc|duplink|norole|notoolbar|nonumber|rawindicator|staleindicator|showindicator|tallframe|hideshown|staleshown
 //                       with --expect-name, plant a defect in the first
-//                       PDF.js embed; the run must then fail: wrongname
-//                       changes its aria-label to "PDF: wrong.pdf", dupdesc
+//                       PDF.js embed (nativename, nativetitle, nativedesc: in the
+//                       first native embed's <object>, nothing to plant in
+//                       when the page has none); the run must then fail:
+//                       wrongname and nativename change its aria-label to
+//                       "PDF: wrong.pdf", nativetitle gives it a title equal
+//                       to its aria-label, nativedesc gives it an
+//                       aria-description equal to its aria-label, dupdesc
 //                       gives its zoom-in button an aria-label equal to its
 //                       title, duplink does the same to its download link,
 //                       norole removes its role attribute, notoolbar
@@ -290,7 +299,7 @@ const FLAGS = ["device", "expect-native", "expect-pdfjs", "expect-pages", "expec
 const BOOL_FLAGS = ["missing-pdfs"];
 const TEXT_PLANTS = ["notext", "swap", "visible", "gone", "inert", "cvhidden"];
 const TREE_PLANTS = ["nolabel", "canvas", "noname", "detach"];
-const NAME_PLANTS = ["wrongname", "dupdesc", "duplink", "norole", "notoolbar", "nonumber", "rawindicator", "staleindicator", "showindicator", "tallframe", "hideshown", "staleshown"];
+const NAME_PLANTS = ["wrongname", "nativename", "nativetitle", "nativedesc", "dupdesc", "duplink", "norole", "notoolbar", "nonumber", "rawindicator", "staleindicator", "showindicator", "tallframe", "hideshown", "staleshown"];
 const INK_PLANTS = ["blank", "nocanvas", "nopages", "namefailed"];
 const DOWNLOAD_PLANTS = ["dltarget", "dlnoname", "dlwrongname", "dlhref", "dlsecond", "dltext", "dlbytes", "decodelink", "extralog"];
 // planted before the text wait (unhydrated) or before the page loads (norender)
@@ -341,18 +350,19 @@ if (flags["slow-text"] !== undefined && !(phrases && /^\d+$/.test(flags["slow-te
   process.exit(2);
 }
 const expectName = flags["expect-name"] ?? null;
-// one name for the --expect-pdfjs embeds, or "a.pdf|b.pdf": one per embed, in order
+// one name for the --expect-native plus --expect-pdfjs embeds, or
+// "a.pdf|b.pdf": one per native or PDF.js embed, in page order
 const expectNames = expectName === null ? null : expectName.split("|");
 if (expectNames && expectNames.some((n) => !n)) {
   console.error("render_check: --expect-name needs a non-empty file name for each embed");
   process.exit(2);
 }
-if (expectNames && expectNames.length === 1 && !/^\d+$/.test(expectPdfjs ?? "")) {
-  console.error("render_check: --expect-name with one name needs --expect-pdfjs, the number of embeds it names");
+if (expectNames && expectNames.length === 1 && (!/^\d+$/.test(expectPdfjs ?? "") || !/^\d+$/.test(expectNative ?? "0"))) {
+  console.error("render_check: --expect-name with one name needs --expect-pdfjs, and --expect-native (0 when not given), whole numbers whose sum is the number of embeds it names");
   process.exit(2);
 }
 // the full names, numbered where they repeat, as the viewer numbers them
-const expectLabels = expectNames && expectedNames(expectNames, Number(expectPdfjs));
+const expectLabels = expectNames && expectedNames(expectNames, Number(expectPdfjs) + Number(expectNative ?? 0));
 // one entry per failed embed whose PDF was inlined, in page order: the path of
 // the PDF file from the repo root, or "-" for an inlined PDF that did not decode
 const expectDownloads = flags["expect-download"] === undefined ? null : flags["expect-download"].split("|");
@@ -713,11 +723,13 @@ async function treeFailures(page, slide) {
 }
 
 // --expect-name, after the pages scroll: each PDF.js embed under a root is a
-// group with its expected name (expectLabels), in the DOM and in Chrome's
-// accessibility tree. The check waits at most 10 s for every embed under the root to be
-// hydrated. A name plant goes into the page's first PDF.js embed, when it is
-// under the root. `before` is the number of PDF.js embeds on earlier slides,
-// so that embed i of the page takes name i of a "|" list.
+// group with its expected name (expectLabels), and each native embed's
+// <object> has it, in the DOM and in Chrome's accessibility tree. The check
+// waits at most 10 s for every embed under the root to be hydrated. A name
+// plant goes into the page's first PDF.js embed (nativename, nativetitle, nativedesc:
+// its first native <object>), when it is under the root. `before` is the
+// number of native and PDF.js embeds on earlier slides, so that embed i of
+// the page takes name i of a "|" list.
 async function nameFailures(page, slide, before) {
   const where = slide === null ? "" : ` on slide ${slide + 1}`;
   const root = slide === null ? page : (await page.evaluateHandle((k) => window.Reveal.getSlides()[k], slide)).asElement();
@@ -728,8 +740,19 @@ async function nameFailures(page, slide, before) {
       const start = Date.now();
       while (Date.now() - start < 10000 && unhydrated()) await new Promise((r) => setTimeout(r, 100));
       const stuck = unhydrated();
-      const first = document.querySelector(".embedpdf-pdfjs");
+      // the native plants go into the page's first native embed
+      const nativePlant = plant === "nativename" || plant === "nativetitle" || plant === "nativedesc";
+      const first = document.querySelector(nativePlant ? ".embedpdf-native" : ".embedpdf-pdfjs");
       if (!namePlants.includes(plant) || !first || !root.contains(first)) return { planted: null, stuck };
+      if (nativePlant) {
+        const object = first.querySelector("object");
+        if (!object) return { planted: null, stuck };
+        if (plant === "nativename") object.setAttribute("aria-label", "PDF: wrong.pdf");
+        else if (plant === "nativetitle") object.setAttribute("title", object.getAttribute("aria-label") || "PDF");
+        // a description equal to the name with no title, so only the tree check sees it
+        else object.setAttribute("aria-description", object.getAttribute("aria-label") || "PDF");
+        return { planted: plant, stuck };
+      }
       if (plant === "wrongname") first.setAttribute("aria-label", "PDF: wrong.pdf");
       if (plant === "dupdesc") {
         const zoomIn = first.querySelectorAll(".embedpdf-toolbar button")[1];
@@ -797,7 +820,8 @@ async function nameFailures(page, slide, before) {
     plant,
     NAME_PLANTS
   );
-  const embeds = await root.$$(".embedpdf-pdfjs");
+  // native and PDF.js embeds in document order, which is the order of the names
+  const embeds = await root.$$(".embedpdf-pdfjs, .embedpdf-native");
   const out = [];
   // a late embed is missing from this count, and later "|" names then shift;
   // count again after the embeds are read, so an embed that hydrated in
@@ -813,10 +837,30 @@ async function nameFailures(page, slide, before) {
     : 0;
   if (stillStuck) out.push(`${stillStuck} embed(s)${where || " on the page"} still not hydrated after 10 s`);
   for (const [i, embed] of embeds.entries()) {
-    const at = `PDF.js embed ${i + 1}${where}`;
+    const native = await embed.evaluate((el) => el.classList.contains("embedpdf-native"));
+    const at = `embed ${i + 1}${where} (${native ? "native" : "PDF.js"})`;
     const name = expectLabels[before + i];
     if (name === undefined) {
-      out.push(`${at}: --expect-name gives no name for PDF.js embed ${before + i + 1} of the page`);
+      out.push(`${at}: --expect-name gives no name for embed ${before + i + 1} of the page`);
+      continue;
+    }
+    if (native) {
+      // the <object> carries the name as aria-label alone: a title equal to
+      // it would be read again as a description
+      const object = await embed.$("object");
+      if (!object) {
+        out.push(`${at}: no <object>`);
+        continue;
+      }
+      const attrs = await object.evaluate((o) => ({ label: o.getAttribute("aria-label"), title: o.getAttribute("title") }));
+      if (attrs.label !== name) out.push(`${at}: <object> aria-label is "${attrs.label}", not "${name}"`);
+      if (attrs.title !== null) out.push(`${at}: <object> has a title, "${attrs.title}"`);
+      const node = await page.accessibility.snapshot({ root: object, interestingOnly: false });
+      if (!node) out.push(`${at}: <object> not in the accessibility tree`);
+      else {
+        if (node.name !== name) out.push(`${at}: <object> tree name is "${node.name}", not "${name}"`);
+        if (node.description && node.description === node.name) out.push(`${at}: <object> description repeats the name "${node.name}"`);
+      }
       continue;
     }
     const attrs = await embed.evaluate((el) => ({ role: el.getAttribute("role"), label: el.getAttribute("aria-label") }));
@@ -926,7 +970,7 @@ async function treeText(page, el) {
   return texts;
 }
 // the embed that the --expect-name check scrolled to page 2, if any, and
-// whether it is the page's first PDF.js embed (where name plants go)
+// whether it is the page's first PDF.js embed (where the PDF.js name plants go)
 let page2Checked = null;
 let page2First = false;
 // toolbar embeds of 2 or more pages that the check tried to scroll to page 2
@@ -1242,9 +1286,9 @@ try {
       remoteServer?.close();
       process.exit(2);
     }
-    // every PDF.js embed must have been checked
-    if (names.embeds !== res.pdfjs || res.pdfjs === 0) {
-      console.error(`render_check: --expect-name checked ${names.embeds} embeds, of ${res.pdfjs} PDF.js embeds`);
+    // every native and PDF.js embed must have been checked
+    if (names.embeds !== res.pdfjs + res.native || names.embeds === 0) {
+      console.error(`render_check: --expect-name checked ${names.embeds} embeds, of ${res.native} native and ${res.pdfjs} PDF.js embeds`);
       process.exitCode = 1;
     }
     // on a page with no slides, a toolbar embed of 2 or more pages must be
@@ -1253,9 +1297,9 @@ try {
       console.error(`render_check: none of the ${page2Tried} embeds of 2 or more pages could scroll page 1 above the middle of its frame, so no indicator was read at page 2`);
       process.exitCode = 1;
     }
-    // the names given must name every PDF.js embed checked
+    // the names given must name every embed checked
     if (expectLabels.length !== names.embeds) {
-      console.error(`render_check: --expect-name gives ${expectLabels.length} names for ${names.embeds} PDF.js embeds`);
+      console.error(`render_check: --expect-name gives ${expectLabels.length} names for ${names.embeds} native and PDF.js embeds`);
       process.exitCode = 1;
     }
     for (const f of names.failures) console.error("render_check: " + f);

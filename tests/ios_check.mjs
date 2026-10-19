@@ -17,6 +17,8 @@
 //   --device <name|udid>   simulator to use (required); booted if needed
 //   --page <path>          page under docs/ to open (default example.html)
 //   --expect-embeds <n>    embeds not set to renderer=native (default 10)
+//   --expect-native <n>    embeds set to renderer=native (default 0); checked
+//                          when given, and always with --expect-name
 //   --expect-pages <n>     pages per PDF.js embed (default 2: sample.pdf)
 //   --port <n>             server port on 127.0.0.1 (default: a free port the
 //                          system picks); a port in use, or any server that
@@ -68,19 +70,26 @@
 //                          its expected aria-label ("PDF: <file name>",
 //                          numbered or "PDF" as below) in the DOM (Safari's
 //                          accessibility tree is not read); cannot be
-//                          combined with --remote or --missing-pdfs. One name
-//                          stands for the --expect-embeds embeds; a "|" list
-//                          gives one name per embed in page order. "-" and
+//                          combined with --remote or --missing-pdfs. Also fail
+//                          unless each renderer=native embed shows the native
+//                          viewer and its <object> has that aria-label and no
+//                          title. One name stands for the --expect-native plus
+//                          --expect-embeds embeds; a "|" list gives one name
+//                          per embed, native or not, in page order. "-" and
 //                          the " (k of n)" numbering work as in
 //                          render_check (tests/expect_names.mjs). Each
 //                          toolbar's page indicator must hold "Page i of
 //                          <pages>" and a shown "i / <pages>" that is
 //                          aria-hidden, and no other node; an embed with no
 //                          indicator fails unless data-toolbar="false".
-//   --plant wrongname|norole|nonumber|rawindicator|noindicator|strayindicator
+//   --plant wrongname|nativename|nativetitle|norole|nonumber|rawindicator|noindicator|strayindicator
 //                          with --expect-name: change the first PDF.js
 //                          embed's aria-label to "PDF: wrong.pdf"
-//                          (wrongname), remove its role attribute (norole),
+//                          (wrongname); change the first native embed's
+//                          <object> aria-label to "PDF: wrong.pdf"
+//                          (nativename), or give it a title equal to its
+//                          aria-label (nativetitle); in the first PDF.js embed, remove
+//                          its role attribute (norole),
 //                          remove the " (k of n)" from its aria-label
 //                          (nonumber), remove aria-hidden from its shown
 //                          "i / n" (rawindicator), remove its page
@@ -150,7 +159,7 @@ import { inkInPixels } from "./ink.mjs";
 import { expectedNames } from "./expect_names.mjs";
 
 const args = process.argv.slice(2);
-const FLAGS = ["device", "page", "expect-embeds", "expect-pages", "expect-text", "expect-name", "expect-download", "port", "timeout", "screenshot", "shot-embed", "plant", "alone", "remote", "slow-text"];
+const FLAGS = ["device", "page", "expect-embeds", "expect-native", "expect-pages", "expect-text", "expect-name", "expect-download", "port", "timeout", "screenshot", "shot-embed", "plant", "alone", "remote", "slow-text"];
 // flags that take no value
 const BOOL_FLAGS = ["missing-pdfs"];
 // parsed flags: a value flag's value is taken as it is, even when it starts
@@ -177,6 +186,12 @@ const expectEmbedsArg = opt("expect-embeds", "10");
 const expectEmbeds = Number(expectEmbedsArg);
 if (!/^\d+$/.test(expectEmbedsArg)) {
   console.error("ios_check: --expect-embeds needs a whole number");
+  process.exit(2);
+}
+const expectNativeArg = opt("expect-native", "0");
+const expectNative = Number(expectNativeArg);
+if (!/^\d+$/.test(expectNativeArg)) {
+  console.error("ios_check: --expect-native needs a whole number");
   process.exit(2);
 }
 const expectPages = Number(opt("expect-pages", "2"));
@@ -238,7 +253,7 @@ if ("slow-text" in parsed && !(phrases && /^\d+$/.test(slowText) && Number(slowT
   process.exit(2);
 }
 const TEXT_PLANTS = ["notext", "swap", "visible", "inert", "cvhidden"];
-const NAME_PLANTS = ["wrongname", "norole", "nonumber", "rawindicator", "noindicator", "strayindicator"];
+const NAME_PLANTS = ["wrongname", "nativename", "nativetitle", "norole", "nonumber", "rawindicator", "noindicator", "strayindicator"];
 // planted before the text wait; needs --expect-text
 const WAIT_PLANTS = ["unhydrated"];
 // planted in a failed embed whose PDF was inlined; needs --expect-download
@@ -269,9 +284,10 @@ if (expectName !== null && expectName.split("|").some((n) => !n)) {
   console.error("ios_check: --expect-name needs a non-empty file name for each embed");
   process.exit(2);
 }
-// the full names, numbered where they repeat, as the viewer numbers them; one
-// name stands for the --expect-embeds embeds
-const expectLabels = expectName === null ? null : expectedNames(expectName.split("|"), expectEmbeds);
+// the full names, numbered where they repeat, as the viewer numbers them, one
+// per embed in page order; one name stands for the --expect-native plus
+// --expect-embeds embeds
+const expectLabels = expectName === null ? null : expectedNames(expectName.split("|"), expectNative + expectEmbeds);
 if (expectName && (remote || missingPdfs)) {
   console.error("ios_check: --expect-name cannot be combined with --remote or --missing-pdfs (no embed shows a PDF there)");
   process.exit(2);
@@ -445,6 +461,12 @@ const PROBE = `<script>
   }
 
   let namePlanted = "";
+  if (plant === "nativename" || plant === "nativetitle") {
+    const first = embeds().find((el) => kind(el) === "native");
+    const object = first && first.querySelector("object");
+    if (object && plant === "nativename") { object.setAttribute("aria-label", "PDF: wrong.pdf"); namePlanted = plant; }
+    if (object && plant === "nativetitle") { object.setAttribute("title", object.getAttribute("aria-label") || "PDF"); namePlanted = plant; }
+  }
   if (plant === "wrongname") {
     const first = embeds().find((el) => kind(el) === "pdfjs");
     if (first) { first.setAttribute("aria-label", "PDF: wrong.pdf"); namePlanted = plant; }
@@ -564,6 +586,11 @@ const PROBE = `<script>
         text: text[i],
         role: el.getAttribute("role"),
         label: el.getAttribute("aria-label"),
+        // a native embed's name is on its <object>
+        object: (() => {
+          const o = el.querySelector("object");
+          return o ? { label: o.getAttribute("aria-label"), title: o.getAttribute("title") } : null;
+        })(),
         toolbarOff: el.dataset.toolbar === "false",
         indicator: (() => {
           const info = el.querySelector(".embedpdf-toolbar .embedpdf-pageinfo");
@@ -701,8 +728,22 @@ try {
   else if (checked.length !== expectEmbeds) {
     failures.push(`expected ${expectEmbeds} embeds not set to renderer=native, found ${checked.length}`);
   }
-  if (expectLabels && !report.stuck && expectLabels.length !== checked.length) {
-    failures.push(`--expect-name gives ${expectLabels.length} names for ${checked.length} embeds not set to renderer=native`);
+  const natives = report.embeds.filter((e) => e.requested === "native");
+  if (!report.stuck && ("expect-native" in parsed || expectLabels) && natives.length !== expectNative) {
+    failures.push(`expected ${expectNative} embeds set to renderer=native, found ${natives.length}`);
+  }
+  if (expectLabels && !report.stuck && expectLabels.length !== report.embeds.length) {
+    failures.push(`--expect-name gives ${expectLabels.length} names for ${report.embeds.length} embeds`);
+  }
+  // --expect-name: a native embed's name, on its <object>, read from the DOM
+  for (const e of expectLabels && !report.stuck ? natives : []) {
+    const name = expectLabels[e.index - 1];
+    if (e.renderer !== "native") failures.push(`embed ${e.index}: renderer ${e.renderer}, expected native`);
+    else if (!e.object) failures.push(`embed ${e.index}: no <object>`);
+    else {
+      if (e.object.label !== name) failures.push(`embed ${e.index}: <object> aria-label is "${e.object.label}", not "${name}"`);
+      if (e.object.title !== null) failures.push(`embed ${e.index}: <object> has a title, "${e.object.title}"`);
+    }
   }
   for (const [i, e] of (report.stuck ? [] : checked).entries()) {
     if (remote) {
@@ -729,7 +770,7 @@ try {
     else if (!e.ink.every(Boolean)) failures.push(`embed ${e.index}: pages without ink: ${e.ink.map((v, i) => (v ? null : i + 1)).filter(Boolean).join(", ")}`);
     // --expect-name: the embed's role and name, read from the DOM
     if (expectLabels && !remote && e.renderer === "pdfjs") {
-      const name = expectLabels[i];
+      const name = expectLabels[e.index - 1];
       if (e.role !== "group") failures.push(`embed ${e.index}: role attribute is ${e.role}, not group`);
       if (e.label !== name) failures.push(`embed ${e.index}: aria-label is "${e.label}", not "${name}"`);
       // the toolbar's page indicator: "Page i of n" for screen readers, and
