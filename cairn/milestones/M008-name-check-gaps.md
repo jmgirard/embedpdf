@@ -1,6 +1,6 @@
 # M008: Name check gaps
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
@@ -89,7 +89,7 @@ the new lines in CLAUDE.md "Verify before finishing".
 - [x] T4: Percent page. Add `files/100%.pdf` (copy of `sample.pdf`) and `percent_test.qmd` (listed under
       `resources:`). Run `quarto render`; Quarto prints a "Invalid URI 'files/100%.pdf'" WARN for the bare-`%` link,
       which is expected and not an error. Run the AC5 lines.
-- [ ] T5: CLAUDE.md. Add the AC3 and AC5 exit-0 lines, and a line in its notes on `percent_test.html`. Run every
+- [x] T5: CLAUDE.md. Add the AC3 and AC5 exit-0 lines, and a line in its notes on `percent_test.html`. Run every
       CLAUDE.md line that passes `--expect-name` or names `revealjs_test.html`.
 
 ## Work log
@@ -112,6 +112,8 @@ the new lines in CLAUDE.md "Verify before finishing".
 - 2026-10-18: T2 done: `--expect-name` splits on `|`; `nameFailures(page, slide, before)` takes the count of PDF.js embeds on earlier slides; a list whose length differs from the embeds checked fails. revealjs_test.html desktop `dummy2.pdf` and iphone `dummy2.pdf|dummy.pdf` exit 0; iphone `dummy.pdf|dummy2.pdf` exits 1 (slides 3 and 4 misnamed), a 3-name list exits 1 ("gives 3 names for 2 PDF.js embeds"), `--plant wrongname` with the list exits 1; name_test.html one-name run exits 0.
 - 2026-10-18: T3 done: `nameFailures()` waits (100 ms steps, 10 s cap) for no unhydrated `div.embedpdf` under its root, the `measureText()` condition, before planting or reading; it runs for the whole page too, where it is harmless. Choice: the wait sits inside `nameFailures()` rather than in the slide loop, so the plant also waits for the embed.
 - 2026-10-18: T4 done: `percent_test.qmd` and `files/100%.pdf` (copy of `sample.pdf`); `quarto render` exits 0 with the one expected "Invalid URI 'files/100%.pdf'" WARN, and docs/ gains only `percent_test.html` and `files/100%.pdf`. The rendered hrefs are `files/100%25.pdf` and `files/100%.pdf`. render_check `--alone file`, `--alone http`, and `--alone file --device iphone` exit 0 (both links `blob`, every page ok); `--plant wrongname` exits 1; ios_check iPhone and iPad `--alone yes` exit 0 with both embeds role group, "PDF: 100%.pdf".
+- 2026-10-18: T5 done: CLAUDE.md's two revealjs_test.html lines gain the AC3 `--expect-name` arguments (in place, not as new lines), four percent_test lines are added, and the notes describe the `|` list and percent_test. A sweep of "Verify before finishing" for `node tests/(render|ios)_check.mjs` lines with `--expect-name` or `revealjs_test.html` found 24 lines, and all 24 exit 0 (Chromium 155, iOS 27.0 simulators). The simple-english hook reports 37 style hits across all of CLAUDE.md; the two added sentences carry none of them, and the older text stays as it is (out of scope).
+- 2026-10-18: claim audit: not owed — internal tier.
 
 ## Decisions
 
