@@ -165,8 +165,10 @@ errors.
   `Access-Control-Allow-Origin`. Safari is checked only with no header, in the
   iOS 27.0 simulators.
 - A real screen reader (VoiceOver, TalkBack) reading a PDF.js embed's hidden
-  page text. Checked only in Chromium's accessibility tree and in Safari's page
-  DOM in the iOS simulators.
+  page text, its "PDF: <file name>" group name, and its toolbar controls'
+  `title`-only names. Checked only in Chromium's accessibility tree and in
+  Safari's page DOM in the iOS simulators. Safari's names for the toolbar
+  controls were not checked.
 - The cost of reading every page's text at load on a constrained phone: memory
   and first-paint delay for a long PDF were not measured.
 
