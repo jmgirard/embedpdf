@@ -79,7 +79,7 @@ CLAUDE.md and script header updates.
       after the scroll or slide walk (LESSONS M002: slides must be visited first) and names the embed and page. Add
       `--plant blank|nocanvas|nopages`, allowed without `--expect-text` or `--expect-name`, and exiting 2 when there
       is nothing to plant in, as the other plants do.
-- [ ] T4: In `tests/serve_docs.mjs`, add content types for each extension under `docs/` (today `.ttf`, `.eot`,
+- [x] T4: In `tests/serve_docs.mjs`, add content types for each extension under `docs/` (today `.ttf`, `.eot`,
       `.map`, `.yml` are missing), send `Content-Length` and `Accept-Ranges: bytes`, answer single `bytes=a-b` and
       `bytes=a-` ranges with 206 and past-the-end ranges with 416, and reject the `serveDocs` promise on a listen
       error. Add the AC3 cases to `helpers_test.mjs` first.
@@ -105,6 +105,7 @@ CLAUDE.md and script header updates.
 - 2026-10-18: T1: `tests/ink.mjs` exports `inkInPixels(data)`; `tests/helpers_test.mjs` prints 8 passed, 0 failed, and the same cases with the old every-100th-pixel red rule give 5 passed, 3 failed (red pixel, last pixel, blue pixel).
 - 2026-10-18: T2: render_check rebuilds the rule with `new Function` from `inkInPixels.toString()` passed to `page.evaluate`, and ios_check inlines the same source into its probe; `grep -n getImageData` finds one call per script, each passed to the rule. Chromium example.html line exits 0 (4 of 4 canvases inked). Google Chrome is not installed; runs use `CHROME_PATH=/Applications/Chromium.app/Contents/MacOS/Chromium`, as M001 did.
 - 2026-10-18: T3: render_check reports each PDF.js page as "ok", "no canvas", or "no ink" and fails per embed on every run; `--plant blank|nocanvas|nopages` act in the final measure step. On example.html (Chrome and `--device iphone`) the clean run exits 0 and each plant exits 1 naming embed 1 (page 2 no ink, page 2 no canvas, no pages). The old all-canvases check passes nocanvas and nopages, since every canvas left has ink. The T3 edit was made with a python script, not the Edit tool; later edits use Edit.
+- 2026-10-18: T4: server cases added first (14 failed on the old server: four extensions, headers, ranges, and an unhandled EADDRINUSE crash); `serveDocs` now sends types for `.ttf`, `.eot`, `.map`, `.yml`, Content-Length and Accept-Ranges, 206 for `bytes=a-b` and `bytes=a-`, 416 past the end, other Range forms get the whole file; `serveDocs` and `serveRemote` reject on a listen error. `node tests/helpers_test.mjs`: 32 passed, 0 failed.
 
 ## Decisions
 
