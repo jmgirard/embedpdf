@@ -45,7 +45,7 @@ GitHub release for 1.2.0: the user declares the release window separately.
      insertion, removal, or reorder renumbers the labels and the Coverage
      lines together. -->
 
-- [ ] AC1: In Chrome with an emulated iPhone, each page of each PDF.js embed
+- [x] AC1: In Chrome with an emulated iPhone, each page of each PDF.js embed
       in `example.html` holds that page's text in a hidden but readable
       element: a 1 by 1 CSS pixel box with computed `overflow: hidden`,
       `user-select: none`, `display` not `none`, `visibility: visible`, and no
@@ -56,36 +56,36 @@ GitHub release for 1.2.0: the user declares the release window separately.
       all 10 embeds, page 1's text contains the first phrase and not the
       second, and page 2's the second and not the first. The phrases come
       from `pdftotext sample.pdf`, not from the viewer.
-- [ ] AC2: The same holds on a self-contained page: `node
+- [x] AC2: The same holds on a self-contained page: `node
       tests/render_check.mjs selfcontained_test.html --alone file --device
       iphone --expect-native 1 --expect-pdfjs 2 --expect-pages 2
       --expect-links 4 --expect-text "On the Origin of Coastlines|Why It
       Matters"` exits 0. It holds on self-contained slides, measured when
       each slide is shown and before its pages scroll: the same line with
       `selfcontained_slides_test.html` exits 0.
-- [ ] AC3: The same holds in Safari on iOS: `node tests/ios_check.mjs
+- [x] AC3: The same holds in Safari on iOS: `node tests/ios_check.mjs
       --device "embedpdf iPhone" --expect-text "On the Origin of
       Coastlines|Why It Matters"` exits 0 for the 10 PDF.js embeds of
       `example.html`, and so does the same line with `--device "embedpdf
       iPad"`.
-- [ ] AC4: Chrome's accessibility tree gives each page its label and text and
+- [x] AC4: Chrome's accessibility tree gives each page its label and text and
       leaves out the canvas. Procedure: in the AC1 run, after the scroll loop,
       when the number of page canvases equals the number of pages,
       `page.accessibility.snapshot({ root, interestingOnly: false })` per
       element. Each page of the 10 PDF.js embeds is a node of role `group`
       named `Page <i> of 2` whose subtree text contains that page's AC1
       phrase, and no page canvas has a node in the tree.
-- [ ] AC5: In the AC4 procedure, in each PDF.js embed that has a toolbar, the
+- [x] AC5: In the AC4 procedure, in each PDF.js embed that has a toolbar, the
       zoom-out button, the zoom-in button, and the toolbar's
       `a.embedpdf-download` link are named `Zoom out`, `Zoom in`, and
       `Download PDF` in Chrome's accessibility tree.
-- [ ] AC6: Rendering does not regress: `pandoc lua tests/test_shortcode.lua`
+- [x] AC6: Rendering does not regress: `pandoc lua tests/test_shortcode.lua`
       prints `0 failed`, and each `node tests/render_check.mjs` and
       `node tests/ios_check.mjs` command line in CLAUDE.md "Verify before
       finishing" at the review's head commit, plus each rerun its prose names
       (`--alone http`, the `--device mac-safari`, `windows-touch`, and `ipad`
       runs), exits 0.
-- [ ] AC7: The README "Known limitations" section says that each page of a
+- [x] AC7: The README "Known limitations" section says that each page of a
       PDF.js embed carries its text, hidden, for screen readers, and that this
       was checked in Chromium's accessibility tree and in the page in Safari
       in iOS 27.0 simulators, not with a screen reader. It still says the
@@ -176,3 +176,13 @@ GitHub release for 1.2.0: the user declares the release window separately.
 
 ## Review
 <!-- owner: review · exclusive. -->
+
+Evidence pass 1 at 6103315 (2026-10-18; Chromium via `CHROME_PATH`; iOS 27.0 simulators), fresh `quarto render` (no errors, no change to docs/) then every verify line and prose rerun, 36 runs, 0 failed.
+
+- AC1: `render_check example.html --device iphone --expect-native 1 --expect-pdfjs 10 --expect-text "On the Origin of Coastlines|Why It Matters"` exit 0; 10 embeds and 20 pages read before the scroll, 0 text failures (each page has its own phrase and not the other's; 1px box, overflow hidden, user-select none, display block, visibility visible, no aria-hidden). Plants in T4 showed each defect kind fails.
+- AC2: `selfcontained_test.html --alone file --device iphone … --expect-text …` exit 0 (2 embeds, 4 pages read, 0 failures); the same with `selfcontained_slides_test.html` exit 0 (read per shown slide; 2 embeds, 4 pages, 0 failures).
+- AC3: `ios_check --device "embedpdf iPhone" --expect-text …` pass true (text after 606 ms); iPad pass true (704 ms); 10 PDF.js embeds each.
+- AC4: in the AC1 run, the tree check read all 10 embeds after the scroll (canvas count = page count), 0 failures: each page role group named "Page i of 2" with its phrase in the subtree; no canvas node.
+- AC5: same run, 0 toolbar-name failures for the embeds with a toolbar ("Zoom out", "Zoom in", "Download PDF" on `a.embedpdf-download`).
+- AC6: `pandoc lua tests/test_shortcode.lua` 40 passed, 0 failed; all 35 render_check/ios_check runs of "Verify before finishing" plus the prose reruns exit 0.
+- AC7: README.md:88 keeps "does not yet support text selection or search"; README.md:89 states the hidden page text, "Page 1 of 2" groups, the hidden image, no selection, checked in Chromium's accessibility tree and in Safari in iOS 27.0 iPhone and iPad simulators, not with a screen reader. CLAUDE.md "Still unverified" lists a real screen reader. `quarto render` no errors.
