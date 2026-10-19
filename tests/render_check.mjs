@@ -30,12 +30,17 @@
 //                       (another origin) with no Access-Control-Allow-Origin
 //                       header, with "*", or as HTTP 404, and point each
 //                       embed's data-src and links at it; fail unless every
-//                       embed's data-src is on that server
+//                       embed's data-src and button link is on that server,
+//                       and unless the console shows each failure's cause
+//                       (PDF.js UnknownErrorException for the CORS block of
+//                       blocked, ResponseException for the 404 of missing).
+//                       blocked and missing need --expect-failed.
 //   --expect-failed <n> fail unless exactly n embeds show the load-failure
 //                       state: the text "This PDF cannot be shown here.", an
 //                       "Open the PDF" link to the same absolute URL as
 //                       data-src with target _blank, and no "Download PDF
-//                       file." link
+//                       file." link. Without it, any embed in that state fails
+//                       the run.
 // Set CHROME_PATH to use another Chrome or Chromium binary.
 //
 // On a RevealJS page the check goes to each slide with Reveal.slide() and
@@ -142,6 +147,10 @@ if (remote && !REMOTE_MODES.includes(remote)) {
 }
 if (remote && (alone || /^https?:/.test(target))) {
   console.error("render_check: --remote needs a page under docs/, without --alone");
+  process.exit(2);
+}
+if ((remote === "blocked" || remote === "missing") && expectFailed === null) {
+  console.error(`render_check: --remote ${remote} needs --expect-failed`);
   process.exit(2);
 }
 if (alone && /^https?:/.test(target)) {
@@ -273,12 +282,14 @@ try {
     const links = [...document.querySelectorAll(".embedpdf-download, .embedpdf object a[download], a.embedpdf-btn")].map(
       (a) => (a.getAttribute("href") || "").split(":")[0]
     );
+    // each embed's PDF and each button link as an absolute URL (--remote
+    // checks that they are remote)
+    const srcs = [
+      ...[...document.querySelectorAll("div.embedpdf")].map((el) => new URL(el.dataset.src || "", document.baseURI).href),
+      ...[...document.querySelectorAll("a.embedpdf-btn")].map((a) => a.href),
+    ];
     // embeds in the load-failure state (see --expect-failed); each other embed
     // that holds the failure text is reported as malformed
-    // each embed's PDF as an absolute URL (--remote checks they are remote)
-    const srcs = [...document.querySelectorAll("div.embedpdf")].map((el) =>
-      new URL(el.dataset.src || "", document.baseURI).href
-    );
     const failed = [];
     const malformed = [];
     document.querySelectorAll("div.embedpdf").forEach((el, i) => {
@@ -361,15 +372,31 @@ try {
     }
   }
   if (remoteBase) {
-    // the rewrite must have pointed every embed at the remote server
+    // the rewrite must have pointed every embed and button link at the remote server
     const local = res.srcs.filter((s) => !s.startsWith(remoteBase));
     if (res.srcs.length === 0 || local.length) {
-      console.error(`render_check: --remote ${remote}: embeds not on ${remoteBase}: ${local.join(", ") || "(no embeds)"}`);
+      console.error(`render_check: --remote ${remote}: embeds or links not on ${remoteBase}: ${local.join(", ") || "(no embeds)"}`);
+      ok = false;
+    }
+    // each failed embed must have failed for the mode's reason: the viewer logs
+    // the PDF.js error for its URL, UnknownErrorException for the CORS block
+    // (blocked) and ResponseException for the 404 (missing); an import failure
+    // logs a TypeError instead
+    const kind = { blocked: "UnknownErrorException", missing: "ResponseException" }[remote];
+    const wrong = res.failed.filter(
+      (f) => !consoleErrors.some((t) => t.startsWith("embedpdf: failed to render " + f.expected + " ") && (!kind || t.includes(kind)))
+    );
+    if (wrong.length) {
+      console.error(`render_check: --remote ${remote}: no "${kind || "failed to render"}" error for ${wrong.map((f) => f.expected).join(", ")}`);
       ok = false;
     }
   }
   if (res.malformed.length) {
     console.error(`render_check: embeds with the failure text but not the failure state: ${JSON.stringify(res.malformed)}`);
+    ok = false;
+  }
+  if (expectFailed === null && res.failed.length) {
+    console.error(`render_check: ${res.failed.length} embeds are in the load-failure state; pass --expect-failed if that is expected`);
     ok = false;
   }
   if (expectFailed !== null && res.failed.length !== Number(expectFailed)) {

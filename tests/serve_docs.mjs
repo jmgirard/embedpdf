@@ -83,9 +83,11 @@ export function serveRemote(mode, { port = 0 } = {}) {
   return new Promise((resolve) => server.listen(port, "127.0.0.1", () => resolve(server)));
 }
 
-// Point every relative .pdf in data-src and href at the remote origin `base`
-// (e.g. "http://127.0.0.1:9000/"), so each embed, fallback link, and button
-// link names the remote PDF.
+// Point each relative .pdf in a double-quoted data-src or href at the remote
+// origin `base` (e.g. "http://127.0.0.1:9000/"), so each embed, fallback link,
+// and button link names the remote PDF. Paths resolve against the remote root,
+// so this fits pages at the root of docs/; a .pdf with a query or #fragment is
+// left as it is.
 export function pointPdfsAt(html, base) {
   return html.replace(/\b(data-src|href)="(?![a-z][a-z0-9+.-]*:)([^"#?]+\.pdf)"/gi, (_, attr, file) => `${attr}="${new URL(file, base).href}"`);
 }

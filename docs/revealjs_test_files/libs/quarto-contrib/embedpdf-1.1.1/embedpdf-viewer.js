@@ -102,6 +102,7 @@ function showFailure(el, opts) {
   msg.appendChild(link);
   el.replaceChildren(msg);
   el.classList.add("embedpdf-failed");
+  if (opts.width) el.style.width = /^\d+$/.test(opts.width) ? opts.width + "px" : opts.width;
 }
 
 async function hydratePdfjs(el, opts) {
@@ -116,6 +117,8 @@ async function hydratePdfjs(el, opts) {
     doc = await pdfjs.getDocument(source).promise;
     page1 = await doc.getPage(1);
   } catch (err) {
+    // a document that loaded but whose page 1 failed still holds worker memory
+    if (doc) doc.destroy();
     showFailure(el, opts);
     throw err; // the caller logs it
   }

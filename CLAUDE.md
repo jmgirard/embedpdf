@@ -70,12 +70,14 @@ node tests/ios_check.mjs --device "embedpdf iPad" --page selfcontained_test.html
 PDFs on another site: `--remote blocked|cors|missing` serves the PDFs from a
 second server on another port (no `Access-Control-Allow-Origin` header, `*`, or
 HTTP 404). `--expect-failed` counts embeds that show "This PDF cannot be shown
-here." and the "Open the PDF" link. Run each `--remote blocked` iphone line
-again with `--device android`, and again with `--remote missing`. Run the
-desktop line also with `--device mac-safari` and `--device windows-touch`:
+here." and the "Open the PDF" link. Run the desktop line also with
+`--device mac-safari` and `--device windows-touch`:
 
 ```
 node tests/render_check.mjs example.html --remote blocked --device iphone --expect-native 1 --expect-pdfjs 0 --expect-failed 10
+node tests/render_check.mjs example.html --remote blocked --device android --expect-native 1 --expect-pdfjs 0 --expect-failed 10
+node tests/render_check.mjs example.html --remote missing --device iphone --expect-native 1 --expect-pdfjs 0 --expect-failed 10
+node tests/render_check.mjs example.html --remote missing --device android --expect-native 1 --expect-pdfjs 0 --expect-failed 10
 node tests/render_check.mjs revealjs_test.html --remote blocked --device iphone --expect-native 1 --expect-pdfjs 0 --expect-failed 2
 node tests/render_check.mjs example.html --remote cors --device iphone --expect-native 1 --expect-pdfjs 10 --expect-pages 2 --expect-failed 0
 node tests/render_check.mjs example.html --remote cors --device android --expect-native 1 --expect-pdfjs 10 --expect-pages 2 --expect-failed 0
@@ -142,6 +144,9 @@ errors.
   before 27. `tests/ios_check.mjs` covers only iOS 27.0 and 27.1 simulators.
 - Self-contained RevealJS slides in Safari on iPhone and iPad (checked only in
   Chromium).
+- A PDF from another site on a real phone, with or without
+  `Access-Control-Allow-Origin`. Safari is checked only with no header, in the
+  iOS 27.0 simulators.
 
 ## Project tracking (cairn)
 

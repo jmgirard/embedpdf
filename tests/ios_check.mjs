@@ -36,7 +36,9 @@
 // the number of such embeds equals --expect-embeds. With --remote blocked,
 // each such embed must instead show the load-failure state: the text "This
 // PDF cannot be shown here.", an "Open the PDF" link to the same absolute URL
-// as data-src with target _blank, and no "Download PDF file." link.
+// as data-src with target _blank, and no "Download PDF file." link; its
+// data-src must be on the remote server, and the console must show the fetch
+// of that URL failing ("Load failed").
 
 import fs from "node:fs";
 import os from "node:os";
@@ -287,7 +289,12 @@ try {
   }
   for (const e of checked) {
     if (remote) {
+      // Safari names no cause beyond "Load failed"; it must be the fetch of
+      // this embed's remote PDF that failed, not the PDF.js import
+      const logged = report.errors.some((t) => t.includes("embedpdf: failed to render " + e.failure.expected) && t.includes("Load failed"));
       if (!e.failure.ok) failures.push(`embed ${e.index}: not in the load-failure state: ${JSON.stringify(e.failure)}`);
+      else if (!e.failure.expected.startsWith(remoteBase)) failures.push(`embed ${e.index}: ${e.failure.expected} is not on ${remoteBase}`);
+      else if (!logged) failures.push(`embed ${e.index}: no "failed to render ${e.failure.expected} … Load failed" error`);
     } else if (e.renderer !== "pdfjs") failures.push(`embed ${e.index}: renderer ${e.renderer}, expected pdfjs`);
     else if (e.pages !== expectPages) failures.push(`embed ${e.index}: ${e.pages} page containers, expected ${expectPages}`);
     else if (!e.ink.every(Boolean)) failures.push(`embed ${e.index}: pages without ink: ${e.ink.map((v, i) => (v ? null : i + 1)).filter(Boolean).join(", ")}`);
