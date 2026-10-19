@@ -7,7 +7,7 @@ _Last hygiene check: 2026-10-18 (triage: promoted to high "Check script gaps", "
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M006 | Check script gaps | planned | — | high | milestones/M006-check-script-gaps.md |
+| M006 | Check script gaps | in-progress | — | high | milestones/M006-check-script-gaps.md |
 | M005 | Screen-reader names | done | — | normal | milestones/archive/M005-screen-reader-names.md |
 | M004 | Screen-reader text | done | — | normal | milestones/archive/M004-screen-reader-text.md |
 | M003 | Remote PDFs on phones | done | — | normal | milestones/archive/M003-remote-pdfs-on-phones.md |
