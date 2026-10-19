@@ -271,6 +271,10 @@ errors.
   the toolbar controls. In desktop Safari 27.0.1, `safari_check.mjs --target
   mac` checks the group name, toolbar controls, and indicator, but not the
   page text.
+- A real screen reader reading a native embed's name, the `aria-label` on its
+  `<object>`. It is checked in Chromium's accessibility tree, in desktop
+  Safari 27.0.1 by `safari_check.mjs --target mac`, and in Safari's page DOM
+  in the iOS simulators.
 - Safari's computed names in the iOS simulators. On 2026-10-19 with iOS 27.0,
   `safari_check.mjs --target simulator` got "Could not find any session hosts
   that match the requested capabilities" from safaridriver. The simulators'

@@ -15,8 +15,9 @@
 // (safari:useSimulator), which also needs Remote Automation on in the
 // simulator's Safari settings. The page comes from docs/ (tests/serve_docs.mjs).
 // Each run fails unless the page has --expect-native native embeds (0 when not
-// given), every native embed's <object> has no title and every native and
-// PDF.js embed's name is its --expect-name name in document order (numbered
+// given), every native embed's <object> has no title, every PDF.js embed's
+// name and every native embed's <object> name is its --expect-name name in
+// document order (numbered
 // as in tests/expect_names.mjs), each toolbar control's name is its
 // title, which must be "Zoom out", "Zoom in", or "Download PDF" in that
 // order, and each toolbar's page indicator reads "Page 1 of <pages>" with the

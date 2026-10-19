@@ -722,11 +722,13 @@ async function treeFailures(page, slide) {
 }
 
 // --expect-name, after the pages scroll: each PDF.js embed under a root is a
-// group with its expected name (expectLabels), in the DOM and in Chrome's
-// accessibility tree. The check waits at most 10 s for every embed under the root to be
-// hydrated. A name plant goes into the page's first PDF.js embed, when it is
-// under the root. `before` is the number of PDF.js embeds on earlier slides,
-// so that embed i of the page takes name i of a "|" list.
+// group with its expected name (expectLabels), and each native embed's
+// <object> has it, in the DOM and in Chrome's accessibility tree. The check
+// waits at most 10 s for every embed under the root to be hydrated. A name
+// plant goes into the page's first PDF.js embed (nativename and nativetitle:
+// its first native <object>), when it is under the root. `before` is the
+// number of native and PDF.js embeds on earlier slides, so that embed i of
+// the page takes name i of a "|" list.
 async function nameFailures(page, slide, before) {
   const where = slide === null ? "" : ` on slide ${slide + 1}`;
   const root = slide === null ? page : (await page.evaluateHandle((k) => window.Reveal.getSlides()[k], slide)).asElement();

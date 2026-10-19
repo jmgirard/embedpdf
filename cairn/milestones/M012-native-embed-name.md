@@ -146,6 +146,7 @@ Architecture, and CLAUDE.md "Still unverified" follow. Version 1.2.4, no tag.
 - 2026-10-19: T3 done: safari_check takes `--expect-native` and reads each native `<object>`'s computed label and title; desktop Safari 27.0.1 on example.html gives the 9 native names "(1 of 11)"–"(8 of 11)" and "(10 of 11)", exit 0; plant `nativename` exits 1, `nonumber` exits 1, and `nativename` on name_test.html exits 2; omitting `--expect-native` exits 1.
 - 2026-10-19: T4 done: ios_check takes `--expect-native` (checked when given, and always with `--expect-name`) and reads each native `<object>`'s `aria-label` and title; on the iOS 27.0 iPhone simulator example.html and selfcontained_test.html (`--alone yes`) exit 0; `nativename` exits 1 ("embed 10: <object> aria-label is "PDF: wrong.pdf""), `nativename` on name_test.html exits 2, and omitting `--expect-native` exits 1. The native-count check is skipped for lines with neither flag, so the `--remote` and `--missing-pdfs` lines stay as written.
 - 2026-10-19: user asked whether desktop Safari checks can run without taking screen focus; answered that desktop Safari has no headless mode, and batched the remaining safari_check runs into T5.
+- 2026-10-19: claim audit: 55 claims read, 3 corrected — tests/ios_check.mjs (plant list wording), tests/safari_check.mjs (native names are the `<object>`'s), tests/render_check.mjs (`nameFailures` comment now covers native embeds and plants).
 
 ## Decisions
 

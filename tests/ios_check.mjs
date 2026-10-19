@@ -85,8 +85,10 @@
 //   --plant wrongname|nativename|norole|nonumber|rawindicator|noindicator|strayindicator
 //                          with --expect-name: change the first PDF.js
 //                          embed's aria-label to "PDF: wrong.pdf"
-//                          (wrongname), or the first native embed's
-//                          <object>'s (nativename), remove its role attribute (norole),
+//                          (wrongname); change the first native embed's
+//                          <object> aria-label to "PDF: wrong.pdf"
+//                          (nativename); in the first PDF.js embed, remove
+//                          its role attribute (norole),
 //                          remove the " (k of n)" from its aria-label
 //                          (nonumber), remove aria-hidden from its shown
 //                          "i / n" (rawindicator), remove its page
