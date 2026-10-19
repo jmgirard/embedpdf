@@ -210,8 +210,8 @@ fails unless that server answered at least one byte-range request (HTTP 206)
 for each PDF.js embed's address. With `--remote cors`, that server is the
 second one. There only answers to requests with an Origin header count, so
 a native embed of the same address is counted apart. That server then sends
-slowly only to requests with an Origin header, so a native viewer's read
-ends before PDF.js reads the PDF. If a PDF.js embed's PDF is not over 128 KB,
+slowly only to requests with an Origin header. A native viewer's read comes
+at full speed, so in the runs it ended before PDF.js read the PDF. If a PDF.js embed's PDF is not over 128 KB,
 or another embed loads the same address, the run exits 2. With `--remote
 cors`, only another PDF.js embed counts here. `--plant noranges` makes that
 server ignore every Range header, and the run must then fail.
@@ -289,8 +289,9 @@ errors.
 - In Safari, once an `<object>` on the page loads a PDF from another origin,
   every CORS read of the same URL fails ("Load failed") with no request sent,
   even with `Access-Control-Allow-Origin: *`. This was seen in desktop Safari
-  27.0.1 and iOS 27.0 on 2026-10-19. fetch options such as `cache` or `credentials` do not
-  help. A read of the URL with an added query works. So for such a PDF the viewer gives
+  27.0.1 and iOS 27.0 on 2026-10-19. In desktop Safari, fetch options such as
+  `cache` or `credentials` did not help (not tried on iOS). A read of the URL
+  with an added query works. So for such a PDF the viewer gives
   PDF.js the address with `embedpdf=pdfjs` added (`pdfjsAddress` in
   `embedpdf-viewer.js`). Safari refuses only after the `<object>` read ends,
   so a check of this case must let the native read end first.

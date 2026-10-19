@@ -132,8 +132,9 @@
 //                          the server answered a GET with no Origin header.
 //                          A page whose embeds hold their PDF inline
 //                          (self-contained) exits 2 before the simulator
-//                          opens. Not with --alone yes; blocked not with
-//                          --plant, --expect-text, or --expect-name.
+//                          opens. Not with --alone yes or --expect-download;
+//                          blocked not with --plant, --expect-text,
+//                          --expect-name, or --expect-ranges.
 //   --missing-pdfs         takes no value: the page's own server answers HTTP
 //                          404 for every path that ends in .pdf. Each embed
 //                          not set to renderer=native must then show the
@@ -145,9 +146,10 @@
 //                          --alone yes, --plant, --expect-text, --expect-name.
 //   --expect-ranges        takes no value: the server that serves the PDFs
 //                          (the docs server, or the remote one with --remote
-//                          cors) sends each whole-file answer for a .pdf file
-//                          over SLOW_ABOVE bytes (tests/serve_docs.mjs)
-//                          slowly, so PDF.js loads it by byte ranges. Fail
+//                          cors, only to requests with an Origin header)
+//                          sends each whole-file answer for a .pdf file over
+//                          SLOW_ABOVE bytes (tests/serve_docs.mjs) slowly, so
+//                          PDF.js loads it by byte ranges. Fail
 //                          unless that server answered at least one
 //                          byte-range request (HTTP 206) for each PDF.js
 //                          embed's address; the report's "ranges" gives the

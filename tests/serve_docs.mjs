@@ -209,8 +209,8 @@ export function serveRemote(mode, { port = 0, slowWhole = false, noRanges = fals
     }
     const headers = { "Content-Type": TYPES[path.extname(file)] || "application/octet-stream", "Cache-Control": "no-store", ...cors };
     // only a CORS read (PDF.js's, with an Origin header) is slow: a native
-    // viewer's read of the same PDF sends none, and comes at once, so it is
-    // done before PDF.js reads the PDF
+    // viewer's read of the same PDF sends none and comes at full speed, so in
+    // practice it ends before PDF.js reads the PDF
     const slow = slowWhole && path.extname(file).toLowerCase() === ".pdf" && req.headers.origin !== undefined;
     countRange(server, sendData(req, res, fs.readFileSync(file), headers, { slowWhole: slow, noRanges }), url, req);
   });

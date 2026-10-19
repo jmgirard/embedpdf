@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M014: Safari shared remote PDF
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -126,7 +126,7 @@ README, example.qmd, CLAUDE.md, and the DESIGN Known issues entry.
       example.qmd near line 141, the CLAUDE.md Safari gotcha, the CLAUDE.md
       "Verify before finishing" lines for AC1 to AC3, "Still unverified", and
       the DESIGN Known issues entry on this case.
-- [ ] T6: Run `quarto render`. Then run the lines of AC1 to AC3, every line
+- [x] T6: Run `quarto render`. Then run the lines of AC1 to AC3, every line
       that AC4 names, and helpers_test.
 
 ## Work log
@@ -152,6 +152,9 @@ README, example.qmd, CLAUDE.md, and the DESIGN Known issues entry.
 - 2026-10-19: T4 choice: with `--remote cors`, render_check and ios_check count only 206 answers to requests with an Origin header (a CORS read), so a native embed of the same address is counted apart, and they exit 2 only when another PDF.js embed shares the address; without it the old per-path rule stands. serveRemote's `slowWhole` now slows only a request with an Origin header, so the native viewer's read finishes first. Without that change the v1.2.4 viewer passed the shared range line (the native read was still arriving when PDF.js read), so the line could not show the fix. ios_check `--expect-ranges` works with `--remote cors`.
 - 2026-10-19: T4 runs: shared_test.html (native, then PDF.js, of `files/large.pdf`). v1.2.4 viewer, "embedpdf iPhone": `--remote cors --expect-native 1 --expect-embeds 1 --expect-pages 14` exits 1, and with `--expect-ranges` it also exits 1 after the slow-rule change (exit 0 before it). v1.2.5: both lines exit 0 on iPhone and iPad (3 answers of 206 to `?embedpdf=pdfjs`, 1 whole read with no Origin). Chromium iphone and android shared lines exit 0 (3 answers of 206). `--plant noranges` exits 1 in ios_check and render_check. render_check example.html `--remote cors --expect-ranges --device iphone` exits 2 (10 PDF.js embeds share sample.pdf, which is also too small). shared_test.html `--expect-ranges` with no remote exits 2 (native shares the address). large_test `--expect-ranges --remote cors` iphone and android exit 0. helpers_test 124 passed.
 - 2026-10-19: T5: README "Known limitations" item and example.qmd "PDFs on Another Site" now say what the viewer does in the shared case and where it was checked (iOS 27.0 simulators, desktop Safari 27.0.1, Chromium; byte ranges in the simulators and Chromium, not desktop Safari). CLAUDE.md: shared_test.qmd in the page list, 4 new `--remote cors` lines, 6 new shared_test lines, the `cors` and Origin counting rules, the Safari gotcha corrected, two "Still unverified" entries narrowed. DESIGN Known issues entry corrected. `quarto render` clean. The simple-english lint hook's counts for README and CLAUDE.md are back to their counts before this task (11 and 38); the remaining hits are older text.
+- 2026-10-19: T6 sweep at 4073f99 after `quarto render`: a script took every `node tests/` line in CLAUDE.md "Verify before finishing" (57 at the plan commit, 67 now; the 10 new are the AC1 to AC3 lines) and added the prose variants (`--alone http` for each `--alone file` line; selfcontained_test desktop lines with mac-safari and windows-touch, iphone lines with ipad; remote and missing-pdfs desktop lines with mac-safari and windows-touch). 86 commands: 62 Chromium, desktop Safari, and Node commands and 24 iOS simulator commands, all exit 0 (Chromium via CHROME_PATH). helpers_test 124 passed.
+- 2026-10-19: claim audit: 80 claims read, 6 corrected — embedpdf-viewer.js, CLAUDE.md, README.md, example.qmd, tests/ios_check.mjs, tests/render_check.mjs, tests/serve_docs.mjs. The fixes: "fetch options do not help" is now credited to desktop Safari only (on iOS 27.0 the v1.2.4 shared_test log showed that only the native read reached the server, so "no request sent" holds there). Native embeds now include `renderer=auto` in a desktop browser. The slow rule's Origin limit was added to two headers. ios_check's `--remote` exclusions are now complete. The native read "ends first" claims now say it came at full speed and ended first in the runs. After `quarto render`, the recheck passed: render_check example.html desktop and `--remote cors --device iphone`, ios_check iPhone `--remote cors` and the default example line, helpers_test 124 passed.
+- 2026-10-19: implement done; status review.
 
 ## Decisions
 

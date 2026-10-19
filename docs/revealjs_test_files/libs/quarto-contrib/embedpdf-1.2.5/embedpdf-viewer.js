@@ -152,8 +152,9 @@ function showFailure(el, opts) {
 // The address PDF.js loads a (not inlined) PDF from. Safari refuses a page's
 // cross-origin read (PDF.js's fetch) of an address that a native <object> on
 // the page loaded, before it sends a request ("Load failed"), even when the
-// other site sends Access-Control-Allow-Origin; a read of the same address
-// with an added query works (desktop Safari 27.0.1, iOS 27.0). So for a PDF on
+// other site sends Access-Control-Allow-Origin (desktop Safari 27.0.1, iOS
+// 27.0); a read of the same address with an added query works (desktop Safari
+// 27.0.1, and PDF.js in iOS 27.0). So for a PDF on
 // another site that a native embed on the page also shows, PDF.js adds
 // "embedpdf=pdfjs" to the query, and still loads the PDF by byte ranges.
 function pdfjsAddress(src) {

@@ -215,7 +215,8 @@
 //                       to plant in unless that embed is the one scrolled
 //                       to page 2).
 //   --expect-ranges     takes no value: the server that serves the PDFs (the
-//                       page's server, or the remote one with --remote cors)
+//                       page's server, or the remote one with --remote cors,
+//                       which slows only requests with an Origin header)
 //                       sends each whole-file answer for a .pdf file over
 //                       SLOW_ABOVE bytes (tests/serve_docs.mjs) slowly, so
 //                       PDF.js loads it by byte ranges. Fail unless that
