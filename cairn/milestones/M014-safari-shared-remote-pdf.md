@@ -102,7 +102,7 @@ README, example.qmd, CLAUDE.md, and the DESIGN Known issues entry.
       too, with `serveRemote` and `pointPdfsAt` from `tests/serve_docs.mjs`.
       Run both against the v1.2.4 viewer. Record in the work log the ios_check
       failure and its error, and whether desktop Safari fails.
-- [ ] T2: Probe the cause in Safari, in an iOS 27.0 simulator and on the
+- [x] T2: Probe the cause in Safari, in an iOS 27.0 simulator and on the
       desktop. One guess is that PDF.js's fetch reuses the object's cached
       answer. Try fixes that keep byte ranges first. An example is a PDF.js
       address that differs from the address a native embed on the page shows.
@@ -145,6 +145,8 @@ README, example.qmd, CLAUDE.md, and the DESIGN Known issues entry.
 - 2026-10-19: implement started on branch m014-safari-shared-remote-pdf; ROADMAP and header set in-progress.
 - 2026-10-19: T1 choice: serve_docs logs each file answer in `server.requests` (method, path, query, Origin, Range, status); a native embed counts as loaded when the remote server answered a GET with no Origin header for its path, since a CORS read sends one. ios_check `--remote cors` keeps every normal check and allows `--plant`, `--expect-text`, and `--expect-name`; safari_check takes `--remote cors` (mac and simulator targets).
 - 2026-10-19: T1 v1.2.4 runs: ios_check "embedpdf iPhone" `--remote cors --expect-native 1` on example.html exits 1, all 10 PDF.js embeds failed with "embedpdf: failed to render http://127.0.0.1:<port>/sample.pdf UnknownErrorException: Load failed", and the native embed's check passed. The same flags on name_test.html (no native embed) exit 0. Desktop Safari 27.0.1 `safari_check --target mac --remote cors` on example.html exits 1: both `renderer=pdfjs` embeds show "This PDF cannot be shown here.". helpers_test 122 passed (7 new request-log cases).
+- 2026-10-19: T2 probe (desktop Safari 27.0.1, safaridriver, example.html with PDFs on a cors remote server, 6 s after load): page-script reads of the remote `sample.pdf` failed with "TypeError: Load failed" for fetch with mode cors and credentials same-origin (PDF.js's options), with cache no-store, with cache reload, with credentials include, with a Range header, and for XMLHttpRequest; none of them reached the server. A fetch of `sample.pdf?embedpdf=1` got 200 and 21,118 bytes. All 16 earlier PDF requests had no Origin header (the native viewers'), so no PDF.js read of the bare address reached the server either. The guess that a cached answer is reused does not fit: the server sends no-store and Safari sent no request.
+- 2026-10-19: T2 conclusion: Safari refuses a CORS read of an address that a native `<object>` on the page loaded, before any request. A PDF.js address with an added query works and keeps byte ranges possible. The whole-file fallback is not needed, so no GP4 D-entry. A `#fragment` was not tried, since a fragment is never sent and the address Safari keys on stays the same.
 
 ## Decisions
 
