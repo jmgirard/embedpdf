@@ -73,13 +73,13 @@ README, example.qmd, CLAUDE.md, and the DESIGN Known issues entry.
       each variant that the CLAUDE.md prose asks for (`--device mac-safari`,
       `--device windows-touch`, `--device ipad`, and `--alone http`).
       `node tests/helpers_test.mjs` prints `N passed, 0 failed`.
-- [ ] AC5: Two texts no longer say that such an embed fails in Safari next to a
+- [x] AC5: Two texts no longer say that such an embed fails in Safari next to a
       native embed of the same PDF. They are the README.md "Known limitations"
       item on PDFs from another site and the example.qmd section "PDFs on
       Another Site". Each names the browsers and devices where AC1 to AC3
       checked that case. Each says whether the case loads by byte ranges in
       Safari, as AC3's runs showed.
-- [ ] AC6: `version:` in `_extensions/embedpdf/_extension.yml` reads 1.2.5. The
+- [x] AC6: `version:` in `_extensions/embedpdf/_extension.yml` reads 1.2.5. The
       `add_html_dependency` version in `embedpdf.lua` reads 1.2.5.
       `pandoc lua tests/test_shortcode.lua` prints `N passed, 0 failed`.
 
@@ -159,3 +159,9 @@ README, example.qmd, CLAUDE.md, and the DESIGN Known issues entry.
 ## Decisions
 
 ## Review
+
+Pass 1, 2026-10-19, at a91ed0e (main 6930c4e has not moved; no PR yet; Copilot round off).
+
+- AC5: README.md:86 and example.qmd:141 and :145, read at a91ed0e. Neither says that such an embed fails; `grep -i 'can fail even with\|seen once'` over both finds nothing. Both say that Safari refuses the read and that the viewer adds `embedpdf=pdfjs`. Both name iOS 27.0 iPhone and iPad simulators, desktop Safari 27.0.1, and Chromium. Both say byte ranges were checked in the simulators and in Chromium (emulated iPhone and Android), and not in desktop Safari. Pass.
+- AC6: `_extension.yml:3` `version: 1.2.5`; `embedpdf.lua:22` `local VERSION = "1.2.5"`, used by both `add_html_dependency` calls (lines 31, 49); `pandoc lua tests/test_shortcode.lua` 40 passed, 0 failed. Pass.
+- Consistency gate: `cairn_validate.py` all checks passed (exit 0). No DESIGN principle changed (the DESIGN diff is one Known issues entry), so `cairn_impact` is skipped. The generic profile's `consistency-gate` slot names no toolchain checks.
