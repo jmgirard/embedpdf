@@ -181,7 +181,8 @@ try {
 
 // --- slowWhole and noRanges ---------------------------------------------------
 // Read a whole-file answer for 500 ms, then drop it: a slow answer has given
-// part of the file by then, at most 3 pieces of 4096 bytes.
+// part of the file by then (about 3 pieces of 4096 bytes; the check allows
+// less than half the file, so a late timer does not fail it).
 async function bytesIn500ms(url) {
   const r = await fetch(url);
   const reader = r.body.getReader();
@@ -211,7 +212,7 @@ for (const kind of ["docs", "remote cors"]) {
   const at = `http://127.0.0.1:${slow.address().port}/`;
   try {
     const part = await bytesIn500ms(at + "files/large.pdf");
-    check(`${kind} slowWhole: large.pdf is sent in pieces`, part.status === 200 && part.length === String(LARGE.length) && part.got > 0 && part.got <= 3 * 4096, `${part.status}, ${part.got} of ${part.length} bytes in 500 ms`);
+    check(`${kind} slowWhole: large.pdf is sent in pieces`, part.status === 200 && part.length === String(LARGE.length) && part.got > 0 && part.got < LARGE.length / 2, `${part.status}, ${part.got} of ${part.length} bytes in 500 ms`);
     const t0 = Date.now();
     const small = await fetch(at + "sample.pdf");
     const smallBody = Buffer.from(await small.arrayBuffer());
@@ -223,6 +224,11 @@ for (const kind of ["docs", "remote cors"]) {
     const a = await getRange(at + "files/large.pdf", "bytes=0-99");
     const b = await getRange(at + "files/large.pdf", `bytes=${LARGE.length - 100}-`);
     const c = await getRange(at + "files/sample%20copy.pdf", "bytes=0-9");
+    const t3 = Date.now();
+    const head = await fetch(at + "files/large.pdf", { method: "HEAD" });
+    await head.arrayBuffer();
+    const headMs = Date.now() - t3;
+    check(`${kind} slowWhole: a HEAD request is answered at once`, head.status === 200 && head.headers.get("content-length") === String(LARGE.length) && headMs < 1000, `${head.status} ${head.headers.get("content-length")} in ${headMs} ms`);
     check(`${kind} slowWhole: ranges of large.pdf are 206 at once`, a.status === 206 && a.body.equals(LARGE.subarray(0, 100)) && b.status === 206 && b.body.equals(LARGE.subarray(-100)), `${a.status} ${b.status}`);
     check(`${kind}: rangeCounts counts 206 answers per path, %20 as sent`, same([...slow.rangeCounts], [["/files/large.pdf", 2], ["/files/sample%20copy.pdf", 1]]), JSON.stringify([...slow.rangeCounts]));
   } finally {

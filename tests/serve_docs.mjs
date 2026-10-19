@@ -90,7 +90,8 @@ function sendData(req, res, data, headers, { slowWhole = false, noRanges = false
     }
   }
   res.writeHead(200, { ...headers, "Accept-Ranges": "bytes", "Content-Length": size });
-  if (!slowWhole || size <= SLOW_ABOVE) {
+  // a HEAD answer has no body to send slowly
+  if (!slowWhole || size <= SLOW_ABOVE || req.method === "HEAD") {
     res.end(data);
     return 200;
   }
@@ -152,7 +153,7 @@ export function serveDocs({ port = 0, transformHtml = null, routes = {}, root = 
     // no-store: the browser must load the viewer build under test, not a cached one
     const headers = { "Content-Type": TYPES[ext] || "application/octet-stream", "Cache-Control": "no-store" };
     // only a PDF is slow: Bootstrap's CSS and PDF.js itself are over SLOW_ABOVE too
-    countRange(server, sendData(req, res, data, headers, { slowWhole: slowWhole && ext === ".pdf", noRanges }), url);
+    countRange(server, sendData(req, res, data, headers, { slowWhole: slowWhole && ext.toLowerCase() === ".pdf", noRanges }), url);
   });
   server.rangeCounts = new Map();
   return listen(server, port);
@@ -192,7 +193,7 @@ export function serveRemote(mode, { port = 0, slowWhole = false, noRanges = fals
       return;
     }
     const headers = { "Content-Type": TYPES[path.extname(file)] || "application/octet-stream", "Cache-Control": "no-store", ...cors };
-    countRange(server, sendData(req, res, fs.readFileSync(file), headers, { slowWhole: slowWhole && path.extname(file) === ".pdf", noRanges }), url);
+    countRange(server, sendData(req, res, fs.readFileSync(file), headers, { slowWhole: slowWhole && path.extname(file).toLowerCase() === ".pdf", noRanges }), url);
   });
   server.rangeCounts = new Map();
   return listen(server, port);

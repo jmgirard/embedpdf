@@ -196,8 +196,9 @@ send each whole `.pdf` file over 128 KB slowly. On a local server PDF.js
 otherwise often gets the whole file before it asks for a range. The run then
 fails unless that server answered at least one byte-range request (HTTP 206)
 for each PDF.js embed's address. With `--remote cors`, that server is the
-second one. `--plant noranges` makes that server ignore every Range header,
-and the run must then fail. The text repeats every two pages, so these lines
+second one. If a PDF.js embed's PDF is not over 128 KB, or another embed
+loads the same address, the run exits 2. `--plant noranges` makes that
+server ignore every Range header, and the run must then fail. The text repeats every two pages, so these lines
 take no `--expect-text`:
 
 ```

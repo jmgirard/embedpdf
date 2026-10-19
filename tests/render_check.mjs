@@ -221,13 +221,17 @@
 //                       PDF.js loads it by byte ranges. Fail unless that
 //                       server answered at least one byte-range request
 //                       (HTTP 206) for each PDF.js embed's address. Answers
-//                       are counted per address, so embeds that share an
-//                       address share the count. Not with --alone,
-//                       --missing-pdfs, a URL, or --remote blocked|missing.
+//                       are counted per address, so the run exits 2 when a
+//                       PDF.js embed's address is also another embed's, or
+//                       when its PDF under docs/ is not over SLOW_ABOVE
+//                       bytes (PDF.js then asks for no range). Not with
+//                       --alone, --missing-pdfs, a URL, or --remote
+//                       blocked|missing.
 //   --plant noranges    with --expect-ranges: that server ignores every
 //                       Range header and sends the whole file (HTTP 200), so
 //                       the run must fail and name each PDF.js embed's
-//                       address.
+//                       address; with no PDF.js embed it exits 2 (nothing
+//                       to plant in).
 // Set CHROME_PATH to use another Chrome or Chromium binary.
 //
 // On a RevealJS page the check goes to each slide with Reveal.slide() and
@@ -253,7 +257,7 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import puppeteer from "puppeteer-core";
-import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, docsFile, REMOTE_MODES, DOCS } from "./serve_docs.mjs";
+import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, docsFile, REMOTE_MODES, DOCS, SLOW_ABOVE } from "./serve_docs.mjs";
 import { inkInPixels } from "./ink.mjs";
 import { expectedNames } from "./expect_names.mjs";
 
@@ -1153,8 +1157,10 @@ try {
       ...[...document.querySelectorAll("div.embedpdf")].map((el) => new URL(el.dataset.src || "", document.baseURI).href),
       ...[...document.querySelectorAll("a.embedpdf-btn")].map((a) => a.href),
     ];
-    // each PDF.js embed's PDF as an absolute URL (--expect-ranges)
+    // each PDF.js embed's PDF, and each embed's PDF, as an absolute URL
+    // (--expect-ranges)
     const pdfjsSrcs = [...document.querySelectorAll(".embedpdf-pdfjs")].map((el) => new URL(el.dataset.src || "", document.baseURI).href);
+    const embedSrcs = [...document.querySelectorAll("div.embedpdf")].map((el) => new URL(el.dataset.src || "", document.baseURI).href);
     // embeds in the load-failure state (see --expect-failed); each other embed
     // that holds the failure text is reported as malformed
     const failed = [];
@@ -1264,6 +1270,7 @@ try {
       malformed,
       srcs,
       pdfjsSrcs,
+      embedSrcs,
       inkPlanted,
     };
   }, inkInPixels.toString(), plant);
@@ -1540,6 +1547,24 @@ try {
     // server that serves the PDFs (the remote one with --remote cors)
     const pdfServer = remoteServer || server;
     const origin = `http://127.0.0.1:${pdfServer.address().port}`;
+    // a page on which the check cannot tell PDF.js loaded by ranges is a bad
+    // argument (exit 2): a PDF too small for PDF.js to ask for ranges, or an
+    // address that another embed (such as a native one, whose viewer can ask
+    // for ranges too) also loads
+    const misuse = [];
+    if (plant === "noranges" && res.pdfjsSrcs.length === 0) misuse.push("--plant noranges found nothing to plant in: no embed uses PDF.js");
+    for (const src of res.pdfjsSrcs) {
+      if (res.embedSrcs.filter((s) => s === src).length > 1) misuse.push(`${src} is the address of more than one embed, so its count would be shared`);
+      const file = docsFile(new URL(src).pathname.slice(1));
+      if (file && fs.statSync(file).size <= SLOW_ABOVE) misuse.push(`${src} is ${fs.statSync(file).size} bytes, not over ${SLOW_ABOVE}, so PDF.js does not ask for ranges`);
+    }
+    if (misuse.length) {
+      for (const m of misuse) console.error("render_check: --expect-ranges: " + m);
+      await browser.close();
+      server?.close();
+      remoteServer?.close();
+      process.exit(2);
+    }
     if (res.pdfjsSrcs.length === 0) {
       console.error("render_check: --expect-ranges given, but no embed uses PDF.js");
       ok = false;
