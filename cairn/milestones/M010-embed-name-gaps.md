@@ -1,6 +1,6 @@
 # M010: Embed name gaps
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
@@ -74,7 +74,45 @@ A screen reader tells each PDF.js embed apart by a name that never comes from a 
 - 2026-10-19: T7 docs: version 1.2.2 in `_extension.yml` and `embedpdf.lua`; README screen-reader bullet, DESIGN.md Architecture (corrected M010), and the name_test and percent_test page text give the name rule, the numbering, and the indicator. The simple-english hook's README count is 10 before and after the edit (none added).
 - 2026-10-19: claim audit: 76 claims read, 6 corrected — README.md (Safari scope of the check; a query with no `.pdf` value gives "PDF"), CLAUDE.md (what each browser check covers; four scripts take `--plant`), tests/safari_check.mjs (exit 2 for a plant with nothing to plant in, a server that cannot start, and a missing safaridriver, now true in code), tests/render_check.mjs (staleindicator fails only on the embed scrolled to page 2). The same reader re-read all six as correct.
 - 2026-10-19: T7 done: a scratchpad runner ran every `node tests/` and `pandoc lua` line in CLAUDE.md's fenced blocks plus the variants its notes name (`--alone http` for each `--alone file`, mac-safari and windows-touch for the desktop selfcontained, `--remote blocked`, and `--missing-pdfs` lines, ipad for the selfcontained iphone lines): 62 commands, 0 failed (viewer at 799db1e; the later script edits were the safari_check exit handling, rerun by hand with exit 0, and comments). Status set to review.
+- 2026-10-19: review return 1: AC5 fails (README names neither failed iOS Safari probe nor its result) and AC1 fails for `https://example.com//a.pdf` (gives "" not "a.pdf"); the return also carries the fix-now findings listed in the Review section, pass 1.
 
 ## Decisions
 
 ## Review
+
+Pass 1 (2026-10-19). Gate: `cairn_validate` all checks passed; the generic profile names no toolchain checks; no principle changed, so no `cairn_impact` run. `quarto render` exit 0 with only the known `files/100%.pdf` "Invalid URI" warning. No criterion ticked in this pass: two findings show AC1 and AC5 failing, so the milestone returns.
+
+spawned: diff-bug, blame-history, prior-review, ripple
+
+- diff-bug #1: README.md names neither failed iOS Safari probe nor its result, which AC5 requires — fix now (review return 1, AC5).
+- diff-bug #2: `fileName("https://example.com//a.pdf")` gives "" because the scheme-relative strip runs after the host strip; AC1's rule gives "a.pdf" — fix now (review return 1, AC1).
+- diff-bug #3: no check that `.embedpdf-pageinfo-text` stays visually hidden or that the shown text is "i / n" — fix now (render_check reads its box and the shown text).
+- diff-bug #4: ios_check takes any page number in "Page i of n", so a scroll handler that never updates passes in Safari — follow-up, row "Embed name follow-ups".
+- diff-bug #5: ios_check skips a missing indicator with no failure — fix now (fail unless `data-toolbar="false"`).
+- diff-bug #6: `staleindicator` can be planted in an embed that is not the one scrolled to page 2 and then passes — fix now (nothing to plant in unless the scrolled embed is the first PDF.js embed).
+- diff-bug #7: the page-2 read covers one embed per run — reject, planned change (AC4 names one embed).
+- diff-bug #8: safari_check scrolls to page 2 with no check that page 1 moved above the middle line — fix now (same guard as render_check).
+- diff-bug #9: ios_check throws on a non-integer `--expect-embeds` with `--expect-name` — fix now (exit 2).
+- diff-bug #10: the hidden indicator text relies on an unprefixed `user-select: none`, which Safari may need as `-webkit-user-select` — fix now (add the prefix to `.embedpdf-pageinfo`).
+- diff-bug #11: a failed embed keeps its number, so readers hear "(1 of 3)" and "(3 of 3)" — reject, planned change (AC2 counts failed embeds).
+- diff-bug #12: `./` gives ".", `../` "..", `a%2Fb.pdf` "a/b.pdf", `about:blank` itself, and a trailing `%20` a trailing space — follow-up, row "Embed name follow-ups".
+- diff-bug #13: DESIGN.md says `fileName()` reads the download link and takes the last path segment, where `embedName()` reads it and the code takes the last non-empty one — fix now.
+- diff-bug #14: safari_check leaves `role="heading"` on if a read throws — fix now (try/finally).
+- diff-bug #15: the slash and rawindicator checks rely on the tree leaving out `aria-hidden` text, with no direct assertion — reject, false: the `rawindicator` plant shows the check fails when the text is not hidden.
+- blame-history #1: a self-contained link with a query and no `.pdf` value now downloads as "document.pdf", not its last segment — follow-up, row "Embed name follow-ups".
+- blame-history #2: `aria-label` would be "undefined" if `hydratePdfjs` ran with no name — fix now (fall back to "PDF").
+- blame-history #3: a failed embed still counts in n — reject, planned change (AC2).
+- blame-history #4: an inlined PDF with no link is now "PDF", not "PDF: document.pdf" — reject, planned change (AC2).
+- blame-history #5: render_check now needs `--expect-pdfjs` with one `--expect-name` — reject, planned change (T3).
+- blame-history #6: the name check scrolls pages before the ink measure, so a canvas could be gone — reject, false: the viewer never removes a page canvas (only `showFailure` replaces children).
+- blame-history #7: CLAUDE.md:77 and :232 give the name as "PDF: <file name>" only — fix now (with ripple #4).
+- prior-review #1: `papers/` names the embed "papers", where M005's review expected "PDF" — reject, planned change (AC1's last non-empty segment); README's example, a bare site address, gives "PDF".
+- prior-review #2: `embedNames()` runs outside a per-embed catch — reject, false: it does string and attribute reads only, with no throwing input.
+- ripple #1: ROADMAP row "Embed name gaps" still describes the old state — reject, planned change: post-merge hygiene graduates the row.
+- ripple #2: ROADMAP row "Safari names on iOS" says the iOS page DOM checks toolbar controls; ios_check does not — fix now.
+- ripple #3: `tests/serve_docs.mjs` header names only render_check and ios_check as users — fix now.
+- ripple #4: CLAUDE.md:77 gives the embed name with no numbering or "PDF" — fix now.
+- ripple #5: render_check and ios_check `--expect-name` headers give the name with no numbering — fix now.
+- ripple #6: render_check:289 comment "one name for every PDF.js embed" — fix now.
+- ripple #7: CLAUDE.md:19 says `files/` holds copies of `sample.pdf`, but `files/inlined-sample.md` is a fixture page — fix now.
+- ripple #8: README leaves the indicator out of the iOS DOM check's scope — fix now (with diff-bug #1).
