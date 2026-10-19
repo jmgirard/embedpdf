@@ -20,7 +20,10 @@
 //                  by ranges
 //   noRanges       true: ignore every Range header and send the whole file
 // The server's rangeCounts Map holds the number of 206 answers per request
-// path, as sent (still percent-encoded, no ?query).
+// path, as sent (still percent-encoded, no ?query). Its requests array holds
+// one { method, path, search, origin, range, status } entry for each request
+// it answered with a file (200, 206, or 416), in order: path as sent, search
+// the ?query or "", origin and range the Origin and Range headers or null.
 // serveRemote(mode, { port, slowWhole, noRanges }) and pointPdfsAt(html, base,
 // page) put the PDFs on another origin.
 
@@ -110,9 +113,18 @@ function sendData(req, res, data, headers, { slowWhole = false, noRanges = false
   return 200;
 }
 
-// Count one 206 answer for a request path (as sent, still percent-encoded)
-function countRange(server, status, url) {
+// Count one 206 answer for a request path (as sent, still percent-encoded),
+// and log the request in server.requests
+function countRange(server, status, url, req) {
   if (status === 206) server.rangeCounts.set(url.pathname, (server.rangeCounts.get(url.pathname) || 0) + 1);
+  server.requests.push({
+    method: req.method,
+    path: url.pathname,
+    search: url.search,
+    origin: req.headers.origin ?? null,
+    range: req.headers.range ?? null,
+    status,
+  });
 }
 
 // resolves to the server once it listens; rejects on a listen error (such as
@@ -153,9 +165,10 @@ export function serveDocs({ port = 0, transformHtml = null, routes = {}, root = 
     // no-store: the browser must load the viewer build under test, not a cached one
     const headers = { "Content-Type": TYPES[ext] || "application/octet-stream", "Cache-Control": "no-store" };
     // only a PDF is slow: Bootstrap's CSS and PDF.js itself are over SLOW_ABOVE too
-    countRange(server, sendData(req, res, data, headers, { slowWhole: slowWhole && ext.toLowerCase() === ".pdf", noRanges }), url);
+    countRange(server, sendData(req, res, data, headers, { slowWhole: slowWhole && ext.toLowerCase() === ".pdf", noRanges }), url, req);
   });
   server.rangeCounts = new Map();
+  server.requests = [];
   return listen(server, port);
 }
 
@@ -193,9 +206,10 @@ export function serveRemote(mode, { port = 0, slowWhole = false, noRanges = fals
       return;
     }
     const headers = { "Content-Type": TYPES[path.extname(file)] || "application/octet-stream", "Cache-Control": "no-store", ...cors };
-    countRange(server, sendData(req, res, fs.readFileSync(file), headers, { slowWhole: slowWhole && path.extname(file).toLowerCase() === ".pdf", noRanges }), url);
+    countRange(server, sendData(req, res, fs.readFileSync(file), headers, { slowWhole: slowWhole && path.extname(file).toLowerCase() === ".pdf", noRanges }), url, req);
   });
   server.rangeCounts = new Map();
+  server.requests = [];
   return listen(server, port);
 }
 

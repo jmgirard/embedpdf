@@ -4,14 +4,14 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M014: Safari shared remote PDF
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1, GP4, GP6
 - **Resolves:** —
 - **Surface tier:** user-facing — readers in Safari get PDF.js embeds that fail today
-- **Branch/PR:** —
+- **Branch/PR:** m014-safari-shared-remote-pdf
 
 ## Goal
 
@@ -94,7 +94,7 @@ README, example.qmd, CLAUDE.md, and the DESIGN Known issues entry.
 
 ## Tasks
 
-- [ ] T1: Write the regression check first. Add `--remote cors` to
+- [x] T1: Write the regression check first. Add `--remote cors` to
       `tests/ios_check.mjs`, where line 239 now allows only `blocked`. Under
       `--remote cors`, check that each `renderer=native` embed is an
       `<object>` whose address is on the remote server, and that the server
@@ -142,6 +142,9 @@ README, example.qmd, CLAUDE.md, and the DESIGN Known issues entry.
 - 2026-10-19: plan gate chose to try range-keeping fixes first (a distinct PDF.js address or request options) over a whole-file fetch by the viewer because the user chose to keep ranges; falsified by Safari runs in which every range-keeping fix still fails.
 - 2026-10-19: plan chose to check desktop Safari (safari_check `--remote cors`) and desktop Chromium over checking only the iOS simulators, because `renderer=pdfjs` next to native embeds of one PDF is the documented desktop case; falsified by nothing at plan time.
 - 2026-10-19: criteria audit (full mode, fresh Opus reader): 11 findings, all disposed. AC1 now requires the native `<object>` on the remote server (T1 checks it) and names the server. AC2 answered: it states the desktop behavior, and AC1's v1.2.4 run is the discrimination evidence. AC2 gained desktop Chromium `--remote cors` lines. AC3 names `files/large.pdf`, fixes the embed order, and makes the Safari range claim depend on T2's result. T4 gained the v1.2.4 shared_test run, the `--plant noranges` run, and the exit-2 rule for two PDF.js embeds. AC4 dropped "every other case" and names the prose variants. `quarto render` moved to T6. T2 records a whole-file fallback as a D-entry (GP4). The warm-cache axis is answered: each run starts cold, and T2's probe covers it.
+- 2026-10-19: implement started on branch m014-safari-shared-remote-pdf; ROADMAP and header set in-progress.
+- 2026-10-19: T1 choice: serve_docs logs each file answer in `server.requests` (method, path, query, Origin, Range, status); a native embed counts as loaded when the remote server answered a GET with no Origin header for its path, since a CORS read sends one. ios_check `--remote cors` keeps every normal check and allows `--plant`, `--expect-text`, and `--expect-name`; safari_check takes `--remote cors` (mac and simulator targets).
+- 2026-10-19: T1 v1.2.4 runs: ios_check "embedpdf iPhone" `--remote cors --expect-native 1` on example.html exits 1, all 10 PDF.js embeds failed with "embedpdf: failed to render http://127.0.0.1:<port>/sample.pdf UnknownErrorException: Load failed", and the native embed's check passed. The same flags on name_test.html (no native embed) exit 0. Desktop Safari 27.0.1 `safari_check --target mac --remote cors` on example.html exits 1: both `renderer=pdfjs` embeds show "This PDF cannot be shown here.". helpers_test 122 passed (7 new request-log cases).
 
 ## Decisions
 

@@ -314,6 +314,18 @@ for (const kind of ["docs", "remote cors"]) {
         check(`remote ${mode}: OPTIONS allows any origin`, o.headers.get("access-control-allow-origin") === "*", o.headers.get("access-control-allow-origin"));
         check(`remote ${mode}: OPTIONS allows Range`, /(^|,\s*)range(\s*,|$)/i.test(o.headers.get("access-control-allow-headers") || ""), o.headers.get("access-control-allow-headers"));
       }
+      // the request log: one entry per file answer, in order; no entry for
+      // OPTIONS or a 404
+      if (mode === "missing") {
+        check("remote missing: requests logs no 404 or OPTIONS answer", remote.requests.length === 0, JSON.stringify(remote.requests));
+      } else {
+        const q = await fetch(at + "?x=1", { headers: { Origin: "http://127.0.0.1:1", Range: "bytes=0-9" } });
+        await q.arrayBuffer();
+        const log = remote.requests;
+        check(`remote ${mode}: requests logs the five file answers and not OPTIONS`, same(log.map((r) => r.status), [206, 206, 416, 200, 206]), JSON.stringify(log.map((r) => r.status)));
+        check(`remote ${mode}: a request with no Origin header logs origin null`, log[0] && log[0].origin === null && log[0].range === "bytes=0-99" && log[0].search === "", JSON.stringify(log[0]));
+        check(`remote ${mode}: a request logs its Origin, Range, path, and query`, same(log[4], { method: "GET", path: "/sample.pdf", search: "?x=1", origin: "http://127.0.0.1:1", range: "bytes=0-9", status: 206 }), JSON.stringify(log[4]));
+      }
     } finally {
       remote.close();
     }

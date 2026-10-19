@@ -7,7 +7,7 @@ _Last hygiene check: 2026-10-19 (M013 done: graduated "Large PDF range check", a
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M014 | Safari shared remote PDF | planned | — | normal | milestones/M014-safari-shared-remote-pdf.md |
+| M014 | Safari shared remote PDF | in-progress | — | normal | milestones/M014-safari-shared-remote-pdf.md |
 | M013 | Large PDF range check | done | — | normal | milestones/archive/M013-large-pdf-range-check.md |
 | M012 | Native embed name | done | — | normal | milestones/archive/M012-native-embed-name.md |
 | M011 | Inlined PDF failure | done | — | normal | milestones/archive/M011-inlined-pdf-failure.md |

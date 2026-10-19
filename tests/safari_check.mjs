@@ -35,6 +35,14 @@
 // aria-label to "PDF: wrong.pdf", and nativetitle gives it a title equal to
 // its aria-label. The run must then fail.
 //
+// --remote cors (with --target mac or simulator) serves the PDFs from a second
+// server on another port (another origin) that sends
+// Access-Control-Allow-Origin: *, and points each embed at it
+// (tests/serve_docs.mjs). The run then also fails if an embed shows "This PDF
+// cannot be shown here.", if a PDF.js embed's address or a native <object>'s
+// address is not on that server, or if that server answered no GET without an
+// Origin header for a native embed's PDF.
+//
 // --target page-script opens a probe page in Safari in the iOS simulator with
 // `xcrun simctl openurl` and reports whether a page script can read a
 // computed name (Element.prototype.computedName). It fails when it cannot.
@@ -47,14 +55,15 @@
 
 import { spawn, execFileSync } from "node:child_process";
 import net from "node:net";
-import { serveDocs } from "./serve_docs.mjs";
+import fs from "node:fs";
+import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, docsFile } from "./serve_docs.mjs";
 import { expectedNames } from "./expect_names.mjs";
 
 const args = process.argv.slice(2);
 const flags = {};
 for (let i = 0; i < args.length; i += 2) {
   const k = args[i];
-  if (!/^--(target|page|device|expect-native|expect-pdfjs|expect-name|plant)$/.test(k) || args[i + 1] === undefined) {
+  if (!/^--(target|page|device|expect-native|expect-pdfjs|expect-name|plant|remote)$/.test(k) || args[i + 1] === undefined) {
     console.error(`safari_check: bad argument ${k}`);
     process.exit(2);
   }
@@ -97,6 +106,11 @@ const page = flags.page || "example.html";
 const plant = flags.plant || null;
 if (plant && (target === "page-script" || !["rawindicator", "nonumber", "nativename", "nativetitle"].includes(plant))) {
   console.error("safari_check: --plant must be rawindicator, nonumber, nativename, or nativetitle, with --target mac or simulator");
+  process.exit(2);
+}
+const remote = flags.remote || null;
+if (remote && (remote !== "cors" || target === "page-script")) {
+  console.error("safari_check: --remote must be cors, with --target mac or simulator");
   process.exit(2);
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -186,7 +200,25 @@ const freePort = () =>
   });
 // the device and the server first, so an exit there leaves no safaridriver
 const dev = target === "simulator" ? simulator(flags.device) : null;
-const server = await startServer();
+// --remote cors: the PDFs come from a second server (another origin) that
+// sends Access-Control-Allow-Origin: *
+const remoteServer = remote
+  ? await serveRemote("cors").catch((err) => {
+      console.error(`safari_check: cannot start the remote server: ${err.message}`);
+      process.exit(2);
+    })
+  : null;
+const remoteBase = remoteServer ? `http://127.0.0.1:${remoteServer.address().port}/` : null;
+if (remoteBase) {
+  const file = docsFile(page);
+  const off = file ? embedSrcsOffRemote(fs.readFileSync(file, "utf8"), remoteBase, page) : [`${page} is not a file under docs/`];
+  if (off.length) {
+    console.error(`safari_check: --remote: ${page} has embeds whose PDF cannot move to the remote server: ${off.join(", ")}`);
+    remoteServer.close();
+    process.exit(2);
+  }
+}
+const server = await startServer(remoteBase ? { transformHtml: (html) => pointPdfsAt(html, remoteBase, page) } : {});
 const sdPort = await freePort();
 const driver = spawn("safaridriver", ["-p", String(sdPort)], { stdio: "ignore" });
 driver.on("error", (err) => {
@@ -257,6 +289,26 @@ try {
   const start = Date.now();
   while ((await unhydrated()) && Date.now() - start < 30000) await sleep(250);
   if (await unhydrated()) failures.push("an embed is still not hydrated after 30 s");
+  // --remote cors: no embed failed, each PDF.js embed's data-src and each
+  // native <object>'s address is on the remote server, and that server
+  // answered a GET with no Origin header (a CORS read sends one) for each
+  // native embed's PDF
+  if (remoteBase) {
+    const where = await run(
+      `return { failed: document.querySelectorAll(".embedpdf-failed").length,
+                pdfjs: [...document.querySelectorAll(".embedpdf-pdfjs")].map((e) => new URL(e.dataset.src, document.baseURI).href),
+                native: [...document.querySelectorAll(".embedpdf-native object")].map((o) => o.data) };`
+    );
+    report.remote = where;
+    if (where.failed) failures.push(`${where.failed} embeds show "This PDF cannot be shown here."`);
+    for (const a of where.pdfjs) if (!a.startsWith(remoteBase)) failures.push(`PDF.js embed address ${a} is not on ${remoteBase}`);
+    for (const a of where.native) {
+      if (!a.startsWith(remoteBase)) failures.push(`native <object> address ${a} is not on ${remoteBase}`);
+      else if (!remoteServer.requests.some((r) => r.path === new URL(a).pathname && r.method === "GET" && r.origin === null)) {
+        failures.push(`the remote server answered no request for ${new URL(a).pathname} without an Origin header, so the native viewer did not load it`);
+      }
+    }
+  }
   if (plant) {
     report.planted = await run(
       `if (arguments[0] === "nativename" || arguments[0] === "nativetitle") {
@@ -387,6 +439,7 @@ try {
 } finally {
   if (session) await wd("DELETE", `/session/${session}`).catch(() => {});
   server.close();
+  remoteServer?.close();
   driver.kill();
 }
 console.log(JSON.stringify({ target, page, ...report, failures }, null, 2));
