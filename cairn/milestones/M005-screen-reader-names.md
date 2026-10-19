@@ -93,6 +93,7 @@ one PDF in a subfolder, named with a space once and percent-encoded once. Checks
 - 2026-10-18: checkpoint (T4, T5 in progress): version 1.2.1 in both places; CLAUDE.md lines gain `--expect-name` and four `name_test.html` lines; README note and DESIGN.md Architecture drafted; full verify run (38 lines) and claim audit running.
 - 2026-10-18: claim audit: 48 claims read, 4 corrected — README.md (Safari checked attributes only, not toolbar controls), name_test.qmd (no screen reader used), CLAUDE.md (toolbar check wording), tests/ios_check.mjs (`--expect-name` skipped under `--remote`).
 - 2026-10-18: T4, T5 done: `pandoc lua tests/test_shortcode.lua` 40 passed, 0 failed; `quarto render` clean; every CLAUDE.md check line plus its `--alone http`, desktop-device, `ipad`, and remote-desktop variants (38 runs, Chromium 155 and the iOS 27.0 "embedpdf iPhone" and "embedpdf iPad" simulators) exited 0; after the claim-audit text change, the 4 `name_test.html` lines exited 0 again. Status → review.
+- 2026-10-18: step-7 approval: m005-screen-reader-names approved for merge
 
 ## Decisions
 
