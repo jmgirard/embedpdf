@@ -191,3 +191,27 @@ Pass 1 (2026-10-19, head 58da15b, Chromium 155.0.8059.39, iOS 27.0 simulators). 
 - ripple #3: ios_check `--timeout` 180 with `--slow-text` — fix now (same as diff-bug #5)
 - ripple #4: the probe's opening comment does not say a stuck embed skips the scroll — fix now
 - ripple #5: the `--slow-text` claim — fix now (same as diff-bug #3)
+- Pass 1 fix-now lines: all fixed e6e22ce (review return 1, T7).
+
+Pass 2 (2026-10-19, after return 1).
+
+- spawned: diff-bug, blame-history, prior-review, ripple
+- Pass-2 evidence at a9ead66: the 10 AC1 to AC5 lines and the 13 AC6 lines gave their planned exits and lines; superseded by the run after the pass-2 fixes below.
+- diff-bug #1: the `--slow-text` pass bounds are exact, so a late timer at 9995 ms or 59990 ms in all fails the run — fix now, fixed 3624e96 (bounds 9000 ms and 50000 ms)
+- diff-bug #2: ios_check's 240 s `--slow-text` budget leaves out the last scroll pass, sleeps, and load — fix now, fixed 3624e96 (300 s)
+- diff-bug #3: the stuck-embed stop exits 1 before a text plant could report finding nothing (exit 2) — follow-up, row "Text check follow-ups"
+- diff-bug #4: the comment after the slow aid claims no text changes after the wait, false when the wait ends on a limit — fix now, fixed 3624e96
+- diff-bug #5: a canvas is numbered among existing canvases, not by its page — fix now, fixed 3624e96 (named by page number)
+- diff-bug #6: one header line runs to 84 columns — reject (style)
+- diff-bug #7: an empty `--slow-text ""` passes ios_check's check — fix now, fixed 3624e96
+- blame-history #1: ios_check's scroll loop checks 90 s only between passes, so a long PDF can pass 180 s (loop on main before M009) — follow-up, row "Text check follow-ups"
+- blame-history #2: the CLAUDE.md note says "wait once", but `--slow-text` waits twice — fix now, fixed 3624e96
+- blame-history #3: `norender` still costs 10 s per embed on a page with no slides; pass 1 fixed only the planted rule and documented the cost — follow-up, row "Text check follow-ups" (the per-embed canvas wait)
+- blame-history #4: canvas numbering — fix now (same as diff-bug #5)
+- blame-history #5: a page with no text keeps each text wait to its 10 s limit (as on main) — follow-up, row "Text check follow-ups"
+- prior-review #1: `norender` cost on a page with no slides — follow-up (same as blame-history #3)
+- prior-review #2: the text-plant exit-2 path prints no text failures first — follow-up, already in row "Text check follow-ups" (pass 1 blame-history #5)
+- ripple #1: ios_check's "All but blank and missing need --expect-text" is wrong for wrongname and norole — reject (false: the sentence is inside the `--plant` entry that lists only blank to unhydrated; wrongname and norole have their own entry)
+- ripple #2: row "Name plant slide target" under-narrows: with `--expect-text` the name plants can no longer take a late embed either — fix now, fixed 3624e96
+- ripple #3: the stuck line's time counts only the second wait in slow mode — reject (false: the line names the wait that ended; the aid's first wait is set-up)
+- ripple #4: row "Text check follow-ups" does not name `stopRun` as a `process.exit` site — reject (false: the row's item covers every such call)
