@@ -1,4 +1,6 @@
-// Static server for docs/, shared by render_check.mjs and ios_check.mjs.
+// Static server for docs/ (or another root), shared by render_check.mjs,
+// ios_check.mjs, safari_check.mjs, and name_rule_test.mjs, which serves
+// _extensions/embedpdf. tests/helpers_test.mjs tests it.
 //
 // Node's http module is used instead of `python3 -m http.server`: Python's
 // server listens with a backlog of 5, and a browser opening many connections

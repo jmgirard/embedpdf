@@ -1,0 +1,24 @@
+---
+title: "embedpdf names with no file name in the path"
+resources:
+  - "files/get"
+---
+
+Both embeds show a copy of `sample.pdf` with PDF.js. The checks in `tests/`
+read the name that the viewer gives each one for screen readers.
+
+## A query-style address
+
+The address is `files/get?file=sample.pdf`. The file `files/get` is a copy of
+`sample.pdf`, and the server ignores the query. The viewer takes the name from
+the query value, so the embed is named "PDF: sample.pdf".
+
+{{< pdf "files/get?file=sample.pdf" renderer=pdfjs >}}
+
+## An inlined PDF with no download link
+
+This embed is written by hand, not by the shortcode. Its `data-src` holds
+`sample.pdf` as a `data:` address, and it has no download link that names the
+file. The embed is named "PDF".
+
+{{< include files/inlined-sample.md >}}

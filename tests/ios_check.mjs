@@ -63,17 +63,30 @@
 //                          <ms> is at most 9000 and pages × <ms> is at most
 //                          50000, which leaves room for late timers under the
 //                          10 s and 60 s limits.
-//   --expect-name "<file name>"
+//   --expect-name "<file name>" | "<name 1>|<name 2>|..."
 //                          fail unless each PDF.js embed has role="group" and
-//                          aria-label "PDF: <file name>" in the DOM (Safari's
+//                          its expected aria-label ("PDF: <file name>",
+//                          numbered or "PDF" as below) in the DOM (Safari's
 //                          accessibility tree is not read); cannot be
 //                          combined with --remote or --missing-pdfs. One name
-//                          for every embed: the "|" list is render_check's.
-//   --plant wrongname|norole
+//                          stands for the --expect-embeds embeds; a "|" list
+//                          gives one name per embed in page order. "-" and
+//                          the " (k of n)" numbering work as in
+//                          render_check (tests/expect_names.mjs). Each
+//                          toolbar's page indicator must hold "Page i of
+//                          <pages>" and a shown "i / <pages>" that is
+//                          aria-hidden, and no other node; an embed with no
+//                          indicator fails unless data-toolbar="false".
+//   --plant wrongname|norole|nonumber|rawindicator|noindicator|strayindicator
 //                          with --expect-name: change the first PDF.js
 //                          embed's aria-label to "PDF: wrong.pdf"
-//                          (wrongname), or remove its role attribute
-//                          (norole); the check must then fail
+//                          (wrongname), remove its role attribute (norole),
+//                          remove the " (k of n)" from its aria-label
+//                          (nonumber), remove aria-hidden from its shown
+//                          "i / n" (rawindicator), remove its page
+//                          indicator (noindicator), or add a text node to
+//                          the indicator (strayindicator); the check must
+//                          then fail
 //   --alone yes|no         yes: serve a copy of the page from an empty
 //                          temporary directory instead of docs/ (default no)
 //   --remote blocked       serve the PDFs from a second server on another port
@@ -110,6 +123,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, docsFile, DOCS } from "./serve_docs.mjs";
 import { inkInPixels } from "./ink.mjs";
+import { expectedNames } from "./expect_names.mjs";
 
 const args = process.argv.slice(2);
 const FLAGS = ["device", "page", "expect-embeds", "expect-pages", "expect-text", "expect-name", "port", "timeout", "screenshot", "shot-embed", "plant", "alone", "remote", "slow-text"];
@@ -135,7 +149,12 @@ const opt = (name, fallback) => {
 };
 const device = opt("device", "");
 const pagePath = opt("page", "example.html");
-const expectEmbeds = Number(opt("expect-embeds", "10"));
+const expectEmbedsArg = opt("expect-embeds", "10");
+const expectEmbeds = Number(expectEmbedsArg);
+if (!/^\d+$/.test(expectEmbedsArg)) {
+  console.error("ios_check: --expect-embeds needs a whole number");
+  process.exit(2);
+}
 const expectPages = Number(opt("expect-pages", "2"));
 // 0: the system picks a free port
 const portArg = opt("port", "0");
@@ -195,7 +214,7 @@ if ("slow-text" in parsed && !(phrases && /^\d+$/.test(slowText) && Number(slowT
   process.exit(2);
 }
 const TEXT_PLANTS = ["notext", "swap", "visible", "inert", "cvhidden"];
-const NAME_PLANTS = ["wrongname", "norole"];
+const NAME_PLANTS = ["wrongname", "norole", "nonumber", "rawindicator", "noindicator", "strayindicator"];
 // planted before the text wait; needs --expect-text
 const WAIT_PLANTS = ["unhydrated"];
 if (plant && !["blank", "missing", ...NAME_PLANTS, ...TEXT_PLANTS, ...WAIT_PLANTS].includes(plant)) {
@@ -203,10 +222,13 @@ if (plant && !["blank", "missing", ...NAME_PLANTS, ...TEXT_PLANTS, ...WAIT_PLANT
   process.exit(2);
 }
 const expectName = opt("expect-name", null);
-if (expectName === "") {
-  console.error("ios_check: --expect-name needs a file name");
+if (expectName !== null && expectName.split("|").some((n) => !n)) {
+  console.error("ios_check: --expect-name needs a non-empty file name for each embed");
   process.exit(2);
 }
+// the full names, numbered where they repeat, as the viewer numbers them; one
+// name stands for the --expect-embeds embeds
+const expectLabels = expectName === null ? null : expectedNames(expectName.split("|"), expectEmbeds);
 if (expectName && (remote || missingPdfs)) {
   console.error("ios_check: --expect-name cannot be combined with --remote or --missing-pdfs (no embed shows a PDF there)");
   process.exit(2);
@@ -388,6 +410,27 @@ const PROBE = `<script>
     const first = embeds().find((el) => kind(el) === "pdfjs");
     if (first) { first.removeAttribute("role"); namePlanted = plant; }
   }
+  if (plant === "strayindicator") {
+    const first = embeds().find((el) => kind(el) === "pdfjs");
+    const info = first && first.querySelector(".embedpdf-pageinfo");
+    if (info) { info.append(document.createTextNode(" 1 / 2")); namePlanted = plant; }
+  }
+  if (plant === "noindicator") {
+    const first = embeds().find((el) => kind(el) === "pdfjs");
+    const info = first && first.querySelector(".embedpdf-pageinfo");
+    if (info) { info.remove(); namePlanted = plant; }
+  }
+  if (plant === "rawindicator") {
+    const first = embeds().find((el) => kind(el) === "pdfjs");
+    const shown = first && first.querySelector(".embedpdf-pageinfo [aria-hidden]");
+    if (shown) { shown.removeAttribute("aria-hidden"); namePlanted = plant; }
+  }
+  if (plant === "nonumber") {
+    const first = embeds().find((el) => kind(el) === "pdfjs");
+    const label = first ? first.getAttribute("aria-label") || "" : "";
+    const bare = label.replace(/ \\(\\d+ of \\d+\\)$/, "");
+    if (bare !== label) { first.setAttribute("aria-label", bare); namePlanted = plant; }
+  }
 
   if (plant === "blank" || plant === "missing") {
     const first = embeds().find((el) => kind(el) === "pdfjs");
@@ -447,6 +490,20 @@ const PROBE = `<script>
         text: text[i],
         role: el.getAttribute("role"),
         label: el.getAttribute("aria-label"),
+        toolbarOff: el.dataset.toolbar === "false",
+        indicator: (() => {
+          const info = el.querySelector(".embedpdf-toolbar .embedpdf-pageinfo");
+          if (!info) return null;
+          const spoken = info.querySelector(".embedpdf-pageinfo-text");
+          const shown = [...info.children].find((c) => c !== spoken);
+          return {
+            spoken: spoken ? spoken.textContent : null,
+            shown: shown ? shown.textContent : null,
+            shownHidden: !!shown && shown.getAttribute("aria-hidden") === "true",
+            // any other node (a stray text node too) would be shown or read
+            others: [...info.childNodes].filter((n) => n !== spoken && n !== shown).length,
+          };
+        })(),
         failure,
       };
     }),
@@ -555,7 +612,10 @@ try {
   else if (checked.length !== expectEmbeds) {
     failures.push(`expected ${expectEmbeds} embeds not set to renderer=native, found ${checked.length}`);
   }
-  for (const e of report.stuck ? [] : checked) {
+  if (expectLabels && !report.stuck && expectLabels.length !== checked.length) {
+    failures.push(`--expect-name gives ${expectLabels.length} names for ${checked.length} embeds not set to renderer=native`);
+  }
+  for (const [i, e] of (report.stuck ? [] : checked).entries()) {
     if (remote) {
       // Safari names no cause beyond "Load failed"; it must be the fetch of
       // this embed's remote PDF that failed, not the PDF.js import
@@ -577,10 +637,21 @@ try {
     else if (e.pages !== expectPages) failures.push(`embed ${e.index}: ${e.pages} page containers, expected ${expectPages}`);
     else if (!e.ink.every(Boolean)) failures.push(`embed ${e.index}: pages without ink: ${e.ink.map((v, i) => (v ? null : i + 1)).filter(Boolean).join(", ")}`);
     // --expect-name: the embed's role and name, read from the DOM
-    if (expectName && !remote && e.renderer === "pdfjs") {
-      const name = "PDF: " + expectName;
+    if (expectLabels && !remote && e.renderer === "pdfjs") {
+      const name = expectLabels[i];
       if (e.role !== "group") failures.push(`embed ${e.index}: role attribute is ${e.role}, not group`);
       if (e.label !== name) failures.push(`embed ${e.index}: aria-label is "${e.label}", not "${name}"`);
+      // the toolbar's page indicator: "Page i of n" for screen readers, and
+      // the shown "i / n" for the same page hidden from them
+      const ind = e.indicator;
+      if (!ind && !e.toolbarOff) failures.push(`embed ${e.index}: no page indicator, and toolbar=false is not set`);
+      if (ind) {
+        const m = /^Page (\d+) of (\d+)$/.exec(ind.spoken || "");
+        if (!m || Number(m[2]) !== e.pages) failures.push(`embed ${e.index}: indicator text is ${JSON.stringify(ind.spoken)}, not "Page i of ${e.pages}"`);
+        else if (ind.shown !== `${m[1]} / ${m[2]}`) failures.push(`embed ${e.index}: indicator shows ${JSON.stringify(ind.shown)}, not "${m[1]} / ${m[2]}"`);
+        if (!ind.shownHidden) failures.push(`embed ${e.index}: the shown indicator ${JSON.stringify(ind.shown)} is not aria-hidden`);
+        if (ind.others) failures.push(`embed ${e.index}: the indicator holds ${ind.others} node(s) besides its two spans`);
+      }
     }
     // --expect-text: the hidden text, read before the probe scrolled
     if (phrases && !remote && e.renderer === "pdfjs") {

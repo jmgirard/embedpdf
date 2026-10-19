@@ -14,9 +14,11 @@ Key files:
 - `example.qmd` (guide), `native.qmd`, `revealjs_test.qmd` → rendered into `docs/`
   (GitHub Pages). `dummy*.pdf` are blank test files; `sample.pdf` is the realistic
   example used by `example.qmd`.
-- `name_test.qmd`, `percent_test.qmd`, `selfcontained_test.qmd`, and
-  `selfcontained_slides_test.qmd` are test pages, also rendered into `docs/`.
-  `files/` holds copies of `sample.pdf` under the names they test.
+- `name_test.qmd`, `name_edge_test.qmd`, `percent_test.qmd`,
+  `selfcontained_test.qmd`, and `selfcontained_slides_test.qmd` are test
+  pages, also rendered into `docs/`. `files/` holds copies of `sample.pdf`
+  under the names they test, and `inlined-sample.md`, the hand-written
+  embed that `name_edge_test.qmd` includes.
 
 ## Verify before finishing — you are the test runner (no CI)
 
@@ -50,27 +52,50 @@ node tests/render_check.mjs example.html --device iphone --expect-native 1 --exp
 node tests/render_check.mjs example.html --device ipad --expect-native 1 --expect-pdfjs 10 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/render_check.mjs name_test.html --expect-native 0 --expect-pdfjs 2 --expect-name "sample copy.pdf"
 node tests/render_check.mjs name_test.html --device iphone --expect-native 0 --expect-pdfjs 2 --expect-name "sample copy.pdf"
+node tests/render_check.mjs name_edge_test.html --expect-native 0 --expect-pdfjs 2 --expect-pages 2 --expect-name "sample.pdf|-" --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/render_check.mjs name_edge_test.html --device iphone --expect-native 0 --expect-pdfjs 2 --expect-pages 2 --expect-name "sample.pdf|-" --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/ios_check.mjs --device "embedpdf iPhone" --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/ios_check.mjs --device "embedpdf iPad" --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/ios_check.mjs --device "embedpdf iPhone" --page name_test.html --expect-embeds 2 --expect-name "sample copy.pdf"
 node tests/ios_check.mjs --device "embedpdf iPad" --page name_test.html --expect-embeds 2 --expect-name "sample copy.pdf"
+node tests/ios_check.mjs --device "embedpdf iPhone" --page name_edge_test.html --expect-embeds 2 --expect-name "sample.pdf|-" --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/ios_check.mjs --device "embedpdf iPad" --page name_edge_test.html --expect-embeds 2 --expect-name "sample.pdf|-" --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/name_rule_test.mjs
+node tests/safari_check.mjs --target mac --expect-pdfjs 2 --expect-name sample.pdf
 ```
+
+`name_rule_test.mjs` checks the viewer's file-name rule over a table of
+addresses in Chrome. `safari_check.mjs` reads Safari's names through
+safaridriver (WebDriver "Get Computed Label"). Turn on safaridriver once with
+`safaridriver --enable` or Safari Settings > Developer > "Allow remote
+automation". Its `--target simulator` and `--target page-script` probes fail
+on the iOS 27.0 simulators (see "Still unverified").
 
 `--expect-text` checks the hidden page text that screen readers read. The
 phrases come from `pdftotext sample.pdf`: phrase 1 is on page 1, phrase 2 on
 page 2. In render_check it also checks Chrome's accessibility tree.
 `revealjs_test.html` uses other PDFs and gets no text check. `--expect-name`
-checks that each PDF.js embed is a group named "PDF: <file name>", and in
-render_check that each toolbar control's name is its tooltip and is not
-repeated as its description. In render_check, `--expect-name "a.pdf|b.pdf"`
+checks that each PDF.js embed is a group with its expected name: "PDF:
+<file name>", numbered, or "PDF" alone, as below. In render_check it also
+checks that each toolbar control's name is its tooltip and is not
+repeated as its description. `--expect-name "a.pdf|b.pdf"`
 gives one name per PDF.js embed in page order, as on `revealjs_test.html`. The
 list must name every PDF.js embed, and it cannot hold a file name with `|`.
+One name stands for the `--expect-pdfjs` (render_check, safari_check) or
+`--expect-embeds` (ios_check) embeds. A name the list holds n > 1 times is expected as
+"PDF: <file name> (k of n)". The viewer numbers embeds that share a name in
+the same way. `-` stands for an embed named "PDF" alone.
 `name_test.html` shows `files/sample copy.pdf` by a path with a space and by
-one with `%20`. `percent_test.html` is self-contained. It shows
+one with `%20`. `name_edge_test.html` shows `sample.pdf` twice. The first
+embed uses the query-style address `files/get?file=sample.pdf`, and
+`files/get` is a copy of the PDF. The second embed is written by hand in
+`files/inlined-sample.md`. It holds the PDF as a `data:` address (made with
+`base64`) and has no download link. `percent_test.html` is self-contained. It shows
 `files/100%.pdf` by `files/100%25.pdf` and by a bare `%`.
 `--plant` in each script plants one defect so you can see a
-check fail. The two scripts have different plant lists (see each header).
-With `--expect-text`, both scripts wait once for the page's text, or twice
+check fail. render_check, ios_check, safari_check, and name_rule_test take
+`--plant`, and each header says what its `--plant` does.
+With `--expect-text`, render_check and ios_check wait once for the page's text, or twice
 with `--slow-text`. When every
 embed is hydrated and every page has text, the wait ends. While something is
 missing, it ends after 10 s with no change, or after 60 s in all. If an embed
@@ -149,7 +174,8 @@ xcrun simctl create "embedpdf iPhone" "iPhone 17" com.apple.CoreSimulator.SimRun
 xcrun simctl create "embedpdf iPad" "iPad Air 11-inch (M4)" com.apple.CoreSimulator.SimRuntime.iOS-27-0
 ```
 
-**After any change to `tests/ink.mjs` or `tests/serve_docs.mjs`**, run the
+**After any change to `tests/ink.mjs`, `tests/serve_docs.mjs`, or
+`tests/expect_names.mjs`**, run the
 helper tests (Node only, no browser), then the browser checks above:
 
 ```
@@ -206,10 +232,18 @@ errors.
 - A PDF missing from the page's own site (HTTP 404) on a real phone. It is
   checked only in Chromium and in the iOS 27.0 simulators.
 - A real screen reader (VoiceOver, TalkBack) reading a PDF.js embed's hidden
-  page text, its "PDF: <file name>" group name, and its toolbar controls'
-  `title`-only names. Checked only in Chromium's accessibility tree and in
-  Safari's page DOM in the iOS simulators. Safari's names for the toolbar
-  controls were not checked.
+  page text, its group name ("PDF: <file name>", numbered or "PDF"), its toolbar controls'
+  `title`-only names, and the page indicator's "Page i of n". All of these are
+  checked in Chromium's accessibility tree. In Safari's page DOM in the iOS
+  simulators, the group name, hidden text, and indicator are checked, but not
+  the toolbar controls. In desktop Safari 27.0.1, `safari_check.mjs --target
+  mac` checks the group name, toolbar controls, and indicator, but not the
+  page text.
+- Safari's computed names in the iOS simulators. On 2026-10-19 with iOS 27.0,
+  `safari_check.mjs --target simulator` got "Could not find any session hosts
+  that match the requested capabilities" from safaridriver. The simulators'
+  Safari "Remote Automation" setting was not turned on. `--target
+  page-script` found no `Element.prototype.computedName`.
 - The cost of reading every page's text at load on a constrained phone: memory
   and first-paint delay for a long PDF were not measured.
 

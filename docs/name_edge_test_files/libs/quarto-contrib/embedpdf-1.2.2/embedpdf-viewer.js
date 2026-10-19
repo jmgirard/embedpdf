@@ -157,9 +157,8 @@ async function hydratePdfjs(el, opts) {
   el.textContent = "";
   el.classList.add("embedpdf-pdfjs");
   // a screen reader names the embed by its file, before its "Page i of n" groups
-  const name = opts.filename || fileName(opts.src);
   el.setAttribute("role", "group");
-  el.setAttribute("aria-label", name ? "PDF: " + name : "PDF");
+  el.setAttribute("aria-label", opts.name || "PDF");
   if (opts.width) el.style.width = /^\d+$/.test(opts.width) ? opts.width + "px" : opts.width;
 
   const pagesEl = document.createElement("div");
@@ -273,9 +272,19 @@ async function hydratePdfjs(el, opts) {
     const toolbar = document.createElement("div");
     toolbar.className = "embedpdf-toolbar";
 
+    // shown as "1 / 2", read by screen readers as "Page 1 of 2"
     const indicator = document.createElement("span");
     indicator.className = "embedpdf-pageinfo";
-    indicator.textContent = `1 / ${doc.numPages}`;
+    const spoken = document.createElement("span");
+    spoken.className = "embedpdf-pageinfo-text";
+    const shown = document.createElement("span");
+    shown.setAttribute("aria-hidden", "true");
+    indicator.append(spoken, shown);
+    const showPage = (i) => {
+      spoken.textContent = `Page ${i} of ${doc.numPages}`;
+      shown.textContent = `${i} / ${doc.numPages}`;
+    };
+    showPage(1);
 
     // A control's title is its tooltip and its only name: the glyph is hidden
     // from screen readers, and no aria-label repeats the title (Chrome would
@@ -314,7 +323,7 @@ async function hydratePdfjs(el, opts) {
         for (let i = 0; i < state.pageEls.length; i++) {
           const rect = state.pageEls[i].getBoundingClientRect();
           if (rect.bottom > host.top + host.height / 2) {
-            indicator.textContent = `${i + 1} / ${doc.numPages}`;
+            showPage(i + 1);
             break;
           }
         }
@@ -371,18 +380,90 @@ async function hydratePdfjs(el, opts) {
   }
 }
 
-// the last path segment of a link target, percent-decoded where possible
-function fileName(href) {
-  const name = href.split(/[?#]/)[0].split("/").pop();
+function decoded(s) {
   try {
-    return decodeURIComponent(name);
+    return decodeURIComponent(s);
   } catch {
-    return name;
+    return s;
   }
 }
 
-async function hydrate(el) {
+// The file name in a PDF's address, or "" when the address names no file.
+// Without its #fragment: the last path segment, percent-decoded, when it ends
+// in .pdf; else the last segment of the first query value that ends in .pdf
+// (a script that takes the PDF by a query value); else the last non-empty path
+// segment when there is no query. A host alone, and a data: or blob: address,
+// name no file. Exported for tests/name_rule_test.mjs.
+export function fileName(address) {
+  const href = String(address || "").trim();
+  if (/^(data|blob):/i.test(href)) return "";
+  const noFragment = href.split("#")[0];
+  const q = noFragment.indexOf("?");
+  const beforeQuery = q < 0 ? noFragment : noFragment.slice(0, q);
+  // drop the scheme and host, or the host of a scheme-relative address (once:
+  // a doubled slash after the host starts the path, not another host)
+  const path = /^[a-z][a-z0-9+.-]*:\/\//i.test(beforeQuery)
+    ? beforeQuery.replace(/^[a-z][a-z0-9+.-]*:\/\/[^/]*/i, "")
+    : beforeQuery.replace(/^\/\/[^/]*/, "");
+  const segments = path.split("/").map(decoded);
+  const last = segments[segments.length - 1];
+  if (/\.pdf$/i.test(last)) return last;
+  if (q >= 0) {
+    for (const [, value] of new URLSearchParams(noFragment.slice(q + 1))) {
+      const name = value.split("/").pop();
+      if (/\.pdf$/i.test(name)) return name;
+    }
+    return "";
+  }
+  return segments.filter(Boolean).pop() || "";
+}
+
+// A PDF.js embed's name for screen readers: "PDF: <file name>", or "PDF" when
+// its address names no file. An inlined (data:) PDF is named by its fallback
+// download link, which still names the separate file.
+function embedName(el) {
+  let address = el.dataset.src || "";
+  // a URL attribute may hold spaces around the address; fileName() drops them too
+  if (/^\s*data:/i.test(address)) {
+    const fallback = el.querySelector("a[download]");
+    address = fallback ? fallback.getAttribute("href") : "";
+  }
+  const name = fileName(address);
+  return name ? "PDF: " + name : "PDF";
+}
+
+function usesPdfjs(el) {
+  const renderer = el.dataset.renderer || "auto";
+  return !(renderer === "native" || (renderer === "auto" && nativeSupported()));
+}
+
+// Each embed's name, by placeholder. PDF.js embeds that share a name are
+// numbered "(k of n)" in document order (a RevealJS deck holds all its slides
+// in the document), so a screen reader can tell them apart. The count takes
+// each embed by the renderer it gets here, whether or not its PDF loads.
+function embedNames(placeholders) {
+  const names = new Map();
+  const total = new Map();
+  for (const el of placeholders) {
+    if (!el.dataset.src || !usesPdfjs(el)) continue;
+    const name = embedName(el);
+    names.set(el, name);
+    total.set(name, (total.get(name) || 0) + 1);
+  }
+  const seen = new Map();
+  for (const [el, name] of names) {
+    const n = total.get(name);
+    if (n < 2) continue;
+    const k = (seen.get(name) || 0) + 1;
+    seen.set(name, k);
+    names.set(el, `${name} (${k} of ${n})`);
+  }
+  return names;
+}
+
+async function hydrate(el, name) {
   const opts = {
+    name,
     src: el.dataset.src,
     renderer: el.dataset.renderer || "auto",
     page: parseInt(el.dataset.page || "1", 10) || 1,
@@ -394,12 +475,13 @@ async function hydrate(el) {
   opts.href = opts.src;
   opts.filename = "";
   opts.label = opts.src;
-  if (/^data:/i.test(opts.src)) {
+  if (/^\s*data:/i.test(opts.src)) {
     // A self-contained page has the PDF inlined in data-src, but its download
     // links (the fallback link and the button) still name the separate file.
     // Point them at the inlined PDF, under that file's name.
     const fallback = el.querySelector("a[download]");
     const fileHref = fallback ? fallback.getAttribute("href") : "";
+    // a download needs a file name; the embed's name does not take this one
     opts.filename = fileName(fileHref) || "document.pdf";
     opts.label = "the inlined " + opts.filename;
     // embed-resources marks an element with an inlined data-src as an image;
@@ -419,8 +501,7 @@ async function hydrate(el) {
       a.setAttribute("download", opts.filename);
     }
   }
-  const useNative = opts.renderer === "native" || (opts.renderer === "auto" && nativeSupported());
-  if (useNative) {
+  if (!usesPdfjs(el)) {
     hydrateNative(el, opts);
   } else {
     await hydratePdfjs(el, opts);
@@ -430,7 +511,9 @@ async function hydrate(el) {
 // a PDF.js embed that cannot load its PDF shows the failure message
 // (showFailure); any other failure leaves the no-JS fallback content in place;
 // one failure never stops the others
-document.querySelectorAll("div.embedpdf").forEach((el) => {
-  const label = /^data:/i.test(el.dataset.src || "") ? "an inlined PDF" : el.dataset.src;
-  hydrate(el).catch((err) => console.error("embedpdf: failed to render " + label, err));
+const placeholders = [...document.querySelectorAll("div.embedpdf")];
+const names = embedNames(placeholders);
+placeholders.forEach((el) => {
+  const label = /^\s*data:/i.test(el.dataset.src || "") ? "an inlined PDF" : el.dataset.src;
+  hydrate(el, names.get(el)).catch((err) => console.error("embedpdf: failed to render " + label, err));
 });

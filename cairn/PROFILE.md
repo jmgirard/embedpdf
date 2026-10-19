@@ -22,13 +22,15 @@ finishing". Run them from the repo root:
 - After a change to `embedpdf.lua`, run `pandoc lua tests/test_shortcode.lua`.
   It must print `N passed, 0 failed`.
 - After a change to `embedpdf-viewer.js` or `embedpdf.css`, run `quarto
-  render`. Then run every `node tests/render_check.mjs` and
-  `node tests/ios_check.mjs` line in CLAUDE.md "Verify before finishing",
+  render`. Then run every `node tests/render_check.mjs`,
+  `node tests/ios_check.mjs`, `node tests/name_rule_test.mjs`, and
+  `node tests/safari_check.mjs` line in CLAUDE.md "Verify before finishing",
   the self-contained lines included. Each one must exit 0. `render_check.mjs` drives Chrome (set
   `CHROME_PATH` for Chromium) and serves `docs/` itself. It needs `npm install
   puppeteer-core` once. `ios_check.mjs` drives Safari in the "embedpdf iPhone"
   and "embedpdf iPad" iOS simulators.
-- After a change to `tests/ink.mjs` or `tests/serve_docs.mjs`, run
+- After a change to `tests/ink.mjs`, `tests/serve_docs.mjs`, or
+  `tests/expect_names.mjs`, run
   `node tests/helpers_test.mjs`. It must print `N passed, 0 failed`. Then run
   the browser check lines above.
 - After a doc or example change, run `quarto render`. It must finish with no
