@@ -135,7 +135,12 @@ shown here." and an "Open the PDF" link with `target="_blank"`. A PDF from
 another site that sends no `Access-Control-Allow-Origin` header ends there
 (D-004; corrected M003). Page rendering goes through one queue shared
 by every viewer on the page, and canvas size is capped at 8,000,000 pixels
-with device pixel ratio clamped to 2, for constrained mobile devices.
+with device pixel ratio clamped to 2, for constrained mobile devices. For
+screen readers, each PDF.js page is a group labeled "Page i of n" that holds
+the page's text (PDF.js `getTextContent()`) in a visually hidden, unselectable
+block, and the canvas is `aria-hidden`. The text of every page is read at
+load on the same queue, and a text task runs only when no page render waits
+(corrected M004).
 
 ## Known issues
 
@@ -145,8 +150,9 @@ with device pixel ratio clamped to 2, for constrained mobile devices.
   RevealJS slides are checked only in Chromium — observed 2026-10-18.
 - The PDF.js viewer has no text selection or search (out of scope, see the
   contract boundary).
-- A PDF.js embed is a canvas with no text, so screen readers cannot read it.
-  The download link is the only accessible path today — observed 2026-10-18.
+- A PDF.js embed's hidden page text is checked in Chromium's accessibility
+  tree and in Safari's page DOM in iOS simulators, not with a real screen
+  reader (corrected M004) — observed 2026-10-18.
 - Not yet checked on a real Android device, iPhone, or iPad loading the GitHub
   Pages site (CLAUDE.md "Still unverified"). iOS is checked only in iOS 27.0
   and 27.1 simulators by `tests/ios_check.mjs`, and iOS versions before 27 are

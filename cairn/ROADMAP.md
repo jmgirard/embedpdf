@@ -7,7 +7,7 @@ _Last hygiene check: 2026-10-18 (M003 done and archived; rows "Safari shared rem
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M004 | Screen-reader text | planned | — | normal | milestones/M004-screen-reader-text.md |
+| M004 | Screen-reader text | review | — | normal | milestones/M004-screen-reader-text.md |
 | M003 | Remote PDFs on phones | done | — | normal | milestones/archive/M003-remote-pdfs-on-phones.md |
 | M002 | Self-contained embeds | done | — | high | milestones/archive/M002-self-contained-embeds.md |
 | M001 | iOS Safari check | done | — | high | milestones/archive/M001-ios-safari-check.md |
@@ -30,5 +30,8 @@ _Last hygiene check: 2026-10-18 (M003 done and archived; rows "Safari shared rem
 - GitHub releases for v1.0.x: publish GitHub releases for tags v1.0.0 to v1.0.2 so the README version badge is current — added 2026-10-18 — DESIGN Known issues
 - Screen-reader text layer: add a hidden PDF.js text layer so screen readers can read PDF.js embeds (GP1 allows it) — added 2026-10-18 — DESIGN Known issues — started M004
 - Check script gaps: `render_check.mjs` checks ink over all canvases at once, not pages per embed; both scripts sample only the red channel of every 100th pixel; `serve_docs.mjs` lacks some content types and HTTP Range requests; `ios_check.mjs` uses a fixed port and crashes on EADDRINUSE (M001 review) — added 2026-10-18
+- Eager text cost: see "First-paint robustness". Reading every page's hidden text at load keeps each PDF.js page object and its worker fonts (no `page.cleanup()`), and a page render can wait behind one text read. Memory and first-paint delay were not measured on a constrained phone or with a long PDF. The plan's alternative was text only for rendered pages; a measured memory failure or first-paint delay is the evidence for it (M004 review) — added 2026-10-18
+- Screen-reader text gaps: hidden page text joins PDF.js items with no added space, so multi-column or positioned text may run words together; every embed labels its pages "Page i of n" with no file name, and the embed has no accessible name; browser find-in-page may match the hidden text; the toolbar controls carry the same `title` and `aria-label`, which some screen readers may read twice. None checked (M004 review) — added 2026-10-18
+- Text check gaps: see "Check script gaps". The `--expect-text` style checks do not cover `inert`, `opacity`, or `content-visibility`, and iOS has no tree check to catch them; a canvas snapshot that is null for any reason counts as hidden; the text wait ends at once on a slide with no embed hydrated or pending (the embed-count check then fails with a less clear message); the 10 s text wait covers the whole shared queue, so a long deck can time out; with `--expect-text` a broken deck can take minutes to fail (M004 review) — added 2026-10-18
 - [low] First-paint robustness: find load cases where an on-screen page still does not render after the v1.0.1 and v1.0.2 fixes. Since M001, `auto` puts iPhone and iPad on this timer path, and `ios_check.mjs` scrolls before it measures, so a no-scroll first paint on iOS is untested (M001 review) — added 2026-10-18 — DESIGN Known issues
 - [low] Apple touch detection edge cases: `isAppleMobile()` treats any Macintosh user agent with `maxTouchPoints > 1` as an iPad, which may also catch Safari on visionOS or a Mac with a third-party touch driver; not verified (M001 review) — added 2026-10-18
