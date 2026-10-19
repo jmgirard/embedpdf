@@ -1,16 +1,15 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-19 (M013 done: graduated "Large PDF range check", added "Large PDF text check", pruned the M010 row; validate green)_
+_Last hygiene check: 2026-10-19 (M014 done: graduated "Safari shared remote URL", added "Shared remote check gaps" and "Shared query fallback", pruned the M011 row; validate green)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M014 | Safari shared remote PDF | review | — | normal | milestones/M014-safari-shared-remote-pdf.md |
+| M014 | Safari shared remote PDF | done | — | normal | milestones/archive/M014-safari-shared-remote-pdf.md |
 | M013 | Large PDF range check | done | — | normal | milestones/archive/M013-large-pdf-range-check.md |
 | M012 | Native embed name | done | — | normal | milestones/archive/M012-native-embed-name.md |
-| M011 | Inlined PDF failure | done | — | normal | milestones/archive/M011-inlined-pdf-failure.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
@@ -21,7 +20,6 @@ _Last hygiene check: 2026-10-19 (M013 done: graduated "Large PDF range check", a
      the opening token is `[high]`/`[low]` or absent (`normal`) — tracking-rules "Candidate priority token";
      open each row with its short title, the words the cairn pane shows, then `: `;
      tracking-rules "Candidate short title" has the whole rule -->
-- Safari shared remote URL: in Safari (seen in an iOS 27.0 iPhone simulator), a PDF.js embed fails ("Load failed") when an `<object>` on the same page, such as a `renderer=native` embed, shows the same PDF from another site, even when that site sends `Access-Control-Allow-Origin: *`. A fix might fetch the PDF with its own request (M003 implement) — added 2026-10-18 — started M014
 - Self-contained native checks: in a self-contained page the native `<object>` gets a `blob:` PDF, but only its bytes are checked (fetch in Chromium). Its display in desktop Safari and Firefox, `#page=` on a `blob:` URL, and the file name that the native viewer's own save button uses are not checked (M002 review) — added 2026-10-18
 - Self-contained slides on iOS: check self-contained RevealJS slides in Safari on iPhone and iPad with `tests/ios_check.mjs`; M002 checks them only in Chrome or Chromium (M002 plan) — added 2026-10-18
 - GitHub releases for v1.0.x: publish GitHub releases for tags v1.0.0 to v1.0.2 so the README version badge is current — added 2026-10-18 — DESIGN Known issues
