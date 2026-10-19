@@ -18,6 +18,12 @@
 // title, which must be "Zoom out", "Zoom in", or "Download PDF" in that
 // order, and each toolbar's page indicator reads "Page 1 of <pages>" with the
 // pages at the top and "Page 2 of <pages>" after they scroll to page 2.
+// Get Computed Label gives a plain span no name, so to read the indicator the
+// check gives it role heading for the read, whose name Safari computes from
+// its content, and then removes the role.
+// --plant rawindicator|nonumber plants a defect in the first PDF.js embed, as
+// in render_check (removes aria-hidden from its shown "i / n", or the " (k of
+// n)" from its name); the run must then fail.
 //
 // --target page-script opens a probe page in Safari in the iOS simulator with
 // `xcrun simctl openurl` and reports whether a page script can read a
@@ -35,7 +41,7 @@ const args = process.argv.slice(2);
 const flags = {};
 for (let i = 0; i < args.length; i += 2) {
   const k = args[i];
-  if (!/^--(target|page|device|expect-pdfjs|expect-name)$/.test(k) || args[i + 1] === undefined) {
+  if (!/^--(target|page|device|expect-pdfjs|expect-name|plant)$/.test(k) || args[i + 1] === undefined) {
     console.error(`safari_check: bad argument ${k}`);
     process.exit(2);
   }
@@ -55,6 +61,11 @@ if (target !== "page-script" && !(flags["expect-name"] && /^\d+$/.test(flags["ex
   process.exit(2);
 }
 const page = flags.page || "example.html";
+const plant = flags.plant || null;
+if (plant && (target === "page-script" || !["rawindicator", "nonumber"].includes(plant))) {
+  console.error("safari_check: --plant must be rawindicator or nonumber, with --target mac or simulator");
+  process.exit(2);
+}
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const simctl = (...a) => execFileSync("xcrun", ["simctl", ...a], { encoding: "utf8" });
 
@@ -172,6 +183,28 @@ try {
   const start = Date.now();
   while ((await unhydrated()) && Date.now() - start < 30000) await sleep(250);
   if (await unhydrated()) failures.push("an embed is still not hydrated after 30 s");
+  if (plant) {
+    report.planted = await run(
+      `const first = document.querySelector(".embedpdf-pdfjs");
+       if (!first) return null;
+       if (arguments[0] === "rawindicator") {
+         const shown = first.querySelector(".embedpdf-pageinfo [aria-hidden]");
+         if (!shown) return null;
+         shown.removeAttribute("aria-hidden");
+       } else {
+         const label = first.getAttribute("aria-label") || "";
+         const bare = label.replace(/ \\(\\d+ of \\d+\\)$/, "");
+         if (bare === label) return null;
+         first.setAttribute("aria-label", bare);
+       }
+       return arguments[0];`,
+      plant
+    );
+    if (!report.planted) {
+      console.error(`safari_check: --plant ${plant} found nothing to plant in`);
+      process.exitCode = 2;
+    }
+  }
 
   const embeds = await find(".embedpdf-pdfjs");
   const want = expectedNames(flags["expect-name"].split("|"), Number(flags["expect-pdfjs"]));
@@ -208,9 +241,15 @@ try {
           i,
           k
         );
+        // Get Computed Label gives a plain span no name, so the indicator
+        // briefly takes role heading, whose name Safari computes from its
+        // content: the text Safari would read there, without aria-hidden parts
+        await run(`document.querySelectorAll(".embedpdf-pdfjs")[arguments[0]].querySelector(".embedpdf-pageinfo").setAttribute("role", "heading");`, i);
         await sleep(300);
-        const [spoken] = await find(`[data-safari-check="${mark}"] .embedpdf-pageinfo-text`);
-        return spoken ? label(spoken) : null;
+        const [info] = await find(`[data-safari-check="${mark}"] .embedpdf-pageinfo`);
+        const text = info ? await label(info) : null;
+        await run(`document.querySelectorAll(".embedpdf-pdfjs")[arguments[0]].querySelector(".embedpdf-pageinfo").removeAttribute("role");`, i);
+        return text;
       };
       r.indicator = [await toPage(1)];
       if (r.indicator[0] !== `Page 1 of ${pages}`) failures.push(`${at}: Safari reads the indicator as ${JSON.stringify(r.indicator[0])}, not "Page 1 of ${pages}"`);
@@ -230,4 +269,4 @@ try {
 }
 console.log(JSON.stringify({ target, page, ...report, failures }, null, 2));
 for (const f of failures) console.error("safari_check: " + f);
-process.exit(failures.length ? 1 : 0);
+process.exit(process.exitCode === 2 ? 2 : failures.length ? 1 : 0);

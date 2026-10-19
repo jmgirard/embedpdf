@@ -59,7 +59,16 @@ node tests/ios_check.mjs --device "embedpdf iPhone" --page name_test.html --expe
 node tests/ios_check.mjs --device "embedpdf iPad" --page name_test.html --expect-embeds 2 --expect-name "sample copy.pdf"
 node tests/ios_check.mjs --device "embedpdf iPhone" --page name_edge_test.html --expect-embeds 2 --expect-name "sample.pdf|-" --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/ios_check.mjs --device "embedpdf iPad" --page name_edge_test.html --expect-embeds 2 --expect-name "sample.pdf|-" --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/name_rule_test.mjs
+node tests/safari_check.mjs --target mac --expect-pdfjs 2 --expect-name sample.pdf
 ```
+
+`name_rule_test.mjs` checks the viewer's file-name rule over a table of
+addresses in Chrome. `safari_check.mjs` reads Safari's names through
+safaridriver (WebDriver "Get Computed Label"). Turn on safaridriver once with
+`safaridriver --enable` or Safari Settings > Developer > "Allow remote
+automation". Its `--target simulator` and `--target page-script` probes fail
+on the iOS 27.0 simulators (see "Still unverified").
 
 `--expect-text` checks the hidden page text that screen readers read. The
 phrases come from `pdftotext sample.pdf`: phrase 1 is on page 1, phrase 2 on
@@ -219,10 +228,15 @@ errors.
 - A PDF missing from the page's own site (HTTP 404) on a real phone. It is
   checked only in Chromium and in the iOS 27.0 simulators.
 - A real screen reader (VoiceOver, TalkBack) reading a PDF.js embed's hidden
-  page text, its "PDF: <file name>" group name, and its toolbar controls'
-  `title`-only names. Checked only in Chromium's accessibility tree and in
-  Safari's page DOM in the iOS simulators. Safari's names for the toolbar
-  controls were not checked.
+  page text, its "PDF: <file name>" group name, its toolbar controls'
+  `title`-only names, and the page indicator's "Page i of n". Checked in
+  Chromium's accessibility tree, in Safari's page DOM in the iOS simulators,
+  and in desktop Safari 27.0.1 by `safari_check.mjs --target mac`.
+- Safari's computed names in the iOS simulators. On 2026-10-19 with iOS 27.0,
+  `safari_check.mjs --target simulator` got "Could not find any session hosts
+  that match the requested capabilities" from safaridriver. The simulators'
+  Safari "Remote Automation" setting was not turned on. `--target
+  page-script` found no `Element.prototype.computedName`.
 - The cost of reading every page's text at load on a constrained phone: memory
   and first-paint delay for a long PDF were not measured.
 
