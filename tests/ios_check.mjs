@@ -74,14 +74,16 @@
 //                          render_check (tests/expect_names.mjs). Each
 //                          toolbar's page indicator must hold "Page i of
 //                          <pages>" and a shown "i / <pages>" that is
-//                          aria-hidden.
-//   --plant wrongname|norole|nonumber|rawindicator
+//                          aria-hidden; an embed with no indicator fails
+//                          unless data-toolbar="false".
+//   --plant wrongname|norole|nonumber|rawindicator|noindicator
 //                          with --expect-name: change the first PDF.js
 //                          embed's aria-label to "PDF: wrong.pdf"
 //                          (wrongname), remove its role attribute (norole),
 //                          remove the " (k of n)" from its aria-label
-//                          (nonumber), or remove aria-hidden from its shown
-//                          "i / n" (rawindicator); the check must then fail
+//                          (nonumber), remove aria-hidden from its shown
+//                          "i / n" (rawindicator), or remove its page
+//                          indicator (noindicator); the check must then fail
 //   --alone yes|no         yes: serve a copy of the page from an empty
 //                          temporary directory instead of docs/ (default no)
 //   --remote blocked       serve the PDFs from a second server on another port
@@ -144,7 +146,12 @@ const opt = (name, fallback) => {
 };
 const device = opt("device", "");
 const pagePath = opt("page", "example.html");
-const expectEmbeds = Number(opt("expect-embeds", "10"));
+const expectEmbedsArg = opt("expect-embeds", "10");
+const expectEmbeds = Number(expectEmbedsArg);
+if (!/^\d+$/.test(expectEmbedsArg)) {
+  console.error("ios_check: --expect-embeds needs a whole number");
+  process.exit(2);
+}
 const expectPages = Number(opt("expect-pages", "2"));
 // 0: the system picks a free port
 const portArg = opt("port", "0");
@@ -204,7 +211,7 @@ if ("slow-text" in parsed && !(phrases && /^\d+$/.test(slowText) && Number(slowT
   process.exit(2);
 }
 const TEXT_PLANTS = ["notext", "swap", "visible", "inert", "cvhidden"];
-const NAME_PLANTS = ["wrongname", "norole", "nonumber", "rawindicator"];
+const NAME_PLANTS = ["wrongname", "norole", "nonumber", "rawindicator", "noindicator"];
 // planted before the text wait; needs --expect-text
 const WAIT_PLANTS = ["unhydrated"];
 if (plant && !["blank", "missing", ...NAME_PLANTS, ...TEXT_PLANTS, ...WAIT_PLANTS].includes(plant)) {
@@ -400,6 +407,11 @@ const PROBE = `<script>
     const first = embeds().find((el) => kind(el) === "pdfjs");
     if (first) { first.removeAttribute("role"); namePlanted = plant; }
   }
+  if (plant === "noindicator") {
+    const first = embeds().find((el) => kind(el) === "pdfjs");
+    const info = first && first.querySelector(".embedpdf-pageinfo");
+    if (info) { info.remove(); namePlanted = plant; }
+  }
   if (plant === "rawindicator") {
     const first = embeds().find((el) => kind(el) === "pdfjs");
     const shown = first && first.querySelector(".embedpdf-pageinfo [aria-hidden]");
@@ -470,6 +482,7 @@ const PROBE = `<script>
         text: text[i],
         role: el.getAttribute("role"),
         label: el.getAttribute("aria-label"),
+        toolbarOff: el.dataset.toolbar === "false",
         indicator: (() => {
           const info = el.querySelector(".embedpdf-toolbar .embedpdf-pageinfo");
           if (!info) return null;
@@ -621,6 +634,7 @@ try {
       // the toolbar's page indicator: "Page i of n" for screen readers, and
       // the shown "i / n" for the same page hidden from them
       const ind = e.indicator;
+      if (!ind && !e.toolbarOff) failures.push(`embed ${e.index}: no page indicator, and toolbar=false is not set`);
       if (ind) {
         const m = /^Page (\d+) of (\d+)$/.exec(ind.spoken || "");
         if (!m || Number(m[2]) !== e.pages) failures.push(`embed ${e.index}: indicator text is ${JSON.stringify(ind.spoken)}, not "Page i of ${e.pages}"`);

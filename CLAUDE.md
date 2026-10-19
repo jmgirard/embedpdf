@@ -17,7 +17,8 @@ Key files:
 - `name_test.qmd`, `name_edge_test.qmd`, `percent_test.qmd`,
   `selfcontained_test.qmd`, and `selfcontained_slides_test.qmd` are test
   pages, also rendered into `docs/`. `files/` holds copies of `sample.pdf`
-  under the names they test.
+  under the names they test, and `inlined-sample.md`, the hand-written
+  embed that `name_edge_test.qmd` includes.
 
 ## Verify before finishing — you are the test runner (no CI)
 
@@ -74,8 +75,9 @@ on the iOS 27.0 simulators (see "Still unverified").
 phrases come from `pdftotext sample.pdf`: phrase 1 is on page 1, phrase 2 on
 page 2. In render_check it also checks Chrome's accessibility tree.
 `revealjs_test.html` uses other PDFs and gets no text check. `--expect-name`
-checks that each PDF.js embed is a group named "PDF: <file name>", and in
-render_check that each toolbar control's name is its tooltip and is not
+checks that each PDF.js embed is a group with its expected name: "PDF:
+<file name>", numbered, or "PDF" alone, as below. In render_check it also
+checks that each toolbar control's name is its tooltip and is not
 repeated as its description. `--expect-name "a.pdf|b.pdf"`
 gives one name per PDF.js embed in page order, as on `revealjs_test.html`. The
 list must name every PDF.js embed, and it cannot hold a file name with `|`.
@@ -229,7 +231,7 @@ errors.
 - A PDF missing from the page's own site (HTTP 404) on a real phone. It is
   checked only in Chromium and in the iOS 27.0 simulators.
 - A real screen reader (VoiceOver, TalkBack) reading a PDF.js embed's hidden
-  page text, its "PDF: <file name>" group name, its toolbar controls'
+  page text, its group name ("PDF: <file name>", numbered or "PDF"), its toolbar controls'
   `title`-only names, and the page indicator's "Page i of n". All of these are
   checked in Chromium's accessibility tree. In Safari's page DOM in the iOS
   simulators, the group name, hidden text, and indicator are checked, but not

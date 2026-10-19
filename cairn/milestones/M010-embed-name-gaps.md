@@ -30,12 +30,12 @@ A screen reader tells each PDF.js embed apart by a name that never comes from a 
 
 ## Coverage
 
-- AC1 → T1
+- AC1 → T1, T8
 - AC2 → T2, T3
 - AC3 → T4
-- AC4 → T5
-- AC5 → T6
-- AC6 → T7
+- AC4 → T5, T8
+- AC5 → T6, T8
+- AC6 → T7, T8
 
 ## Tasks
 
@@ -46,6 +46,7 @@ A screen reader tells each PDF.js embed apart by a name that never comes from a 
 - [x] T5: Indicator: a visually hidden "Page i of n" and the visible "i / n" `aria-hidden`, both updated by the scroll handler (`:317`). render_check reads the toolbar subtree and scrolls one embed's pages to page 2; ios_check reads the DOM. Add plant `rawindicator` (visible text not hidden) to both.
 - [x] T6: Safari: the user runs `safaridriver --enable` once (a stop for the user's hands). Write `tests/safari_check.mjs` with raw WebDriver HTTP calls (no new npm dependency): desktop Safari on `example.html`, then the `safari:useSimulator` and page-script `computedName` probes; record each probe that fails in README, CLAUDE.md, and a candidate row.
 - [x] T7: Bump to 1.2.2 in both places; update README (screen-reader paragraph), DESIGN.md Architecture, and CLAUDE.md; `quarto render`; run every CLAUDE.md verify command.
+- [ ] T8: Review return 1: README names both failed iOS Safari probes and their results (AC5); `fileName()` keeps the last segment after a doubled slash, with a table row (AC1); then each fix-now item of the Review section, pass 1; re-render and re-run every CLAUDE.md verify command.
 
 ## Work log
 
@@ -75,6 +76,8 @@ A screen reader tells each PDF.js embed apart by a name that never comes from a 
 - 2026-10-19: claim audit: 76 claims read, 6 corrected — README.md (Safari scope of the check; a query with no `.pdf` value gives "PDF"), CLAUDE.md (what each browser check covers; four scripts take `--plant`), tests/safari_check.mjs (exit 2 for a plant with nothing to plant in, a server that cannot start, and a missing safaridriver, now true in code), tests/render_check.mjs (staleindicator fails only on the embed scrolled to page 2). The same reader re-read all six as correct.
 - 2026-10-19: T7 done: a scratchpad runner ran every `node tests/` and `pandoc lua` line in CLAUDE.md's fenced blocks plus the variants its notes name (`--alone http` for each `--alone file`, mac-safari and windows-touch for the desktop selfcontained, `--remote blocked`, and `--missing-pdfs` lines, ipad for the selfcontained iphone lines): 62 commands, 0 failed (viewer at 799db1e; the later script edits were the safari_check exit handling, rerun by hand with exit 0, and comments). Status set to review.
 - 2026-10-19: review return 1: AC5 fails (README names neither failed iOS Safari probe nor its result) and AC1 fails for `https://example.com//a.pdf` (gives "" not "a.pdf"); the return also carries the fix-now findings listed in the Review section, pass 1.
+- 2026-10-19: T8 added (minor amendment for review return 1); Coverage gains T8 on AC1, AC4, AC5, AC6.
+- 2026-10-19: T8 fixes: `fileName()` strips the host once (rows `https://example.com//a.pdf` and `//example.com//a.pdf`; the first fails on the old viewer, 23 rows pass); `aria-label` falls back to "PDF"; `-webkit-user-select` on the indicator; render_check checks the shown "1 / n" and the 1px hidden box (plant `showindicator` fails) and plants `staleindicator` only in the embed scrolled to page 2 (nothing to plant in on revealjs iPhone, exit 2); ios_check fails a missing indicator (plant `noindicator` fails) and exits 2 on a non-integer `--expect-embeds`; safari_check reads page 2 only where page 1 moves past the middle line and removes the role in a finally. README names both iOS probes and their results; CLAUDE.md, DESIGN.md, the script headers, `serve_docs.mjs` header, and row "Safari names on iOS" corrected.
 
 ## Decisions
 

@@ -158,7 +158,7 @@ async function hydratePdfjs(el, opts) {
   el.classList.add("embedpdf-pdfjs");
   // a screen reader names the embed by its file, before its "Page i of n" groups
   el.setAttribute("role", "group");
-  el.setAttribute("aria-label", opts.name);
+  el.setAttribute("aria-label", opts.name || "PDF");
   if (opts.width) el.style.width = /^\d+$/.test(opts.width) ? opts.width + "px" : opts.width;
 
   const pagesEl = document.createElement("div");
@@ -399,9 +399,12 @@ export function fileName(address) {
   if (/^(data|blob):/i.test(href)) return "";
   const noFragment = href.split("#")[0];
   const q = noFragment.indexOf("?");
-  const path = (q < 0 ? noFragment : noFragment.slice(0, q))
-    .replace(/^[a-z][a-z0-9+.-]*:\/\/[^/]*/i, "") // scheme and host
-    .replace(/^\/\/[^/]*/, ""); // host of a scheme-relative address
+  const beforeQuery = q < 0 ? noFragment : noFragment.slice(0, q);
+  // drop the scheme and host, or the host of a scheme-relative address (once:
+  // a doubled slash after the host starts the path, not another host)
+  const path = /^[a-z][a-z0-9+.-]*:\/\//i.test(beforeQuery)
+    ? beforeQuery.replace(/^[a-z][a-z0-9+.-]*:\/\/[^/]*/i, "")
+    : beforeQuery.replace(/^\/\/[^/]*/, "");
   const segments = path.split("/").map(decoded);
   const last = segments[segments.length - 1];
   if (/\.pdf$/i.test(last)) return last;

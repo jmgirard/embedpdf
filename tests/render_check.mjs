@@ -116,9 +116,10 @@
 //                       runs out in turn). Needs --expect-text.
 //   --expect-name "<file name>" | "<name 1>|<name 2>|..."
 //                       after the pages are scrolled, fail unless each PDF.js
-//                       embed has role="group" and aria-label "PDF: <file
-//                       name>" in the DOM, and Chrome's accessibility tree
-//                       gives it role group and that name. One name applies
+//                       embed has role="group" and its expected aria-label
+//                       ("PDF: <file name>", numbered or "PDF" as below) in
+//                       the DOM, and Chrome's accessibility tree gives it
+//                       role group and that name. One name applies
 //                       to as many PDF.js embeds as --expect-pdfjs gives,
 //                       which it then needs. A "|" list gives one name per
 //                       PDF.js embed, in page order (slide order on a
@@ -134,12 +135,14 @@
 //                       unless each embed without a toolbar has
 //                       data-toolbar="false". Each toolbar's text in the
 //                       tree must read "Page 1 of <pages>" with the pages at
-//                       the top, and no "i / n" text. The first embed whose
+//                       the top, and no "i / n" text; on the page it must
+//                       show "1 / <pages>" and keep "Page 1 of <pages>" in a
+//                       1px, overflow-hidden, absolute box. The first embed whose
 //                       pages can scroll page 1 above the middle of their
 //                       frame then scrolls to page 2 and must read "Page 2
 //                       of <pages>"; the report names it as page2Checked
 //                       (null when no embed could).
-//   --plant wrongname|dupdesc|duplink|norole|notoolbar|nonumber|rawindicator|staleindicator
+//   --plant wrongname|dupdesc|duplink|norole|notoolbar|nonumber|rawindicator|staleindicator|showindicator
 //                       with --expect-name, plant a defect in the first
 //                       PDF.js embed; the run must then fail: wrongname
 //                       changes its aria-label to "PDF: wrong.pdf", dupdesc
@@ -151,9 +154,9 @@
 //                       has none), rawindicator removes aria-hidden from its
 //                       shown "i / n", staleindicator swaps its "Page i of
 //                       n" text for a "Page 1 of n" copy that the scroll does
-//                       not update (this fails only when that embed is the
-//                       one scrolled to page 2, see page2Checked, as on
-//                       example.html).
+//                       not update (nothing to plant in unless that embed
+//                       is the one scrolled to page 2, see page2Checked),
+//                       showindicator makes its "Page i of n" text visible.
 // Set CHROME_PATH to use another Chrome or Chromium binary.
 //
 // On a RevealJS page the check goes to each slide with Reveal.slide() and
@@ -236,7 +239,7 @@ const FLAGS = ["device", "expect-native", "expect-pdfjs", "expect-pages", "expec
 const BOOL_FLAGS = ["missing-pdfs"];
 const TEXT_PLANTS = ["notext", "swap", "visible", "gone", "inert", "cvhidden"];
 const TREE_PLANTS = ["nolabel", "canvas", "noname", "detach"];
-const NAME_PLANTS = ["wrongname", "dupdesc", "duplink", "norole", "notoolbar", "nonumber", "rawindicator", "staleindicator"];
+const NAME_PLANTS = ["wrongname", "dupdesc", "duplink", "norole", "notoolbar", "nonumber", "rawindicator", "staleindicator", "showindicator"];
 const INK_PLANTS = ["blank", "nocanvas", "nopages"];
 // planted before the text wait (unhydrated) or before the page loads (norender)
 const WAIT_PLANTS = ["unhydrated", "norender"];
@@ -286,7 +289,7 @@ if (flags["slow-text"] !== undefined && !(phrases && /^\d+$/.test(flags["slow-te
   process.exit(2);
 }
 const expectName = flags["expect-name"] ?? null;
-// one name for every PDF.js embed, or "a.pdf|b.pdf": one per embed, in order
+// one name for the --expect-pdfjs embeds, or "a.pdf|b.pdf": one per embed, in order
 const expectNames = expectName === null ? null : expectName.split("|");
 if (expectNames && expectNames.some((n) => !n)) {
   console.error("render_check: --expect-name needs a non-empty file name for each embed");
@@ -683,6 +686,13 @@ async function nameFailures(page, slide, before) {
         if (!shown) return { planted: null, stuck };
         shown.removeAttribute("aria-hidden");
       }
+      if (plant === "showindicator") {
+        const spoken = first.querySelector(".embedpdf-pageinfo-text");
+        if (!spoken) return { planted: null, stuck };
+        spoken.style.position = "static";
+        spoken.style.width = "auto";
+        spoken.style.height = "auto";
+      }
       if (plant === "staleindicator") {
         // a copy the viewer does not hold, so the scroll never updates it
         const spoken = first.querySelector(".embedpdf-pageinfo-text");
@@ -789,10 +799,26 @@ async function nameFailures(page, slide, before) {
       if (!top.includes(`Page 1 of ${pages}`)) out.push(`${at}: toolbar text is ${JSON.stringify(top)}, without "Page 1 of ${pages}"`);
       const slash = top.filter((t) => /\d\s*\/\s*\d/.test(t));
       if (slash.length) out.push(`${at}: toolbar text ${JSON.stringify(slash)} is read as "i / n"`);
+      // what sighted readers see: "1 / n" shown, and "Page 1 of n" in a 1px clipped box
+      const seen = await toolbar.evaluate((t) => {
+        const spoken = t.querySelector(".embedpdf-pageinfo-text");
+        const shown = t.querySelector(".embedpdf-pageinfo [aria-hidden]");
+        const s = spoken ? getComputedStyle(spoken) : null;
+        return {
+          shown: shown ? shown.textContent : null,
+          box: s ? { width: s.width, height: s.height, overflow: s.overflow, position: s.position } : null,
+        };
+      });
+      if (seen.shown !== `1 / ${pages}`) out.push(`${at}: the indicator shows ${JSON.stringify(seen.shown)}, not "1 / ${pages}"`);
+      const b = seen.box;
+      if (!b || b.width !== "1px" || b.height !== "1px" || b.overflow !== "hidden" || b.position !== "absolute") {
+        out.push(`${at}: the "Page i of n" text is not in a 1px hidden box: ${JSON.stringify(b)}`);
+      }
       if (pages >= 2 && !page2Checked) {
         const second = await toPage(2);
         if (second.moved) {
           page2Checked = `${at}`;
+          page2First = await embed.evaluate((el) => el === document.querySelector(".embedpdf-pdfjs"));
           if (!second.text.includes(`Page 2 of ${pages}`)) out.push(`${at}: after a scroll to page 2, toolbar text is ${JSON.stringify(second.text)}, without "Page 2 of ${pages}"`);
         }
       }
@@ -812,8 +838,10 @@ async function treeText(page, el) {
   walk(await page.accessibility.snapshot({ root: el, interestingOnly: false }));
   return texts;
 }
-// the embed that the --expect-name check scrolled to page 2, if any
+// the embed that the --expect-name check scrolled to page 2, if any, and
+// whether it is the page's first PDF.js embed (where name plants go)
 let page2Checked = null;
+let page2First = false;
 
 const browser = await puppeteer.launch({
   executablePath: CHROME,
@@ -1034,7 +1062,10 @@ try {
     ? {
         expectName,
         plant,
-        planted: nameReports.map((r) => r.planted).find(Boolean) || null,
+        // staleindicator shows only on the embed scrolled to page 2, so it
+        // counts as planted only when that embed is the one it went into
+        planted:
+          plant === "staleindicator" && !page2First ? null : nameReports.map((r) => r.planted).find(Boolean) || null,
         embeds: nameReports.reduce((n, r) => n + r.embeds, 0),
         page2Checked,
         failures: nameReports.flatMap((r) => r.failures),

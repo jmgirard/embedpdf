@@ -36,6 +36,8 @@ const ROWS = [
   ["files/report/", "report"],
   ["DATA:application/pdf;base64,JVBERi0x", ""],
   ["get?id=5&file=a+b.pdf", "a b.pdf"],
+  ["https://example.com//a.pdf", "a.pdf"],
+  ["//example.com//a.pdf", "a.pdf"],
 ];
 
 const args = process.argv.slice(2);

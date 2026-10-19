@@ -17,7 +17,8 @@
 // (numbered as in tests/expect_names.mjs), each toolbar control's name is its
 // title, which must be "Zoom out", "Zoom in", or "Download PDF" in that
 // order, and each toolbar's page indicator reads "Page 1 of <pages>" with the
-// pages at the top and "Page 2 of <pages>" after they scroll to page 2.
+// pages at the top and "Page 2 of <pages>" after they scroll to page 2 (read
+// only where page 1 can scroll above the middle of the frame).
 // Get Computed Label gives a plain span no name, so to read the indicator the
 // check gives it role heading for the read, whose name Safari computes from
 // its content, and then removes the role.
@@ -243,30 +244,47 @@ try {
       }
       // the page indicator, at the top of the pages and at page 2
       const pages = await run(`return document.querySelectorAll(".embedpdf-pdfjs")[arguments[0]].querySelectorAll(".embedpdf-page").length;`, i);
+      // returns whether page 1 is above the frame's middle line (the line the
+      // viewer's indicator reads) after the scroll, and the indicator's text
       const toPage = async (k) => {
-        await run(
+        const moved = await run(
           `const p = document.querySelectorAll(".embedpdf-pdfjs")[arguments[0]].querySelector(".embedpdf-pages");
            const t = p.querySelectorAll(".embedpdf-page")[arguments[1] - 1];
            p.scrollTop += t.getBoundingClientRect().top - p.getBoundingClientRect().top;
-           p.dispatchEvent(new Event("scroll"));`,
+           p.dispatchEvent(new Event("scroll"));
+           const host = p.getBoundingClientRect();
+           return p.querySelector(".embedpdf-page").getBoundingClientRect().bottom <= host.top + host.height / 2;`,
           i,
           k
         );
         // Get Computed Label gives a plain span no name, so the indicator
         // briefly takes role heading, whose name Safari computes from its
         // content: the text Safari would read there, without aria-hidden parts
-        await run(`document.querySelectorAll(".embedpdf-pdfjs")[arguments[0]].querySelector(".embedpdf-pageinfo").setAttribute("role", "heading");`, i);
-        await sleep(300);
-        const [info] = await find(`[data-safari-check="${mark}"] .embedpdf-pageinfo`);
-        const text = info ? await label(info) : null;
-        await run(`document.querySelectorAll(".embedpdf-pdfjs")[arguments[0]].querySelector(".embedpdf-pageinfo").removeAttribute("role");`, i);
-        return text;
+        const role = (on) =>
+          run(
+            `const info = document.querySelectorAll(".embedpdf-pdfjs")[arguments[0]].querySelector(".embedpdf-pageinfo");
+             if (arguments[1]) info.setAttribute("role", "heading"); else info.removeAttribute("role");`,
+            i,
+            on
+          );
+        await role(true);
+        try {
+          await sleep(300);
+          const [info] = await find(`[data-safari-check="${mark}"] .embedpdf-pageinfo`);
+          return { moved, text: info ? await label(info) : null };
+        } finally {
+          await role(false);
+        }
       };
-      r.indicator = [await toPage(1)];
-      if (r.indicator[0] !== `Page 1 of ${pages}`) failures.push(`${at}: Safari reads the indicator as ${JSON.stringify(r.indicator[0])}, not "Page 1 of ${pages}"`);
+      const top = await toPage(1);
+      r.indicator = [top.text];
+      if (top.text !== `Page 1 of ${pages}`) failures.push(`${at}: Safari reads the indicator as ${JSON.stringify(top.text)}, not "Page 1 of ${pages}"`);
       if (pages >= 2) {
-        r.indicator.push(await toPage(2));
-        if (r.indicator[1] !== `Page 2 of ${pages}`) failures.push(`${at}: after a scroll to page 2, Safari reads the indicator as ${JSON.stringify(r.indicator[1])}, not "Page 2 of ${pages}"`);
+        // only where page 1 can scroll above the middle line does the
+        // viewer's indicator move to page 2
+        const second = await toPage(2);
+        r.indicator.push(second.moved ? second.text : "(page 1 cannot scroll past the middle line; not read)");
+        if (second.moved && second.text !== `Page 2 of ${pages}`) failures.push(`${at}: after a scroll to page 2, Safari reads the indicator as ${JSON.stringify(second.text)}, not "Page 2 of ${pages}"`);
       }
     }
     report.embeds.push(r);
