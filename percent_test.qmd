@@ -10,8 +10,9 @@ resources:
 Both embeds show `files/100%.pdf`, a copy of `sample.pdf` whose file name
 holds a `%`. This page is built with `embed-resources: true`, so each PDF is
 inside the page. The first embed gives the path as `files/100%25.pdf`, and
-the second gives it with a bare `%`. The viewer names each one
-"PDF: 100%.pdf" for screen readers. The checks in `tests/` read that name.
+the second gives it with a bare `%`. The viewer names the embeds
+"PDF: 100%.pdf (1 of 2)" and "PDF: 100%.pdf (2 of 2)" for screen readers. The
+checks in `tests/` read those names.
 
 ## Path with %25
 
