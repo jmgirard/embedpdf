@@ -7,7 +7,7 @@ _Last hygiene check: 2026-10-18 (M006 done: graduated "Check script gaps", re-po
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M007 | Remote check gaps | in-progress | — | high | milestones/M007-remote-check-gaps.md |
+| M007 | Remote check gaps | review | — | high | milestones/M007-remote-check-gaps.md |
 | M006 | Check script gaps | done | — | high | milestones/archive/M006-check-script-gaps.md |
 | M005 | Screen-reader names | done | — | normal | milestones/archive/M005-screen-reader-names.md |
 | M004 | Screen-reader text | done | — | normal | milestones/archive/M004-screen-reader-text.md |

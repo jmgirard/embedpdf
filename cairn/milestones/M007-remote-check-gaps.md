@@ -1,6 +1,6 @@
 # M007: Remote check gaps
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
@@ -97,7 +97,7 @@ Close the gaps that the M003 review found in the remote-PDF checks of `tests/ser
 - [x] T5: `ios_check.mjs --missing-pdfs`, with the same exclusions as `--remote` (`--alone yes`, `--plant`,
       `--expect-text`, `--expect-name`). Read the error Safari logs for a 404 on the first run and record it in the
       work log. Run on both simulators.
-- [ ] T6: Add the `--missing-pdfs` lines (render_check iPhone, Android, desktop and its two device variants;
+- [x] T6: Add the `--missing-pdfs` lines (render_check iPhone, Android, desktop and its two device variants;
       ios_check iPhone and iPad) to CLAUDE.md "Verify before finishing" with one sentence on what the flag does. Run
       `node tests/helpers_test.mjs` and every check line the section lists.
 
@@ -120,6 +120,10 @@ Close the gaps that the M003 review found in the remote-PDF checks of `tests/ser
 - 2026-10-18: T3 done: `serveRemote` sends through `sendData`, answers OPTIONS 204 (cors and missing allow GET/HEAD/OPTIONS and `Range`), and in cors and missing modes adds `Access-Control-Expose-Headers: Accept-Ranges, Content-Range, Content-Length` so a cross-origin reader sees the range headers (implement choice, not in AC3); 15 helper cases (70 passed); planting the old whole-file send failed 6; 5 Chromium `--remote` lines exit 0.
 - 2026-10-18: T4 done: `serveDocs({ missingPdfs })` 404s a path ending in `.pdf` (5 helper cases, 75 passed); render_check `--missing-pdfs` is a flag with no value (new `BOOL_FLAGS`), needs `--expect-failed`, refuses `--remote`, `--alone`, and a URL (each exits 2). The viewer's "failed to render" line names the `data-src` as written (`sample.pdf`), not the absolute URL, so each failed entry now carries `src` and the check matches on it. A planted wrong kind (`UnknownErrorException`) failed the run; the 3 AC4 lines and the mac-safari and windows-touch variants exit 0, and `--remote missing --device iphone` still exits 0.
 - 2026-10-18: T5 done: ios_check parses `--missing-pdfs` as a flag with no value and refuses it with `--remote`, `--alone yes`, `--plant`, `--expect-text`, `--expect-name` (exit 2). Safari in the iOS 27.0 iPhone simulator logs `embedpdf: failed to render sample.pdf ResponseException: Unexpected server response (404) while retrieving PDF "<url>".`, so the check also requires `ResponseException`. iPhone and iPad exit 0; a planted wrong kind ("Load failed") failed all 10 embeds on the iPhone.
+- 2026-10-18: T6 done: CLAUDE.md "Verify before finishing" gains a `--missing-pdfs` paragraph and 5 lines. Verify slot run: helpers_test 75 passed, 0 failed; all 34 code-block check lines plus 14 extra runs the text names (4 `--alone http` reruns, 6 self-contained device variants, 4 desktop variants of the remote and missing lines) exit 0, in Chromium and the iOS 27.0 simulators.
+- 2026-10-18: the simple-english lint hook reports 37 hits in CLAUDE.md; all 37 were there before this branch (the same count on main), and the added paragraph has none, so the rest of the file was left as it is.
+- 2026-10-18: claim audit: not owed — internal tier.
+- 2026-10-18: implement complete; status review.
 
 ## Decisions
 

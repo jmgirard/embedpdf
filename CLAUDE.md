@@ -101,6 +101,18 @@ node tests/ios_check.mjs --device "embedpdf iPhone" --remote blocked
 node tests/ios_check.mjs --device "embedpdf iPad" --remote blocked
 ```
 
+A PDF missing from the page's own site: `--missing-pdfs` (no value) makes the
+page's server answer HTTP 404 for every `.pdf`. Run the desktop line also with
+`--device mac-safari` and `--device windows-touch`:
+
+```
+node tests/render_check.mjs example.html --missing-pdfs --device iphone --expect-native 1 --expect-pdfjs 0 --expect-failed 10
+node tests/render_check.mjs example.html --missing-pdfs --device android --expect-native 1 --expect-pdfjs 0 --expect-failed 10
+node tests/render_check.mjs example.html --missing-pdfs --expect-native 9 --expect-pdfjs 0 --expect-failed 2
+node tests/ios_check.mjs --device "embedpdf iPhone" --missing-pdfs
+node tests/ios_check.mjs --device "embedpdf iPad" --missing-pdfs
+```
+
 `render_check.mjs` serves `docs/` itself with `tests/serve_docs.mjs`. If every
 page of every PDF.js embed has a canvas with ink and the counts match, it exits
 0. Both scripts use the ink rule in `tests/ink.mjs`. If Google Chrome is not
