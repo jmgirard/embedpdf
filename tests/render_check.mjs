@@ -475,7 +475,8 @@ const cannotServe = (what) => (err) => {
   process.exit(2);
 };
 // --expect-ranges: the server that serves the PDFs sends a whole large file
-// slowly, so PDF.js loads it by ranges; --plant noranges makes it ignore
+// slowly (the remote one only to requests with an Origin header), so PDF.js
+// loads it by ranges; --plant noranges makes it ignore
 // every Range header
 const rangeOpts = { slowWhole: expectRanges, noRanges: plant === "noranges" };
 const remoteServer = remote ? await serveRemote(remote, rangeOpts).catch(cannotServe("remote")) : null;
@@ -1557,7 +1558,8 @@ try {
     // an Origin header, and a native viewer's request sends none, so only 206
     // answers to requests with an Origin header count: a native embed of the
     // same address is counted apart. (This script's own read of a native
-    // embed's PDF sends an Origin header too, but asks for the whole file.)
+    // embed's PDF sends an Origin header too, but asks for the whole file, so
+    // it gets a 200, sent slowly for a large PDF.)
     // Two PDF.js embeds of one address still share a count.
     const byOrigin = remote === "cors";
     // a page on which the check cannot tell PDF.js loaded by ranges is a bad
@@ -1587,7 +1589,8 @@ try {
       const count =
         u.origin !== origin ? 0
         : byOrigin ? pdfServer.requests.filter((r) => r.path === u.pathname && r.status === 206 && r.origin !== null).length
-        : pdfServer.rangeCounts.get(u.pathname) || 0;      if (count === 0) {
+        : pdfServer.rangeCounts.get(u.pathname) || 0;
+      if (count === 0) {
         console.error(`render_check: --expect-ranges: no byte-range request (HTTP 206) answered for ${src}${u.origin === origin ? "" : ` (not on ${origin})`}`);
         ok = false;
       } else console.log(`render_check: ${count} byte-range answers (HTTP 206) for ${src}`);

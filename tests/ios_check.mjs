@@ -153,7 +153,8 @@
 //                          unless that server answered at least one
 //                          byte-range request (HTTP 206) for each PDF.js
 //                          embed's address; the report's "ranges" gives the
-//                          count per path. Answers are counted per address
+//                          count per path that the check reads. Answers are
+//                          counted per address
 //                          path, so the run exits 2 when a PDF.js embed's
 //                          address is also another embed's. With --remote
 //                          cors only answers to requests with an Origin
@@ -930,7 +931,10 @@ try {
   // is counted apart.
   const pdfServer = remoteServer || server;
   const byOrigin = remote === "cors";
-  const ranges = expectRanges ? Object.fromEntries(pdfServer.rangeCounts) : undefined;
+  // the report's counts are the ones the check reads
+  const counted = new Map();
+  for (const r of pdfServer.requests) if (r.status === 206 && r.origin !== null) counted.set(r.path, (counted.get(r.path) || 0) + 1);
+  const ranges = expectRanges ? Object.fromEntries(byOrigin ? counted : pdfServer.rangeCounts) : undefined;
   // a page on which the check cannot tell PDF.js loaded by ranges is a bad
   // argument (exit 2): a PDF too small for PDF.js to ask for ranges, or an
   // address that another embed (with --remote cors, another PDF.js embed)

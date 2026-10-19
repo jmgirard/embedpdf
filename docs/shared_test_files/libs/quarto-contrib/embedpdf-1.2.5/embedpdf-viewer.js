@@ -156,13 +156,17 @@ function showFailure(el, opts) {
 // 27.0); a read of the same address with an added query works (desktop Safari
 // 27.0.1, and PDF.js in iOS 27.0). So for a PDF on
 // another site that a native embed on the page also shows, PDF.js adds
-// "embedpdf=pdfjs" to the query, and still loads the PDF by byte ranges.
+// "embedpdf=pdfjs" to the query, in every browser, and still loads the PDF by
+// byte ranges.
 function pdfjsAddress(src) {
   const url = new URL(src, document.baseURI);
   const href = url.href;
   url.hash = "";
-  if (url.origin === location.origin || !nativeAddresses.has(url.href)) return href;
-  return url.href + (url.search ? "&" : url.href.endsWith("?") ? "" : "?") + "embedpdf=pdfjs";
+  // both origins from URL, since a file: page's location.origin can differ
+  // from its URL origin ("null") in some browsers
+  if (url.origin === new URL(location.href).origin || !nativeAddresses.has(url.href)) return href;
+  const sep = !url.search ? (url.href.endsWith("?") ? "" : "?") : url.href.endsWith("&") ? "" : "&";
+  return url.href + sep + "embedpdf=pdfjs";
 }
 
 async function hydratePdfjs(el, opts) {

@@ -165,3 +165,30 @@ Pass 1, 2026-10-19, at a91ed0e (main 6930c4e has not moved; no PR yet; Copilot r
 - AC5: README.md:86 and example.qmd:141 and :145, read at a91ed0e. Neither says that such an embed fails; `grep -i 'can fail even with\|seen once'` over both finds nothing. Both say that Safari refuses the read and that the viewer adds `embedpdf=pdfjs`. Both name iOS 27.0 iPhone and iPad simulators, desktop Safari 27.0.1, and Chromium. Both say byte ranges were checked in the simulators and in Chromium (emulated iPhone and Android), and not in desktop Safari. Pass.
 - AC6: `_extension.yml:3` `version: 1.2.5`; `embedpdf.lua:22` `local VERSION = "1.2.5"`, used by both `add_html_dependency` calls (lines 31, 49); `pandoc lua tests/test_shortcode.lua` 40 passed, 0 failed. Pass.
 - Consistency gate: `cairn_validate.py` all checks passed (exit 0). No DESIGN principle changed (the DESIGN diff is one Known issues entry), so `cairn_impact` is skipped. The generic profile's `consistency-gate` slot names no toolchain checks.
+- spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1: the added query applies in every browser, so a site that rejects an unknown query (a signed address) can break a case that worked outside Safari, and only a work-log line recorded the choice — fix now (D-005 records the choice and its rejected alternatives; README and example.qmd say "in every browser") and follow-up (row "Shared query fallback", parked on a real-site report)
+- diff-bug #2: with `--remote cors` the range count would take a native viewer's Origin-bearing 206 answers for the PDF.js embed — follow-up (row "Shared remote check gaps"; the 2026-10-19 logs show no such request)
+- diff-bug #3: the native-load check passes when one no-Origin GET reached the path, so one native embed stands for all that share the address — follow-up (row "Shared remote check gaps")
+- diff-bug #4: ios_check's report `ranges` gave all 206 answers while the check counts only Origin-bearing ones — fix now (report counts what the check reads; header says so)
+- diff-bug #5: on a `file:` page WebKit can give `location.origin` "file://" while a URL's origin is "null", so a local shared PDF would get the query — fix now (both origins from `new URL`; checked in Node with stand-in globals)
+- diff-bug #6: render_check's own read of a native PDF is now slowed under `--remote cors --expect-ranges` — fix now (comment says so; it gets a 200 and does not count)
+- diff-bug #7: a query ending in `&` gave `&&` — fix now (no separator after a trailing `&`; checked in Node)
+- diff-bug #8: the CLAUDE.md gotcha stated "Safari refuses only after the `<object>` read ends" from one comparison — fix now (states the one comparison)
+- diff-bug #9: "renderer=auto in a desktop browser" ignores a desktop browser with no built-in PDF viewer — fix now (README, example.qmd)
+- diff-bug #10: "The site sent no header … and sent `*`" reads as a real site — fix now ("The local test site", README and example.qmd)
+- diff-bug #11: two statements on one line in render_check's range count — fix now
+- diff-bug #12: the query covers native embeds on the same page only, not an author's own `<iframe>`/`<object>`/`<embed>` or an earlier load in the tab — follow-up (row "Shared remote check gaps")
+- blame-history #1: D-004 says another way to read such a PDF takes a D-entry — reject, false: D-004 covers a site that sends no header, and this change is for a site that sends one; D-005 records the change anyway (blame-history #2)
+- blame-history #2: M003's run decision "no ios_check --remote cors" was reversed with no D-entry — fix now (D-005)
+- blame-history #3: ios_check report `ranges` disagrees with the check under `--remote cors` — fix now (as diff-bug #4)
+- blame-history #4: serveRemote's slow answer now slows only Origin-bearing requests, narrowing M013's rule — reject, planned change (T4, recorded in the work log)
+- blame-history #5: the shared-address exit-2 rule is relaxed under `--remote cors` — reject, planned change (T4 and AC3's shared_test lines need it)
+- blame-history #6: "The site sent no header … `*`" is ambiguous — fix now (as diff-bug #10)
+- blame-history #7: two statements on one line in render_check — fix now (as diff-bug #11)
+- blame-history #8: the unshared path keeps the fragment and the shared path drops it — reject, style: fetch never sends a fragment, so the two addresses read the same file
+- prior-review #1: the relaxed exit-2 rule rests on native viewers sending no Origin header, and render_check has no native-load check — follow-up (row "Shared remote check gaps")
+- prior-review #2: the Safari lesson is revised a second time without a real-site check — reject, false as a regression: the real-site gap is recorded in CLAUDE.md "Still unverified", the DESIGN Known issues entry, and D-005
+- ripple #1: the candidate row "Safari shared remote URL" still describes the bug — reject, planned change: post-merge hygiene removes the row this milestone graduates
+- ripple #2: CLAUDE.md's `--expect-ranges` sentence says every whole large PDF is sent slowly — fix now (points to the `--remote cors` rule)
+- ripple #3: render_check's comment above `rangeOpts` says the server sends every whole large file slowly — fix now
+- ripple #4: example.qmd:133 "used only the value `*`" sits beside a no-header check — reject, false: every check with the header used `*`, and the no-header checks send no value

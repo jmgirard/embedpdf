@@ -204,7 +204,8 @@ joined with `pdfunite`, 14 pages and over that size. `files/large-2.pdf` is a
 copy of it. `large_test.html` shows `large.pdf` with `renderer=pdfjs` and
 `large-2.pdf` with `renderer=auto`, so the two embeds load different
 addresses. `--expect-ranges` (no value) makes the server that serves the PDFs
-send each whole `.pdf` file over 128 KB slowly. On a local server PDF.js
+send each whole `.pdf` file over 128 KB slowly (with `--remote cors`, see
+below). On a local server PDF.js
 otherwise often gets the whole file before it asks for a range. The run then
 fails unless that server answered at least one byte-range request (HTTP 206)
 for each PDF.js embed's address. With `--remote cors`, that server is the
@@ -293,8 +294,9 @@ errors.
   `cache` or `credentials` did not help (not tried on iOS). A read of the URL
   with an added query works. So for such a PDF the viewer gives
   PDF.js the address with `embedpdf=pdfjs` added (`pdfjsAddress` in
-  `embedpdf-viewer.js`). Safari refuses only after the `<object>` read ends,
-  so a check of this case must let the native read end first.
+  `embedpdf-viewer.js`), in every browser. In one comparison in the iOS 27.0
+  iPhone simulator, the v1.2.4 viewer loaded the PDF while the `<object>` read
+  was still arriving. So a check of this case lets the native read end first.
 - `quarto render` renders only `*.qmd` (`_quarto.yml`), so `cairn/` stays out
   of `docs/`.
 - The viewer serializes rendering (one page at a time, shared PDF.js worker) and
