@@ -1,0 +1,22 @@
+---
+title: "embedpdf names with a percent sign"
+format:
+  html:
+    embed-resources: true
+resources:
+  - "files/100%.pdf"
+---
+
+Both embeds show `files/100%.pdf`, a copy of `sample.pdf` whose file name
+holds a `%`. This page is built with `embed-resources: true`, so each PDF is
+inside the page. The first embed gives the path as `files/100%25.pdf`, and
+the second gives it with a bare `%`. The viewer names each one
+"PDF: 100%.pdf" for screen readers. The checks in `tests/` read that name.
+
+## Path with %25
+
+{{< pdf "files/100%25.pdf" renderer=pdfjs >}}
+
+## Path with a bare %
+
+{{< pdf "files/100%.pdf" renderer=pdfjs >}}

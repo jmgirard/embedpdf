@@ -86,7 +86,7 @@ the new lines in CLAUDE.md "Verify before finishing".
       `--expect-name` lines (one name) to show they still pass.
 - [x] T3: Hydration wait. Before `nameFailures()` reads a slide, wait (100 ms steps, 10 s cap) for no unhydrated
       `div.embedpdf` under the slide, with the condition `measureText()` uses (line 340). Run the AC3 exit-0 lines.
-- [ ] T4: Percent page. Add `files/100%.pdf` (copy of `sample.pdf`) and `percent_test.qmd` (listed under
+- [x] T4: Percent page. Add `files/100%.pdf` (copy of `sample.pdf`) and `percent_test.qmd` (listed under
       `resources:`). Run `quarto render`; Quarto prints a "Invalid URI 'files/100%.pdf'" WARN for the bare-`%` link,
       which is expected and not an error. Run the AC5 lines.
 - [ ] T5: CLAUDE.md. Add the AC3 and AC5 exit-0 lines, and a line in its notes on `percent_test.html`. Run every
@@ -111,6 +111,7 @@ the new lines in CLAUDE.md "Verify before finishing".
 - 2026-10-18: T1 done: render_check plants `duplink` and `norole`, ios_check plant `norole`. example.html `--plant duplink` exits 1 ("download control: description repeats the name"), `--plant norole` exits 1 ("role attribute is null, not group", tree role generic); name_test.html ios_check iPhone `--plant norole` exits 1 with the same role line; both clean runs exit 0.
 - 2026-10-18: T2 done: `--expect-name` splits on `|`; `nameFailures(page, slide, before)` takes the count of PDF.js embeds on earlier slides; a list whose length differs from the embeds checked fails. revealjs_test.html desktop `dummy2.pdf` and iphone `dummy2.pdf|dummy.pdf` exit 0; iphone `dummy.pdf|dummy2.pdf` exits 1 (slides 3 and 4 misnamed), a 3-name list exits 1 ("gives 3 names for 2 PDF.js embeds"), `--plant wrongname` with the list exits 1; name_test.html one-name run exits 0.
 - 2026-10-18: T3 done: `nameFailures()` waits (100 ms steps, 10 s cap) for no unhydrated `div.embedpdf` under its root, the `measureText()` condition, before planting or reading; it runs for the whole page too, where it is harmless. Choice: the wait sits inside `nameFailures()` rather than in the slide loop, so the plant also waits for the embed.
+- 2026-10-18: T4 done: `percent_test.qmd` and `files/100%.pdf` (copy of `sample.pdf`); `quarto render` exits 0 with the one expected "Invalid URI 'files/100%.pdf'" WARN, and docs/ gains only `percent_test.html` and `files/100%.pdf`. The rendered hrefs are `files/100%25.pdf` and `files/100%.pdf`. render_check `--alone file`, `--alone http`, and `--alone file --device iphone` exit 0 (both links `blob`, every page ok); `--plant wrongname` exits 1; ios_check iPhone and iPad `--alone yes` exit 0 with both embeds role group, "PDF: 100%.pdf".
 
 ## Decisions
 
