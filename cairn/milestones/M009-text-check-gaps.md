@@ -1,6 +1,6 @@
 # M009: Text check gaps
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
@@ -134,7 +134,52 @@ slide's canvas wait runs out (render_check); the plants and the `--slow-text` ai
 - 2026-10-19: T6 done: both header comments describe the whole-page wait, the new checks, plants, and `--slow-text`; CLAUDE.md gains a four-line note on the text wait (fb04d96). Full verify slot: shortcode tests 40 passed, 0 failed; helpers 85 passed, 0 failed; 54 check lines exit 0 (the 39 literal CLAUDE.md lines, 13 of them with `--expect-text`, plus the `--alone http`, mac-safari, windows-touch, and ipad variants CLAUDE.md asks for), Chromium 155 and the iOS 27.0 iPhone and iPad simulators.
 - 2026-10-19: claim audit: not owed — internal tier.
 - 2026-10-19: status review; all tasks done, verify slot green.
+- 2026-10-19: review return 1: AC2 — diff-bug #1, a canvas swapped before its page is looked up crashes the tree check (`holder.$` on a null `closest()`); fix with the 15 fix-now findings of pass 1 (Review section) and file row "Text check follow-ups".
 
 ## Decisions
 
 ## Review
+
+Pass 1 (2026-10-19, head 58da15b, Chromium 155.0.8059.39, iOS 27.0 simulators). Each AC command line run fresh by a script that read the lines from this file.
+
+- AC1 evidence: render_check `--plant inert` exit 1 with "PDF.js embed 1, page 2: text is under inert (on div.embedpdf-page)"; `--plant cvhidden` exit 1 with "PDF.js embed 1, page 2: text is under content-visibility: hidden (on the text block)"; ios_check iPhone `inert` and `cvhidden` exit 1, each `failures` holding only the matching entry for embed 1 page 2.
+- AC2 evidence: the `--plant detach` run exits 1 with "PDF.js embed 1: canvas 2 left the page during the accessibility check". Not ticked: diff-bug #1 below shows a swap path that crashes.
+- AC3 evidence: render_check iphone `--slow-text 1500` exit 0, `text.wait` 30087 ms over 20 pages; ios_check iPhone `--slow-text 1500` exit 0, `textWaitedMs` 30151 over 20 pages.
+- AC4 evidence: render_check exit 1 with only "1 embed(s) still not hydrated when the text wait ended after 10092 ms"; ios_check iPhone exit 1, `failures` only "1 embed(s) still not hydrated when the text wait ended after 10895 ms".
+- AC5 evidence: exit 1 with "stopped at slide 2: a PDF.js page there still had no canvas when the canvas wait ended" and one failure line, "PDF.js embed 1 on slide 2: 0 canvases for 2 pages".
+- AC6 evidence: all 13 literal CLAUDE.md lines with `--expect-text` exit 0 (9 render_check, 4 ios_check).
+- No box ticked in pass 1: return 1 changes code that AC1 to AC6 depend on, so pass 2 runs every AC line again.
+- Consistency gate: `cairn_validate.py` exit 0; no principle changed (no `cairn_impact` run); the generic profile's consistency-gate slot names no toolchain checks.
+- spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1: the canvas's page is looked up after earlier awaits, so a canvas the viewer swaps out first gives `closest()` null and `holder.$` throws — fix now (return 1, AC2)
+- diff-bug #2: `snapOrNull` turns any snapshot error on a connected canvas into "hidden" — fix now
+- diff-bug #3: the `--slow-text` "must still pass under 10000 ms" claim fails when pages × ms passes the 60 s cap, and the restore interval runs on after the wait — fix now
+- diff-bug #4: the slow aid saves a still-empty block as "" and can write it over text the viewer adds late — fix now
+- diff-bug #5: ios_check with `--slow-text` can pass its 180 s report timeout (two 60 s waits and the 90 s scroll loop) — fix now
+- diff-bug #6: the 10 s no-progress window starts before a stalled read's own 10 s viewer timeout, so one stalled page marks every later page as missing text — follow-up, row "Text check follow-ups"
+- diff-bug #7: `stopRun` leaves the console errors out of its report — fix now
+- diff-bug #8: `norender` always counts as planted, and on a page with no slides it costs 10 s per embed — fix now
+- diff-bug #9: `process.exit` right after `console.log` to a pipe can cut large output — follow-up, row "Text check follow-ups"
+- diff-bug #10: the CLAUDE.md note says the wait ends 10 s after the last progress, also when everything is in — fix now
+- diff-bug #11: the ios_check probe writes the text plant list out a second time — fix now
+- diff-bug #12: ios_check plants the stray div after the slow aid's first wait, render_check before it — fix now
+- diff-bug #13: on a Safari without `content-visibility`, the computed value is undefined and the check never fails — follow-up, row "Text check follow-ups"
+- diff-bug #14: the inert check misses inertness from a modal dialog — reject (planned change: AC1 names the `inert` attribute)
+- blame-history #1: snapshot errors pass the canvas check — fix now (same as diff-bug #2)
+- blame-history #2: the `--slow-text` claim is false past 6 pages at 9000 ms — fix now (same as diff-bug #3)
+- blame-history #3: the ios_check slow path can pass 180 s — fix now (same as diff-bug #5)
+- blame-history #4: `norender` skips the found-nothing rule — fix now (same as diff-bug #8)
+- blame-history #5: the text-plant exit-2 path prints no text failures first (in main before M009) — follow-up, row "Text check follow-ups"
+- prior-review #1: snapshot errors read as hidden — fix now (same as diff-bug #2)
+- prior-review #2: `norender` always planted — fix now (same as diff-bug #8)
+- prior-review #3: the early stops skip all other checks — reject (planned change: AC4 asks for no other failure line)
+- prior-review #4: CLAUDE.md gains no command line for `--slow-text` or the new plants — reject (planned change: plants and test aids live in the script headers, and AC6 covers the existing lines)
+- prior-review #5: the CLAUDE.md note misstates when the wait ends — fix now (same as diff-bug #10)
+- prior-review #6: ios_check's "Exits 0 only when" paragraph lists neither the text failures nor the stuck failure — fix now
+- prior-review #7: the canvas wait runs 10 s per embed in turn, so a slide with many unrendered embeds stops late — follow-up, row "Text check follow-ups"
+- prior-review #8: the whole-page wait counts embeds on slides not yet shown — reject (false: the viewer reads all text at load; both selfcontained_slides `--expect-text` lines exit 0 with 2 embeds read)
+- ripple #1: the ROADMAP row "Text check gaps" describes the old behavior — reject (planned change: post-merge hygiene graduates the row)
+- ripple #2: the row "Name plant slide target" names a per-slide text "still not hydrated" line that no longer exists — fix now
+- ripple #3: ios_check `--timeout` 180 with `--slow-text` — fix now (same as diff-bug #5)
+- ripple #4: the probe's opening comment does not say a stuck embed skips the scroll — fix now
+- ripple #5: the `--slow-text` claim — fix now (same as diff-bug #3)
