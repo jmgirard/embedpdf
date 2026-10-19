@@ -156,3 +156,26 @@ CLAUDE.md and script header updates.
 - ripple #2: PROFILE.md `verify` slot had no line for the helper tests — fix now, fixed d16f5c8.
 - ripple #3: row "Large PDF range check" says "after M006" — reject, false: it is accurate once M006 merges.
 - ripple #4: CLAUDE.md said "`--plant` in both scripts" though the lists differ — fix now, fixed d16f5c8.
+
+### Pass 2 (2026-10-18, head 3aaa48b, after the AC4 amendment)
+
+- Sync: main had not moved. An evidence run at 3aaa48b was stopped after its plant, port, and first 13 CLAUDE.md lines (all as expected), because the pass-2 fixes below change render_check and serve_docs; the final evidence is gathered at a4f7453.
+- spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug: every pass-1 "fixed d16f5c8" line confirmed fixed except the header wrap (diff-bug #4 below).
+- diff-bug #1: an ink plant that found nothing exited 2 before the page failures printed, hiding a real defect — fix now (exit after the per-page loop), fixed a4f7453.
+- diff-bug #2: the native-object fetch awaits split the DOM snapshot (`failed`, `links`, `srcs` read after them) — fix now (fetch moved after every DOM read), fixed a4f7453.
+- diff-bug #3: render_check's header exit list lacked the server-start exit 2 and the "cannot be read" status; ios_check's `--port` line lacked other start errors — fix now, fixed a4f7453.
+- diff-bug #4: the header sentence still wrapped mid-clause — fix now, fixed a4f7453.
+- diff-bug #5: `bytes=30000-100` got 416 though a range whose end is before its start is invalid — fix now (ignored, whole file; new helper case), fixed a4f7453.
+- diff-bug #6: rows "Remote check gaps", "Name check gaps", "Text check gaps" point at "Check script gaps", which hygiene removes; the "Ink check follow-ups" pointer was unclear — fix now for the new row (pointer dropped), fixed a4f7453; the three older pointers are re-pointed at post-merge hygiene, when the row goes.
+- diff-bug #7: render_check numbers PDF.js embeds, ios_check numbers all embeds — reject, style (each message says which).
+- diff-bug #8: a coverage tool that rewrites function source would break the injected rule — reject, false for this repo: nothing instruments these scripts, and `tests/ink.mjs` states the no-outer-names rule.
+- diff-bug #9: the blank plant does not guard a null 2d context — reject, false today: the viewer makes only 2d canvases.
+- blame-history #1: `canvasesWithInk` left the printed JSON — reject, planned fix: pass-1 removal, and `git grep` finds no reader.
+- blame-history #2: header exit lists — fix now (same as diff-bug #3), fixed a4f7453.
+- prior-review: no prior-review evidence of regression; items #1 to #5 restate pass-1 follow-ups already in rows "Ink check follow-ups" and "Remote check gaps".
+- prior-review #6: the "Ink check follow-ups" pointer — fix now (same as diff-bug #6), fixed a4f7453.
+- prior-review #7: `pdfjsPages` entries became strings — reject, planned change (T3), no reader in the repo.
+- ripple #1: row "Large PDF range check" names 128 KB, though the chunk size is 64 KB — reject, false: PDF.js turns ranges on only above 2 × 65536 bytes (`validateRangeRequestCapabilities`), which is 128 KiB.
+- ripple #2: the three "see "Check script gaps"" pointers — same as diff-bug #6, re-pointed at hygiene.
+- ripple #3: render_check header exit 2 list — fix now (same as diff-bug #3), fixed a4f7453.
