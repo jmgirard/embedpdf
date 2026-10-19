@@ -29,7 +29,8 @@
 //                       serve the PDFs from a second server on another port
 //                       (another origin) with no Access-Control-Allow-Origin
 //                       header, with "*", or as HTTP 404, and point each
-//                       embed's data-src and links at it
+//                       embed's data-src and links at it; fail unless every
+//                       embed's data-src is on that server
 //   --expect-failed <n> fail unless exactly n embeds show the load-failure
 //                       state: the text "This PDF cannot be shown here.", an
 //                       "Open the PDF" link to the same absolute URL as
@@ -274,6 +275,10 @@ try {
     );
     // embeds in the load-failure state (see --expect-failed); each other embed
     // that holds the failure text is reported as malformed
+    // each embed's PDF as an absolute URL (--remote checks they are remote)
+    const srcs = [...document.querySelectorAll("div.embedpdf")].map((el) =>
+      new URL(el.dataset.src || "", document.baseURI).href
+    );
     const failed = [];
     const malformed = [];
     document.querySelectorAll("div.embedpdf").forEach((el, i) => {
@@ -301,6 +306,7 @@ try {
       links,
       failed,
       malformed,
+      srcs,
     };
   });
 
@@ -351,6 +357,14 @@ try {
     }
     if (!res.links.every((s) => s === "data" || s === "blob")) {
       console.error(`render_check: download links not inline: ${res.links.join(", ")}`);
+      ok = false;
+    }
+  }
+  if (remoteBase) {
+    // the rewrite must have pointed every embed at the remote server
+    const local = res.srcs.filter((s) => !s.startsWith(remoteBase));
+    if (res.srcs.length === 0 || local.length) {
+      console.error(`render_check: --remote ${remote}: embeds not on ${remoteBase}: ${local.join(", ") || "(no embeds)"}`);
       ok = false;
     }
   }

@@ -7,7 +7,7 @@ _Last hygiene check: 2026-10-18 (M002 done and archived; "Self-contained embeds"
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M003 | Remote PDFs on phones | in-progress | — | normal | milestones/M003-remote-pdfs-on-phones.md |
+| M003 | Remote PDFs on phones | review | — | normal | milestones/M003-remote-pdfs-on-phones.md |
 | M002 | Self-contained embeds | done | — | high | milestones/archive/M002-self-contained-embeds.md |
 | M001 | iOS Safari check | done | — | high | milestones/archive/M001-ios-safari-check.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent

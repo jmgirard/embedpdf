@@ -348,8 +348,9 @@ async function hydrate(el) {
   }
 }
 
-// one embed that fails leaves its no-JS fallback content in place and never
-// stops the others
+// a PDF.js embed that cannot load its PDF shows the failure message
+// (showFailure); any other failure leaves the no-JS fallback content in place;
+// one failure never stops the others
 document.querySelectorAll("div.embedpdf").forEach((el) => {
   const label = /^data:/i.test(el.dataset.src || "") ? "an inlined PDF" : el.dataset.src;
   hydrate(el).catch((err) => console.error("embedpdf: failed to render " + label, err));

@@ -1,6 +1,6 @@
 # M003: Remote PDFs on phones
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -52,11 +52,12 @@ blocks cross-site reads.
       and the same with `--device "embedpdf iPad"` exit 0 only when each of the 10 embeds of `example.html` not set
       to `renderer=native` shows AC1's message and link and holds no "Download PDF file." link.
 - [ ] AC5: README "Known limitations" and a new `example.qmd` section say that on a page that is not
-      self-contained, an embed that uses PDF.js (iPhone, iPad, Android, or `renderer=pdfjs`) shows a PDF from
-      another site only if that site sends `Access-Control-Allow-Origin: *`, that otherwise the reader sees AC1's
-      message and link, and that putting the PDF in the Quarto project avoids this. They say that Android was
-      checked by emulation in Chrome, not on a device. Each claim about a named site's headers carries the date of
-      the `curl -I` run that showed it. `quarto render` completes with no errors.
+      self-contained, an embed that uses PDF.js (iPhone, iPad, Android, or `renderer=pdfjs`) needs the other site
+      to allow the read with an `Access-Control-Allow-Origin` header, that the checks used only the value `*`,
+      that without the header the reader sees AC1's message and link, and that putting the PDF in the Quarto
+      project avoids this. They say that Android was checked by emulation in Chromium, not on a device. Each claim
+      about a named site's headers names the URL probed, the header value seen, and the date of the `curl -I` run.
+      `quarto render` completes with no errors.
 - [ ] AC6: The version is 1.1.1 in `_extension.yml` and in the `add_html_dependency` call in `embedpdf.lua`,
       `pandoc lua tests/test_shortcode.lua` prints `0 failed`, and every `node tests/render_check.mjs` and
       `node tests/ios_check.mjs` line in CLAUDE.md "Verify before finishing" at commit `a093bb9` exits 0.
@@ -111,6 +112,11 @@ blocks cross-site reads.
 - 2026-10-18: failure identity in Safari, by scratch pages (not committed): PDF.js `getDocument` on a cross-port PDF succeeds with `Access-Control-Allow-Origin: *` and fails with no header (both with no `<object>` on the page), so AC4's failure is the header.
 - 2026-10-18: found in Safari (iOS 27.0 iPhone simulator): once an `<object>` on the page loads a cross-origin PDF, a PDF.js `getDocument` of the same URL fails with "Load failed" even with `Access-Control-Allow-Origin: *` (`disableStream`/`disableRange` makes a new URL and loads). So an `ios_check --remote cors` mode fails on example.html, whose `renderer=native` embed shows the same PDF; the mode was dropped. The fix goes to candidate row "Safari shared remote URL"; T4's docs state the limit.
 - 2026-10-18: T4 done: `curl -I` 2026-10-18: jmgirard.github.io/embedpdf/sample.pdf sends `access-control-allow-origin: *`; nbviewer.org/github/jhelvy/cv/blob/main/cv-jph.pdf sends none. README "Known limitations" bullet, `example.qmd` "PDFs on Another Site" section (code only, no live embed; example.html still has 11 embeds), CLAUDE.md remote check block and Safari gotcha, DESIGN.md Architecture and Known issues. `quarto render` exit 0. The simple-english lint hook flags README.md and CLAUDE.md; the added text was rewritten until the counts equal those of the files before this task (10 and 36).
+- 2026-10-18: claim audit: 55 claims read, 5 corrected — embedpdf-viewer.js (stale fallback comment), README.md (`*` stated as required; which browsers use PDF.js; Safari finding read as seen on both simulators), example.qmd (`*` as required; desktop display not shown by a test); also a gap fixed in render_check: `--remote` now fails unless every embed's data-src is on the remote server. 10 claims unverifiable from code (dated observations and simulator findings).
+- 2026-10-18: substantive amendment: AC5 — "only if that site sends `Access-Control-Allow-Origin: *`" became "needs the other site to allow the read with an `Access-Control-Allow-Origin` header, that the checks used only the value `*`"; "emulation in Chrome" became "in Chromium"; site header claims name URL, value, and date. Reason: the claim audit found `*` stated as required when any value allowing the page's origin works. Deliverable unchanged (docs wording only), so no stop.
+- 2026-10-18: re-audit: AC5 (full) — first reader: header-claim clause too wide (one URL stands for a host) and "Chrome" vs Chromium; both fixed in the wording above.
+- 2026-10-18: re-audit: AC5 (full) — re-entry reader: no finding on reachability, bounded promise, instrument, proportionality; ambiguities (each doc or both; "AC1's message"; no value when no header) and an iOS-simulator disclosure; the AC wording is kept and the docs meet each point (both docs carry every claim, quote the message, say nbviewer sent no header, and say iPhone and iPad were checked only in iOS 27.0 simulators).
+- 2026-10-18: after the fixes: `quarto render` exit 0; the 10 AC1–AC3 lines and the plain example.html desktop line exit 0; planted case (`--remote cors` on selfcontained_test.html, whose data: srcs are not rewritten) exits 1 on the new remote-server check. Status set to review.
 
 ## Decisions
 

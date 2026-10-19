@@ -269,12 +269,13 @@ Note
 <h2 class="anchored" data-anchor-id="pdfs-on-another-site">PDFs on Another Site</h2>
 <p>You can give the shortcode the URL of a PDF on another site:</p>
 <p><code>{{&lt; pdf https://example.com/report.pdf &gt;}}</code></p>
-<p>This section is about pages that are not self-contained. On desktop, the browser’s built-in viewer shows such a PDF. PDF.js is different, because your page reads the PDF itself. To let your page read a PDF from another site, the browser needs the header <code>Access-Control-Allow-Origin: *</code> from that site with the PDF. This applies to every PDF.js embed: on iPhone, iPad, and Android, and wherever you set <code>renderer=pdfjs</code>.</p>
-<p>If the site does not send the header, the embed shows “This PDF cannot be shown here.” and an “Open the PDF” link. The link opens the PDF in a new tab.</p>
-<p>On 2026-10-18, GitHub Pages sent this header with a PDF (<a href="https://jmgirard.github.io/embedpdf/sample.pdf">sample.pdf</a>), and nbviewer.org did not.</p>
+<p>This section is about pages that are not self-contained. On desktop, <code>renderer=auto</code> uses the browser’s built-in viewer, so this section is about PDF.js embeds. <code>renderer=auto</code> uses PDF.js on iPhone and iPad and in browsers with no built-in PDF viewer, such as Chrome on Android. <code>renderer=pdfjs</code> uses PDF.js everywhere.</p>
+<p>With PDF.js, your page reads the PDF itself. To let your page read a PDF from another site, the browser needs that site to allow the read with an <code>Access-Control-Allow-Origin</code> header. The checks below used only the value <code>*</code>.</p>
+<p>Without the header, the embed shows “This PDF cannot be shown here.” and an “Open the PDF” link. The link opens the PDF in a new tab.</p>
+<p>On 2026-10-18, <code>curl -I</code> showed <code>access-control-allow-origin: *</code> for <a href="https://jmgirard.github.io/embedpdf/sample.pdf">https://jmgirard.github.io/embedpdf/sample.pdf</a> (GitHub Pages). On the same date, <code>https://nbviewer.org/github/jhelvy/cv/blob/main/cv-jph.pdf</code> sent no such header.</p>
 <p>To avoid the problem, put the PDF in your Quarto project and list it under <code>resources</code> in the YAML header. Then give the shortcode its relative path, for example <code>{{&lt; pdf cv.pdf &gt;}}</code>. If a script makes the PDF somewhere else, copy it into the project before you render.</p>
-<p>In Safari, a PDF.js embed of a PDF from another site can fail even with the header. The cause is an embed with <code>renderer=native</code> on the same page that shows the same PDF. This was seen on 2026-10-18 in an iOS 27.0 iPhone simulator.</p>
-<p>These cases were checked on 2026-10-18 in Chromium with an emulated iPhone and an emulated Android phone. Android was checked by emulation in Chromium, not on a device. They were also checked in Safari in iOS 27.0 iPhone and iPad simulators, with a site that sends no header.</p>
+<p>In Safari, a PDF.js embed of a PDF from another site can fail even with the header. The cause is an embed with <code>renderer=native</code> on the same page that shows the same PDF. This was seen once, on 2026-10-18, in an iOS 27.0 iPhone simulator.</p>
+<p>These cases were checked on 2026-10-18 in Chromium with an emulated iPhone and an emulated Android phone. Android was checked by emulation in Chromium, not on a device. iPhone and iPad were checked only in Safari in iOS 27.0 simulators, with a site that sends no header.</p>
 </section>
 <section id="when-javascript-is-disabled" class="level2">
 <h2 class="anchored" data-anchor-id="when-javascript-is-disabled">When JavaScript is Disabled</h2>
