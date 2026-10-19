@@ -90,6 +90,7 @@ one PDF in a subfolder, named with a space once and percent-encoded once. Checks
 - 2026-10-18: T1 done: `hydratePdfjs()` sets `role="group"` and `aria-label` ("PDF" alone when no file name is found); `name_test.qmd` lists `files/sample copy.pdf` under `resources`, and `quarto render name_test.qmd` copied it to `docs/files/`. Checked by T2's checks.
 - 2026-10-18: T2 done: `--expect-name` and `--plant wrongname` in both scripts (Chromium 155 via `CHROME_PATH`). Green on `name_test.html` (desktop, iphone), `example.html`, and `selfcontained_test.html --alone file`; red with the plant and with a wrong expected name, each naming the embed and the wrong label; iPhone simulator green on `name_test.html` and red with the plant. The `ios_check.mjs` edit went through a Python script, not the Edit tool, so the app's edited-files card misses it.
 - 2026-10-18: T3 done: each toolbar control holds its glyph in an `aria-hidden` span and has `title` only. `--expect-name` also checks the three controls; green on `example.html` (desktop, iphone, with `--expect-text`); `--plant dupdesc` fails with "description repeats the name"; the existing `--plant noname` now removes `title` and still fails.
+- 2026-10-18: checkpoint (T4, T5 in progress): version 1.2.1 in both places; CLAUDE.md lines gain `--expect-name` and four `name_test.html` lines; README note and DESIGN.md Architecture drafted; full verify run (38 lines) and claim audit running.
 
 ## Decisions
 
