@@ -143,6 +143,8 @@ slide's canvas wait runs out (render_check); the plants and the `--slow-text` ai
 - 2026-10-19: review return 1: AC2 — diff-bug #1, a canvas swapped before its page is looked up crashes the tree check (`holder.$` on a null `closest()`); fix with the 15 fix-now findings of pass 1 (Review section) and file row "Text check follow-ups".
 - 2026-10-19: T7 checkpoint (not done): fixes written, row "Text check follow-ups" filed, row "Name plant slide target" narrowed; probes on temporary copies show a swapped canvas passes the tree check and a thrown snapshot fails it ("canvas 1 snapshot failed (probe error)"); the AC and verify lines are running.
 - 2026-10-19: T7 done: the 10 AC1 to AC5 lines give their planned exits and lines (slow-text waits 30086 ms and 30154 ms over 20 pages); full verify slot green: shortcode 40 passed, helpers 85 passed, 54 check lines exit 0. Status review.
+- 2026-10-19: the first merge chip was interrupted by the user; `/milestone-review M009` re-run, resume route (d): branch level with origin/main, no code change since evidence head 3624e96, validate green; chip re-posed.
+- 2026-10-19: step-7 approval: m009-text-check-gaps approved for merge
 
 ## Decisions
 
