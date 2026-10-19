@@ -4,14 +4,14 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M004: Screen-reader text
 
-- **Status:** planned   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate; M<xx>, M<yy> or — -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate; RR<NN> whose Binding criteria bind this milestone's ACs (binding-criteria check), or — -->
 - **Principles touched:** IP1, GP1, GP4   <!-- owner: plan · create/amend-via-gate; comma-separated IPn/GPn ids this milestone touches, or — -->
 - **Resolves:** —   <!-- owner: plan · create/amend-via-gate; comma-separated GitHub issues the scope absorbs, each `#N closes` (the PR closes it at merge) or `#N partial` (the remainder gets a candidate row), or — ; skill conduct only — no validate check parses it -->
 - **Surface tier:** user-facing — readers of PDF.js embeds who use a screen reader get the page text   <!-- owner: plan · create/amend-via-gate; user-facing | internal — <one-clause reason>; skill conduct only — no validate check parses it -->
-- **Branch/PR:** —   <!-- owner: implement (branch) / review (PR URL) · create; a companion checkout the milestone also works in is one further entry per checkout, `companion: <abs-path> <branch>` (implement), its PR URL appended by review — /milestone-review merges companions first, in listed order -->
+- **Branch/PR:** m004-screen-reader-text   <!-- owner: implement (branch) / review (PR URL) · create; a companion checkout the milestone also works in is one further entry per checkout, `companion: <abs-path> <branch>` (implement), its PR URL appended by review — /milestone-review merges companions first, in listed order -->
 
 ## Goal
 <!-- owner: plan · create; a wrong goal returns to plan, never edited in place -->
@@ -113,7 +113,7 @@ GitHub release for 1.2.0: the user declares the release window separately.
      cites; an insertion, removal, or reorder renumbers the labels and the
      Coverage lines together. -->
 
-- [ ] T1: Viewer page text (`embedpdf-viewer.js`). Give each page element
+- [x] T1: Viewer page text (`embedpdf-viewer.js`). Give each page element
       `role="group"` and `aria-label="Page i of n"` (line 143 loop) and a
       `.embedpdf-text` child. Render replaces only the canvas, never the text
       (line 184), and the canvas gets `aria-hidden="true"`. At hydrate, queue
@@ -121,9 +121,9 @@ GitHub release for 1.2.0: the user declares the release window separately.
       joined, a line break at `hasEOL`. Text tasks run one at a time on the
       shared queue (lines 51-56) and only when no page render waits (GP4). A
       failed extraction logs and leaves that page's text empty.
-- [ ] T2: Toolbar names: `aria-label` "Zoom out", "Zoom in", "Download PDF"
+- [x] T2: Toolbar names: `aria-label` "Zoom out", "Zoom in", "Download PDF"
       on the two buttons and the download link (lines 233-250).
-- [ ] T3: `embedpdf.css`: `.embedpdf-text` visually hidden (1px box, clip,
+- [x] T3: `embedpdf.css`: `.embedpdf-text` visually hidden (1px box, clip,
       overflow hidden, `user-select: none`). Version 1.2.0 in
       `_extension.yml` and the `add_html_dependency` version in `embedpdf.lua`.
 - [ ] T4: `tests/render_check.mjs`: `--expect-text "<p1>|<p2>"` reads each
@@ -162,6 +162,9 @@ GitHub release for 1.2.0: the user declares the release window separately.
 - 2026-10-18: audit gaps disposed: "cannot be selected" is now AC1's `user-select: none`; text tasks yielding to renders (GP4) and a failed extraction leaving empty text stay task behavior with no criterion, since no instrument here measures first-paint delay on a phone and no test PDF fails extraction. AC6 covers that rendering still completes.
 - 2026-10-18: render_check on this machine needs `CHROME_PATH=/Applications/Chromium.app/Contents/MacOS/Chromium` (no Google Chrome at the default path), per the audit.
 - 2026-10-18: revealjs_test.html gets no text check because its dummy PDFs differ per embed; slide text is checked in selfcontained_slides_test.html.
+- 2026-10-18: implement started on branch m004-screen-reader-text.
+- 2026-10-18: T1-T3 done: the shared queue is now two lists (renders first, then text tasks), a page render swaps only its canvas, the text block is absolutely placed in a `position: relative` page so layout is unchanged; version 1.2.0. Shortcode tests 40 passed, 0 failed; `quarto render` clean; render_check example.html on iphone (10 PDF.js, 1 native) exits 0. The full verify slot runs at T7.
+- 2026-10-18: implement chose no `page.cleanup()` after text extraction: text reading loads no page images, and cleanup could drop objects a pending render needs.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local. -->

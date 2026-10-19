@@ -43,16 +43,48 @@ async function inlinedPdf(src) {
   return { blob: pdf, url: URL.createObjectURL(pdf) };
 }
 
-// Serialize page rendering across every viewer on the page. All viewers share
+// Serialize PDF.js work across every viewer on the page. All viewers share
 // a single PDF.js worker, and firing many render() calls at once can overwhelm
 // it — on some browsers the render promises then never resolve. Running one
-// render at a time keeps things reliable (and is easier on constrained
-// devices) at no real cost, since only on-screen pages are ever queued.
-let renderQueue = Promise.resolve();
+// task at a time keeps things reliable (and is easier on constrained
+// devices) at no real cost, since only on-screen pages are ever rendered.
+// Reading a page's text (for screen readers) runs only when no page render
+// waits, so it never delays what is on screen.
+const renderTasks = [];
+const textTasks = [];
+let queueBusy = false;
+function runQueue() {
+  if (queueBusy) return;
+  const task = renderTasks.shift() || textTasks.shift();
+  if (!task) return;
+  queueBusy = true;
+  Promise.resolve()
+    .then(task)
+    .catch(() => {})
+    .then(() => {
+      queueBusy = false;
+      runQueue();
+    });
+}
 function enqueueRender(task) {
-  const run = renderQueue.then(task, task);
-  renderQueue = run.catch(() => {});
-  return run;
+  renderTasks.push(task);
+  runQueue();
+}
+function enqueueText(task) {
+  textTasks.push(task);
+  runQueue();
+}
+
+// a page's text as PDF.js extracts it, with a line break at each line end
+async function pageText(page) {
+  const content = await page.getTextContent();
+  let text = "";
+  for (const item of content.items) {
+    if (typeof item.str !== "string") continue; // a marked-content marker
+    text += item.str;
+    if (item.hasEOL) text += "\n";
+  }
+  return text.trim();
 }
 
 // iPhone, iPod, or iPad. iPadOS Safari sends a Mac user agent by default, so
@@ -134,19 +166,27 @@ async function hydratePdfjs(el, opts) {
   }
 
   let zoom = 1;
-  const state = { doc, pagesEl, zoom, pageEls: [], ratios: [] };
+  const state = { doc, pagesEl, zoom, pageEls: [], textEls: [], ratios: [] };
 
   // page 1 sets the placeholder aspect ratio; refined per page on render
   const vp1 = page1.getViewport({ scale: 1 });
   const defaultRatio = vp1.height / vp1.width;
 
+  // Each page is a labeled group that holds the page's text, hidden from view
+  // (embedpdf.css), for screen readers. The canvas is hidden from them.
   for (let i = 1; i <= doc.numPages; i++) {
     const pageEl = document.createElement("div");
     pageEl.className = "embedpdf-page";
     pageEl.dataset.pageNumber = i;
+    pageEl.setAttribute("role", "group");
+    pageEl.setAttribute("aria-label", `Page ${i} of ${doc.numPages}`);
     pageEl.style.aspectRatio = `1 / ${defaultRatio}`;
+    const textEl = document.createElement("div");
+    textEl.className = "embedpdf-text";
+    pageEl.appendChild(textEl);
     pagesEl.appendChild(pageEl);
     state.pageEls.push(pageEl);
+    state.textEls.push(textEl);
     state.ratios.push(defaultRatio);
   }
 
@@ -178,10 +218,14 @@ async function hydratePdfjs(el, opts) {
         if (pixels > MAX_CANVAS_PIXELS) scale *= Math.sqrt(MAX_CANVAS_PIXELS / pixels);
         const viewport = page.getViewport({ scale });
         const canvas = document.createElement("canvas");
+        canvas.setAttribute("aria-hidden", "true");
         canvas.width = Math.floor(viewport.width);
         canvas.height = Math.floor(viewport.height);
         await page.render({ canvas: canvas, canvasContext: canvas.getContext("2d"), viewport }).promise;
-        pageEl.replaceChildren(canvas);
+        // replace only the old canvas; the page's text stays
+        const old = pageEl.querySelector("canvas");
+        if (old) old.replaceWith(canvas);
+        else pageEl.prepend(canvas);
       } catch (err) {
         pageEl.dataset.renderKey = ""; // allow a later retry
         console.error("embedpdf: failed to render page " + num + " of " + opts.label, err);
@@ -234,12 +278,14 @@ async function hydratePdfjs(el, opts) {
     zoomOut.type = "button";
     zoomOut.textContent = "−";
     zoomOut.title = "Zoom out";
+    zoomOut.setAttribute("aria-label", "Zoom out");
     zoomOut.addEventListener("click", () => applyZoom(1 / 1.25));
 
     const zoomIn = document.createElement("button");
     zoomIn.type = "button";
     zoomIn.textContent = "+";
     zoomIn.title = "Zoom in";
+    zoomIn.setAttribute("aria-label", "Zoom in");
     zoomIn.addEventListener("click", () => applyZoom(1.25));
 
     const download = document.createElement("a");
@@ -248,6 +294,7 @@ async function hydratePdfjs(el, opts) {
     download.setAttribute("download", opts.filename);
     download.textContent = "⤓";
     download.title = "Download PDF";
+    download.setAttribute("aria-label", "Download PDF");
 
     toolbar.append(zoomOut, zoomIn, indicator, download);
     el.appendChild(toolbar);
@@ -283,6 +330,18 @@ async function hydratePdfjs(el, opts) {
     if (!started && tries++ < 40) setTimeout(kickInitial, 100);
   };
   kickInitial();
+
+  // read every page's text, so a screen reader can reach pages that were
+  // never scrolled into view; a page whose text fails keeps an empty block
+  state.textEls.forEach((textEl, i) =>
+    enqueueText(async () => {
+      try {
+        textEl.textContent = await pageText(await state.doc.getPage(i + 1));
+      } catch (err) {
+        console.error("embedpdf: failed to read the text of page " + (i + 1) + " of " + opts.label, err);
+      }
+    })
+  );
 
   let resizeTimer = null;
   new ResizeObserver(() => {

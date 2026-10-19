@@ -73,6 +73,7 @@
 }
 
 .embedpdf-page {
+  position: relative;
   width: 100%;
   margin: 0 auto 0.5rem auto;
   background: white;
@@ -83,6 +84,24 @@
   display: block;
   width: 100%;
   height: auto;
+}
+
+/* a page's text: read by screen readers, not shown and not selectable */
+.embedpdf-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: pre-line;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* download button (button= kwarg) */
