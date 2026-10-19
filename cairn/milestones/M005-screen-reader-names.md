@@ -2,14 +2,14 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M005: Screen-reader names
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1, GP3
 - **Resolves:** —
 - **Surface tier:** user-facing — screen-reader users of every PDF.js embed hear the change
-- **Branch/PR:** —
+- **Branch/PR:** m005-screen-reader-names
 
 ## Goal
 
