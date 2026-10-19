@@ -31,7 +31,7 @@ slide's canvas wait runs out (render_check); the plants and the `--slow-text` ai
 
 ## Acceptance criteria
 
-- [ ] AC1: With `--expect-text`, `tests/render_check.mjs` and `tests/ios_check.mjs` fail a page in two more cases.
+- [x] AC1: With `--expect-text`, `tests/render_check.mjs` and `tests/ios_check.mjs` fail a page in two more cases.
       In the first case, the page's `.embedpdf-text` block or an element that contains the block has the `inert`
       attribute. In the second case, one of them has a computed `content-visibility` of `hidden`. Each script gains
       `--plant inert`, which sets `inert` on the last `.embedpdf-page` of the first PDF.js embed just before the
@@ -43,7 +43,7 @@ slide's canvas wait runs out (render_check); the plants and the `--slow-text` ai
       `node tests/render_check.mjs example.html --expect-native 9 --expect-pdfjs 2 --expect-text "On the Origin of Coastlines|Why It Matters" --plant cvhidden`,
       `node tests/ios_check.mjs --device "embedpdf iPhone" --expect-text "On the Origin of Coastlines|Why It Matters" --plant inert`,
       and `node tests/ios_check.mjs --device "embedpdf iPhone" --expect-text "On the Origin of Coastlines|Why It Matters" --plant cvhidden`.
-- [ ] AC2: In the `--expect-text` accessibility-tree check of `tests/render_check.mjs`, a null snapshot of a page
+- [x] AC2: In the `--expect-text` accessibility-tree check of `tests/render_check.mjs`, a null snapshot of a page
       canvas counts as hidden in one case only: the canvas is still in the document after the snapshot. If the
       canvas is no longer in the document, the check takes one snapshot of the page's current canvas and judges it
       by the same rule, with no further retry. If the page has no canvas, the check prints a failure line that says
@@ -51,7 +51,7 @@ slide's canvas wait runs out (render_check); the plants and the `--slow-text` ai
       the first PDF.js embed after the check finds that canvas and before its snapshot. This run exits 1 and prints
       that line for canvas 2 of PDF.js embed 1:
       `node tests/render_check.mjs example.html --expect-native 9 --expect-pdfjs 2 --expect-text "On the Origin of Coastlines|Why It Matters" --plant detach`.
-- [ ] AC3: With `--expect-text`, `tests/render_check.mjs` and `tests/ios_check.mjs` each wait once for the whole
+- [x] AC3: With `--expect-text`, `tests/render_check.mjs` and `tests/ios_check.mjs` each wait once for the whole
       page before they read any text. On a RevealJS page, render_check waits before it goes to the first slide. On
       other pages, it waits before the pages scroll. ios_check waits before the probe scrolls. The wait ends at the
       first of three events. Every `div.embedpdf` is hydrated and every `.embedpdf-text` block of a PDF.js page holds
@@ -62,20 +62,20 @@ slide's canvas wait runs out (render_check); the plants and the `--slow-text` ai
       until the aid has emptied the text. These two runs exit 0:
       `node tests/render_check.mjs example.html --device iphone --expect-native 1 --expect-pdfjs 10 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters" --slow-text 1500`
       and `node tests/ios_check.mjs --device "embedpdf iPhone" --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters" --slow-text 1500`.
-- [ ] AC4: With `--expect-text`, if the AC3 wait ends while a `div.embedpdf` is not hydrated, `tests/render_check.mjs`
+- [x] AC4: With `--expect-text`, if the AC3 wait ends while a `div.embedpdf` is not hydrated, `tests/render_check.mjs`
       prints a line that gives the number of embeds that are not hydrated, and `tests/ios_check.mjs` puts that line in
       its report's `failures`. Each script then exits 1 with no other failure line or entry. With `--expect-text`,
       each script gains `--plant unhydrated`, which adds a `div.embedpdf` with no `data-src` to the page's body before
       that wait. These two runs exit 1 with that line or entry and no other:
       `node tests/render_check.mjs selfcontained_slides_test.html --alone file --device iphone --expect-native 1 --expect-pdfjs 2 --expect-pages 2 --expect-links 4 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters" --plant unhydrated`
       and `node tests/ios_check.mjs --device "embedpdf iPhone" --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters" --plant unhydrated`.
-- [ ] AC5: On a RevealJS page with `--expect-text`, a slide's accessibility-tree check can end its canvas wait with a
+- [x] AC5: On a RevealJS page with `--expect-text`, a slide's accessibility-tree check can end its canvas wait with a
       PDF.js page that has no canvas. Then `tests/render_check.mjs` checks no later slide, prints a line that names
       that slide, and exits 1. With `--expect-text`, `--plant norender` keeps the viewer from putting a canvas on any
       page, without a change to the viewer file. This run exits 1, prints that line naming slide 2, and prints no
       failure line that names a later slide:
       `node tests/render_check.mjs selfcontained_slides_test.html --alone file --device iphone --expect-native 1 --expect-pdfjs 2 --expect-pages 2 --expect-links 4 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters" --plant norender`.
-- [ ] AC6: Every literal `node tests/render_check.mjs` or `node tests/ios_check.mjs` command line in CLAUDE.md
+- [x] AC6: Every literal `node tests/render_check.mjs` or `node tests/ios_check.mjs` command line in CLAUDE.md
       "Verify before finishing" that passes `--expect-text` exits 0.
 
 ## Coverage
@@ -215,3 +215,13 @@ Pass 2 (2026-10-19, after return 1).
 - ripple #2: row "Name plant slide target" under-narrows: with `--expect-text` the name plants can no longer take a late embed either — fix now, fixed 3624e96
 - ripple #3: the stuck line's time counts only the second wait in slow mode — reject (false: the line names the wait that ended; the aid's first wait is set-up)
 - ripple #4: row "Text check follow-ups" does not name `stopRun` as a `process.exit` site — reject (false: the row's item covers every such call)
+
+Final evidence (2026-10-19, head 3624e96, Chromium 155.0.8059.39, iOS 27.0 simulators; each AC command line read from this file and run fresh after the pass-2 fixes):
+
+- AC1 evidence: render_check `--plant inert` exit 1 with "PDF.js embed 1, page 2: text is under inert (on div.embedpdf-page)"; `--plant cvhidden` exit 1 with "PDF.js embed 1, page 2: text is under content-visibility: hidden (on the text block)"; ios_check iPhone `inert` exit 1, `failures` only "embed 1, page 2: text is under inert (on div.embedpdf-page)"; `cvhidden` exit 1, `failures` only "embed 1, page 2: text is under content-visibility: hidden (on the text block)".
+- AC2 evidence: `--plant detach` exit 1 with "PDF.js embed 1: canvas 2 left the page during the accessibility check". Probes on temporary copies (T7): a canvas swapped for a clone passes the tree check; a thrown snapshot fails it.
+- AC3 evidence: render_check iphone `--slow-text 1500` exit 0, `text.wait` 30098 ms over 20 pages; ios_check iPhone `--slow-text 1500` exit 0, `textWaitedMs` 30155 over 20 pages.
+- AC4 evidence: render_check exit 1 with only "1 embed(s) still not hydrated when the text wait ended after 10096 ms"; ios_check iPhone exit 1, `failures` only "1 embed(s) still not hydrated when the text wait ended after 10686 ms".
+- AC5 evidence: exit 1 with "stopped at slide 2: a PDF.js page there still had no canvas when the canvas wait ended" and one other line, "PDF.js embed 1 on slide 2: 0 canvases for 2 pages"; no line names a later slide.
+- AC6 evidence: all 13 literal CLAUDE.md lines with `--expect-text` exit 0, within a full verify slot run: shortcode 40 passed, 0 failed; helpers 85 passed, 0 failed; 54 check lines exit 0 (39 literal lines plus the `--alone http`, mac-safari, windows-touch, and ipad variants).
+- Consistency gate: `cairn_validate.py` exit 0; no principle changed; the generic profile names no toolchain checks.
