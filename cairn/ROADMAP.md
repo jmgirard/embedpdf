@@ -1,16 +1,15 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-18 (M004 done and archived; row "Screen-reader text layer" graduated; rows "Eager text cost", "Screen-reader text gaps", "Text check gaps" added; M001 row pruned)_
+_Last hygiene check: 2026-10-18 (M005 done and archived; row "Screen-reader text gaps" narrowed; rows "Embed name gaps", "Name check gaps" added; M002 row pruned)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M005 | Screen-reader names | review | — | normal | milestones/M005-screen-reader-names.md |
+| M005 | Screen-reader names | done | — | normal | milestones/archive/M005-screen-reader-names.md |
 | M004 | Screen-reader text | done | — | normal | milestones/archive/M004-screen-reader-text.md |
 | M003 | Remote PDFs on phones | done | — | normal | milestones/archive/M003-remote-pdfs-on-phones.md |
-| M002 | Self-contained embeds | done | — | high | milestones/archive/M002-self-contained-embeds.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
@@ -30,7 +29,7 @@ _Last hygiene check: 2026-10-18 (M004 done and archived; row "Screen-reader text
 - GitHub releases for v1.0.x: publish GitHub releases for tags v1.0.0 to v1.0.2 so the README version badge is current — added 2026-10-18 — DESIGN Known issues
 - Check script gaps: `render_check.mjs` checks ink over all canvases at once, not pages per embed; both scripts sample only the red channel of every 100th pixel; `serve_docs.mjs` lacks some content types and HTTP Range requests; `ios_check.mjs` uses a fixed port and crashes on EADDRINUSE (M001 review) — added 2026-10-18
 - Eager text cost: see "First-paint robustness". Reading every page's hidden text at load keeps each PDF.js page object and its worker fonts (no `page.cleanup()`), and a page render can wait behind one text read. Memory and first-paint delay were not measured on a constrained phone or with a long PDF. The plan's alternative was text only for rendered pages; a measured memory failure or first-paint delay is the evidence for it (M004 review) — added 2026-10-18
-- Screen-reader text gaps: hidden page text joins PDF.js items with no added space, so multi-column or positioned text may run words together; every embed labels its pages "Page i of n" with no file name, and the embed has no accessible name; browser find-in-page may match the hidden text; the toolbar controls carry the same `title` and `aria-label`, which some screen readers may read twice. None checked (M004 review) — added 2026-10-18 — started M005
+- Screen-reader text gaps: browser find-in-page may match the hidden page text (not checked). Hidden text joins PDF.js items with no added space, but PDF.js 6.1.200 adds space items itself for gaps: an M005 plan probe in Chromium read positioned words, two columns, and a `TJ` gap with spaces, and only a 2 pt gap at 12 pt and a text rise joined with none. A real PDF whose hidden text runs words together is the evidence for a fix (M004 review; narrowed 2026-10-18 by M005) — added 2026-10-18
 - Native embed name: a native `<object>` embed has no accessible name naming its file, while M005 names PDF.js embeds "PDF: <file name>"; how each browser's built-in viewer exposes a name is not checked (M005 plan) — added 2026-10-18
 - Embed name gaps: see "Screen-reader text gaps". Two PDF.js embeds of one file get the same "PDF: <file name>" name and the same page groups; a query-style URL (`download.php?file=a.pdf`) or a bare host names the embed by the script or host; on a self-contained page with no download link the name is the made-up "document.pdf", and an inlined `href` would give a base64 name; the toolbar page indicator "1 / 2" has no label; Safari and VoiceOver handling of a `title`-only control name over `aria-hidden` content is not checked (M005 review) — added 2026-10-18
 - Name check gaps: see "Check script gaps". `--plant dupdesc` plants only in the zoom-in button, not the download link, and no plant removes `role="group"`; `revealjs_test.html` (several PDFs) gets no `--expect-name` line; without `--expect-text`, `nameFailures` on a slide runs with no hydration wait (it fails loudly, not silently); file names with a malformed or literal `%` are untested (M005 review) — added 2026-10-18
