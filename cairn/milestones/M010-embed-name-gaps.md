@@ -1,13 +1,13 @@
 # M010: Embed name gaps
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1, GP3
 - **Resolves:** —
 - **Surface tier:** user-facing — screen-reader names that readers of authors' pages hear
-- **Branch/PR:** —
+- **Branch/PR:** m010-embed-name-gaps
 
 ## Goal
 
@@ -39,7 +39,7 @@ A screen reader tells each PDF.js embed apart by a name that never comes from a 
 
 ## Tasks
 
-- [ ] T1: Replace `fileName()` (`embedpdf-viewer.js:375`) with the AC1 rule as an exported function; use it in `hydrate()` (`:403`, no "document.pdf" in the name, only in the `download` attribute) and `hydratePdfjs()` (`:160`). Write `tests/name_rule_test.mjs`: it serves the viewer, imports it in Chromium with puppeteer, and checks each AC1 row; `--plant` swaps one expected value so the run can be seen to fail.
+- [x] T1: Replace `fileName()` (`embedpdf-viewer.js:375`) with the AC1 rule as an exported function; use it in `hydrate()` (`:403`, no "document.pdf" in the name, only in the `download` attribute) and `hydratePdfjs()` (`:160`). Write `tests/name_rule_test.mjs`: it serves the viewer, imports it in Chromium with puppeteer, and checks each AC1 row; `--plant` swaps one expected value so the run can be seen to fail.
 - [ ] T2: Number shared names: at load, before any hydrate, pick each placeholder's renderer and name in document order, count the PDF.js ones per name, and pass "(k of n)" into `hydratePdfjs()`. Keep the failed embed unnamed (`showFailure`).
 - [ ] T3: render_check and ios_check `--expect-name <base>` expect "<base> (k of n)" for embeds whose base name repeats among the given names, counted from the list given, never from the page; a value `-` stands for the bare "PDF". Add plant `nonumber` (drop the number) to both. Update the `--expect-name` values and notes in CLAUDE.md.
 - [ ] T4: Add `files/get` and `name_edge_test.qmd` (resources so Quarto copies `files/get`; a raw `div.embedpdf` with a `data:` `data-src` of `dummy.pdf`); add its render_check and ios_check lines to CLAUDE.md.
@@ -60,6 +60,8 @@ A screen reader tells each PDF.js embed apart by a name that never comes from a 
 - 2026-10-19: plan gate chose a hidden "Page i of n" with the visible "i / n" `aria-hidden` over `role="status"` (read aloud on every scroll) and over hiding the indicator (loses the position); falsified by a screen reader that skips the hidden text.
 - 2026-10-19: plan gate chose an exported naming function with a Chromium table test over page-level checks alone because hosts and `blob:` addresses cannot be served by `serveDocs`; falsified by a name that differs between the table and a page.
 - 2026-10-19: page groups keep "Page i of n" as their label: they sit inside the embed's named group, so the numbered embed name tells them apart.
+- 2026-10-19: implement started on branch m010-embed-name-gaps; Google Chrome is not installed here, so every check runs with `CHROME_PATH=/Applications/Chromium.app/Contents/MacOS/Chromium` (Chromium 155.0.8059.39).
+- 2026-10-19: T1 done: `fileName()` rewritten as an exported, string-only rule (no `URL` parsing, so a bare `%` stays); new `embedName(el)` gives "PDF: <file name>" or "PDF"; `name_rule_test.mjs` serves `_extensions/embedpdf` with `serveDocs` and passes 21 rows (16 AC1 rows plus 5 beside them), and `--plant` fails on the `download.php` row; name_test and selfcontained_test iPhone name checks still pass.
 
 ## Decisions
 
