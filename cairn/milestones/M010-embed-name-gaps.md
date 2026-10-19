@@ -218,3 +218,4 @@ spawned: diff-bug, blame-history, prior-review, ripple
 - ripple #2: CLAUDE.md's one-name rule omits safari_check — fix now.
 - ripple #3: row "Native embed name" quotes M005's form — reject, a record of what M005 did (as pass-2 ripple #4).
 - ripple #4: DESIGN.md does not say whitespace before `data:` is allowed — fix now.
+- Pass-3 fix-now items fixed 5f06a4d: diff-bug #2, #3, #4, #5, #6, #13, #14, #15, #17, #18; blame-history #1, #2; prior-review #1; ripple #1, #2, #4. Claim audit of the fixes: 46 claims read, 2 corrected in 1e028ee (row "Embed name follow-ups" U+00A0 clause limited to a `file://` page; render_check header's page-2 sentence), re-read by the same reader as correct.
