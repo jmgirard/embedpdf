@@ -1,6 +1,6 @@
 # M009: Text check gaps
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
@@ -106,7 +106,7 @@ slide's canvas wait runs out (render_check); the plants and the `--slow-text` ai
       ios_check, POST the report at once with that one failure. Add `unhydrated` to both plant lists. In
       render_check, stop the slide loop when a slide's canvas wait runs out; add `norender`, put in place before the
       page loads. Run the AC4 and AC5 lines.
-- [ ] T6: Docs and verify. Update both header comments (the text wait, now "at most 10 s" in render_check lines
+- [x] T6: Docs and verify. Update both header comments (the text wait, now "at most 10 s" in render_check lines
       60-77 and ios_check lines 35-44, the new plants, `--slow-text`) and any CLAUDE.md note the change makes stale.
       Run every CLAUDE.md line that passes `--expect-text` (AC6), then the full `verify` slot.
 
@@ -131,6 +131,9 @@ slide's canvas wait runs out (render_check); the plants and the `--slow-text` ai
 - 2026-10-19: T3 done: `waitForText()` runs once before the slide loop or scroll; `measureText()` no longer waits; the JSON `text.wait` holds `waitedMs`, `slowPages`, `unhydrated`. AC3 render_check line exits 0 with a 30019 ms wait over 20 pages; selfcontained_slides iphone text line exits 0; `--slow-text 12000` on desktop exits 1 after a 10008 ms wait, so the wait ends after 10 s without new text.
 - 2026-10-19: T4 done: the probe's text wait follows the T3 rule; `--slow-text` goes to the probe as `slow=<ms>`; the report adds `slowPages`. AC3 ios_check line (iPhone) exits 0 with `textWaitedMs` 30090 over 20 pages.
 - 2026-10-19: T5 done: render_check `stopRun()` prints the cause and the text and tree failures so far, then exits 1; plants `unhydrated` (in `waitForText()`) and `norender` (`getContext` returns null, set before load) in a new `WAIT_PLANTS` list; ios_check reports at once with `stuck`, which becomes the one failure. AC4 render_check exits 1 in 12 s with only "1 embed(s) still not hydrated when the text wait ended after 10007 ms"; AC4 ios_check (iPhone) exits 1 in 14 s with only that `failures` entry; AC5 exits 1 in 16 s with "stopped at slide 2: …" and one failure line, for slide 2.
+- 2026-10-19: T6 done: both header comments describe the whole-page wait, the new checks, plants, and `--slow-text`; CLAUDE.md gains a four-line note on the text wait (fb04d96). Full verify slot: shortcode tests 40 passed, 0 failed; helpers 85 passed, 0 failed; 54 check lines exit 0 (the 39 literal CLAUDE.md lines, 13 of them with `--expect-text`, plus the `--alone http`, mac-safari, windows-touch, and ipad variants CLAUDE.md asks for), Chromium 155 and the iOS 27.0 iPhone and iPad simulators.
+- 2026-10-19: claim audit: not owed — internal tier.
+- 2026-10-19: status review; all tasks done, verify slot green.
 
 ## Decisions
 
