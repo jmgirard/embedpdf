@@ -1,13 +1,13 @@
 # M022: Native embeds on self-contained slides checked
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1
 - **Resolves:** —
 - **Surface tier:** internal — a check script, a test page, and repo docs, with no change to the extension's code
-- **Branch/PR:** —
+- **Branch/PR:** m022-slides-native-check
 
 ## Goal
 
@@ -44,7 +44,7 @@ A check shows that each native embed on the self-contained RevealJS slides shows
 
 ## Tasks
 
-- [ ] T1: Add the fourth slide to `selfcontained_slides_test.qmd`, run `quarto render`, change the counts on the CLAUDE.md `render_check.mjs` and `ios_check.mjs` lines for `selfcontained_slides_test.html`, and run those lines (render_check also with `--alone http`).
+- [x] T1: Add the fourth slide to `selfcontained_slides_test.qmd`, run `quarto render`, change the counts on the CLAUDE.md `render_check.mjs` and `ios_check.mjs` lines for `selfcontained_slides_test.html`, and run those lines (render_check also with `--alone http`).
 - [ ] T2: In `tests/native_check.mjs`, on a page with `.reveal .slides`: make Reveal's scale 1 during the run (size the window, else exit 2 with the scale found); before each native embed's state read and screenshot, go to its slide (`Reveal.getIndices`, `Reveal.slide`); fail the embed when `Reveal.getCurrentSlide()` does not hold it; add the `noslide` plant (skip going to the target embed's slide); keep the other plants working per slide; update the header.
 - [ ] T3: Run the six AC2 runs, the AC3 and AC4 plant runs, and the nine AC5 lines. Run `node tests/helpers_test.mjs` if a helper changed.
 - [ ] T4: Probe in headless Chromium: open `selfcontained_test.html` alone, press the save control of the native viewer of one native embed, and read the saved file's name (CDP download events into a scratch folder). Write the dated DESIGN.md Known issues entry, and log the probe's command and result in the work log.
@@ -63,6 +63,7 @@ A check shows that each native embed on the self-contained RevealJS slides shows
 - 2026-10-20: plan gate chose screenshots at Reveal scale 1 over a reference drawn under the slide's own zoom or transform, because the reference and the `<iframe>` box check measure CSS pixels and a match under zoom is unproven; falsified by a native embed that shows its PDF at scale 1 but not under Reveal's zoom or transform at another window size.
 - 2026-10-20: plan gate chose extending native_check over render_check (bound to Chromium's CDP) and safari_check (no slide walk), for the reasons M020 gave; falsified by a slide-only behavior that native_check's screenshot comparison cannot see.
 - 2026-10-20: no version change planned: test and docs only.
+- 2026-10-20: T1 done: fourth slide (`renderer=native page=2 width=600 height=400`) added and rendered; the four render_check lines (desktop and iphone, `--alone file` and `http`) and the two ios_check lines for `selfcontained_slides_test.html` exit 0 with the new counts (native 3 or 2, links 5); the `http` runs log one 404, as before (the page alone has no favicon).
 
 ## Decisions
 
