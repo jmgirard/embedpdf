@@ -3,17 +3,18 @@
 //
 // Usage:
 //   node tests/frame_rule_check.mjs --browser chromium|firefox|safari
-//        [--slow-head] [--plant noorigin|nook|anydisp|get|casesens|swap]
+//        [--slow-head] [--plant noorigin|nook|noredirect|notimeout|anydisp|get|casesens|swap]
 //
 // A native embed whose page option is over 1 is an <iframe> only when the PDF
 // is inlined, or comes from the page's own origin and a HEAD request for it
-// answers OK within 5 s with media type application/pdf and a disposition type
-// other than attachment, both compared without case or parameters; otherwise
-// it is an <object> (embedpdf-viewer.js, frameAllowed; D-008).
-// This check serves docs/page_test.html with its embeds replaced by the nine
+// answers OK within 5 s, from that origin, with media type application/pdf and
+// a disposition type other than attachment, both compared without case or
+// parameters; otherwise it is an <object> (embedpdf-viewer.js, frameAllowed;
+// D-008).
+// This check serves docs/page_test.html with its embeds replaced by the twelve
 // below, all with renderer=native, each at its own address, and the
-// extension's viewer from docs/. A second server on another port is another
-// origin. Embed k gets the answer and must get the element:
+// extension's viewer from docs/. A second and a third server, on other ports,
+// are other origins. Embed k gets the answer and must get the element:
 //   1 /__fr/plain.pdf        application/pdf                         <iframe>
 //   2 /__fr/upper            Application/PDF; charset=binary         <iframe>
 //   3 /__fr/inline.pdf       application/pdf, Content-Disposition:
@@ -27,11 +28,16 @@
 //                            Access-Control-Allow-Origin: *          <object>
 //   8 /__fr/missing.pdf      HTTP 404                                <object>
 //   9 /__fr/page1.pdf        application/pdf, no page option         <object>
-// Embeds 1-8 have page=2. The run fails unless each embed is hydrated as a
-// native embed with that element, each address of embeds 1-8 ends in
+//  10 /__fr/late.pdf         application/pdf, HEAD answered after 7 s <object>
+//  11 /__fr/notype.pdf       HTTP 200 with no Content-Type           <object>
+//  12 /__fr/redirect.pdf     HTTP 302 to <third origin>/__fr/far.pdf,
+//                            application/pdf, Content-Disposition:
+//                            attachment, Access-Control-Allow-Origin: * <object>
+// All but embed 9 have page=2. The run fails unless each embed is hydrated as
+// a native embed with that element, each address but embed 9's ends in
 // #page=2 (an <iframe>'s src, an <object>'s data) and embed 9's has no
-// fragment, the page's server got at least one HEAD request for each of
-// embeds 1-6 and 8 and none for embed 9, and the second server got no HEAD
+// fragment, the page's server got at least one HEAD request for each embed on
+// it but embed 9 and none for embed 9, and the second server got no HEAD
 // request.
 //
 // --slow-head delays every HEAD answer by 3 s, under the viewer's 5 s limit;
@@ -39,6 +45,8 @@
 // server, and the run must then fail:
 //   noorigin  frameAllowed skips its origin check
 //   nook      frameAllowed ignores the answer's status
+//   noredirect  frameAllowed ignores a redirect to another origin
+//   notimeout frameAllowed waits for an answer with no time limit
 //   anydisp   frameAllowed takes any Content-Disposition as an attachment
 //   get       frameAllowed sends GET, not HEAD
 //   casesens  frameAllowed compares without lowering case
@@ -49,9 +57,8 @@
 //
 // Exits 0 on a pass, 1 on a failed check, 2 on a bad argument, when a plant
 // does not apply to the viewer's code, when docs/page_test.html has no viewer
-// script or not 3 embeds, or when the browser, safaridriver, or a server
-// cannot start; 130 on Ctrl-C or a kill. A missing puppeteer-core is an
-// uncaught import error (exit 1).
+// script or not 3 embeds, or when puppeteer-core, the browser, safaridriver,
+// or a server cannot start; 130 on Ctrl-C or a kill.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -62,7 +69,9 @@ import { serveDocs, DOCS } from "./serve_docs.mjs";
 const WD_MS = 60000;
 const PLANTS = {
   noorigin: [['if (own === "null" || url.origin !== own) return false;', ""]],
-  nook: [["if (!res.ok) return false;", ""]],
+  nook: [["if (!res.ok || new URL(res.url).origin !== own) return false;", "if (new URL(res.url).origin !== own) return false;"]],
+  noredirect: [["if (!res.ok || new URL(res.url).origin !== own) return false;", "if (!res.ok) return false;"]],
+  notimeout: [[', signal: AbortSignal.timeout(5000)', ""]],
   anydisp: [['disposition !== "attachment"', "!disposition"]],
   get: [['method: "HEAD"', 'method: "GET"']],
   casesens: [
@@ -118,18 +127,22 @@ const ANSWERS = {
   head405: { headStatus: 405, headers: { "Content-Type": "application/pdf" } },
   missing: { status: 404, headers: { "Content-Type": "text/plain" } },
   page1: { headers: { "Content-Type": "application/pdf" } },
+  late: { headDelay: 7000, headers: { "Content-Type": "application/pdf" } },
+  notype: { headers: {} },
+  redirect: { status: 302, headers: {} }, // Location set once the third server runs
 };
 if (plant === "swap") [ANSWERS.plain, ANSWERS.octet] = [ANSWERS.octet, ANSWERS.plain];
 
 function answer(req, res, a, extra = {}) {
   const head = req.method === "HEAD";
   const status = (head && a.headStatus) || a.status || 200;
-  const body = status === 200 ? pdf : Buffer.from("not here");
+  const body = status === 200 ? pdf : Buffer.from(status === 302 ? "" : "not here");
   const send = () => {
     res.writeHead(status, { "Cache-Control": "no-store", "Content-Length": body.length, ...a.headers, ...extra });
     res.end(head ? undefined : body);
   };
-  if (head && slowHead) setTimeout(send, 3000);
+  const delay = head ? Math.max(a.headDelay || 0, slowHead ? 3000 : 0) : 0;
+  if (delay) setTimeout(send, delay);
   else send();
 }
 
@@ -143,6 +156,9 @@ const embeds = [
   { k: 7, addr: null, page: 2, want: "object", remote: true },
   { k: 8, addr: "__fr/missing.pdf", page: 2, want: "object" },
   { k: 9, addr: "__fr/page1.pdf", page: 1, want: "object" },
+  { k: 10, addr: "__fr/late.pdf", page: 2, want: "object" },
+  { k: 11, addr: "__fr/notype.pdf", page: 2, want: "object" },
+  { k: 12, addr: "__fr/redirect.pdf", page: 2, want: "object" },
 ];
 
 const pageLog = [];
@@ -167,6 +183,14 @@ const remote = await serveDocs({
 }).catch((err) => bad(`cannot start the second server: ${err.message}`));
 const remoteBase = `http://127.0.0.1:${remote.address().port}/`;
 embeds[6].addr = remoteBase + "__fr/remote.pdf";
+// the redirect's target: an attachment that a CORS read cannot see as one
+const far = await serveDocs({
+  routes: {
+    "/__fr/far.pdf": (req, res) =>
+      answer(req, res, { headers: { "Content-Type": "application/pdf", "Content-Disposition": 'attachment; filename="sample.pdf"' } }, { "Access-Control-Allow-Origin": "*" }),
+  },
+}).catch((err) => bad(`cannot start the third server: ${err.message}`));
+ANSWERS.redirect.headers.Location = `http://127.0.0.1:${far.address().port}/__fr/far.pdf`;
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
 const placeholders = embeds
@@ -201,12 +225,18 @@ const pageUrl = `http://127.0.0.1:${page.address().port}/frame_rule.html`;
 const closeServers = () => {
   page.close();
   remote.close();
+  far.close();
 };
 
 // --- browser drivers ---------------------------------------------------------
 // Each driver gives: open(url), run(fnSource) -> value, close().
 async function puppeteerDriver(kind) {
-  const { default: puppeteer } = await import("puppeteer-core");
+  let puppeteer;
+  try {
+    ({ default: puppeteer } = await import("puppeteer-core"));
+  } catch (err) {
+    bad(`cannot load puppeteer-core (npm install puppeteer-core): ${err.message.split("\n")[0]}`);
+  }
   const opts =
     kind === "firefox"
       ? { browser: "firefox", executablePath: process.env.FIREFOX_PATH || "/Applications/Firefox.app/Contents/MacOS/firefox", headless: true }
@@ -218,9 +248,16 @@ async function puppeteerDriver(kind) {
     const hint = /profile folder/.test(err.message) ? " (launch it once through macOS open, as tests/native_check.mjs's header says)" : "";
     bad(`cannot start ${kind}${hint}: ${err.message.split("\n")[0]}`);
   }
-  const tab = await browser.newPage();
+  let tab, version;
+  try {
+    tab = await browser.newPage();
+    version = await browser.version();
+  } catch (err) {
+    await browser.close().catch(() => {});
+    bad(`cannot start ${kind}: ${err.message.split("\n")[0]}`);
+  }
   return {
-    version: await browser.version(),
+    version,
     open: (url) => tab.goto(url, { waitUntil: "load" }),
     run: (fnSource) => tab.evaluate(`(${fnSource})()`),
     close: () => browser.close(),

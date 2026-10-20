@@ -178,12 +178,16 @@ load on the same queue, and a text task runs only when no page render waits
 - Desktop Safari 27.0.1 opens a native `<object>` at page 1 whatever its
   `#page` says. So in a desktop browser with a built-in PDF viewer, a native
   embed with a `page` over 1 is an `<iframe>` in the cases `frameAllowed()`
-  accepts: an inlined PDF, or a PDF on the page's own site whose HEAD answer
-  is OK within 5 s, `application/pdf`, and not an attachment (D-008). It is an
-  `<object>` otherwise, and desktop Safari opens it at page 1: a PDF from
-  another site, an answer that is not OK (such as 404 or 405), another media
-  type, an attachment, a late answer, and a PDF file that is not inlined on a
-  `file:` page. Such an `<iframe>` opened at page 2 on `page_test.html` and on
+  accepts: an inlined PDF, or a PDF on the page's own origin (scheme, host,
+  and port) whose HEAD answer is OK within 5 s, from that origin,
+  `application/pdf`, and not an attachment (D-008). It is an `<object>`
+  otherwise, and desktop Safari opens it at page 1: a PDF from another origin
+  or redirected to one, an answer that is not OK (such as 404 or 405), another
+  media type, an attachment, a late answer, and a PDF file that is not inlined
+  on a `file:` or sandboxed page. Any other browser that reports a built-in PDF
+  viewer is treated alike, except iPhone and iPad; an Android browser that
+  reports one is not checked. Author CSS aimed at `.embedpdf object` does not
+  reach such an `<iframe>`. Such an `<iframe>` opened at page 2 on `page_test.html` and on
   the in-page copy of `selfcontained_test.html` (local file and HTTP) in
   Chromium 155 and Firefox 158 (headless) and desktop Safari 27.0.1
   (`tests/native_check.mjs`; corrected M021) — observed 2026-10-20. A server

@@ -241,7 +241,7 @@ node tests/safari_check.mjs --target mac --page page_test.html --expect-native 3
 
 Which element a native embed with `page` over 1 gets: the viewer reads the
 PDF's answer to a HEAD request first (D-008). `frame_rule_check.mjs` serves
-a page with nine native embeds, each at its own address. It fails unless
+a page with twelve native embeds, each at its own address. It fails unless
 each embed gets the element that its header lists, and unless the request
 logs are as the header says. `--slow-head` delays each HEAD answer by 3 s, and
 the run must still pass. The header states the plants. Run the plants in

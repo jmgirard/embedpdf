@@ -185,6 +185,7 @@ than `attachment` (both compared without case or parameters); any other answer, 
 - 2026-10-20: claim audit: 74 claims read, 9 corrected (and 4 stale lines beside them) — CLAUDE.md (frame_rule_check paragraph, inlined PDFs, `file:` item), README `page` row (inlined `data:` PDFs, origin is site and port, failed request), tests/native_check.mjs (inlined PDFs skip the HEAD rule, header D-008, options not attributes), tests/ios_check.mjs (comment claim, D-008), tests/frame_rule_check.mjs (exit codes), embedpdf.css comment. All comment or docs text; after `quarto render` the docs/ diff is the CSS comment alone (8 copies).
 - 2026-10-20: implement complete after review return 1; status review.
 - 2026-10-20: review pass 2 in progress (checkpoint): evidence run of all 102 lines started at 09d2daa; four lenses spawned; ripple fix-now edits landed (PROFILE.md verify list names frame_rule_check, ROADMAP rows "Run the render checks in Firefox" and "Close the native name check gaps" corrected, D-008 cited in render_check and ios_check comments).
+- 2026-10-20: review pass 2 fix-now landed: `frameAllowed` uses `self.origin` and rejects a redirect to another origin; frame_rule_check gains embeds 10-12 (late HEAD, no Content-Type, cross-origin redirect), plants `noredirect` and `notimeout`, and setup exit 2; docs and comments as listed in the Review section. After `quarto render`, frame_rule_check passes in Chromium, Firefox, Safari and with `--slow-head`; each of its 8 plants exits 1 in Chromium naming its embed; ~/Downloads unchanged. The evidence run started at 09d2daa was stopped at line 39 (viewer code changed); a new full run follows.
 - 2026-10-20: the Goal stays as written (never edited in place); after the user's review decision it holds for PDFs that pass the header rule, and the docs name the rest (AC6).
 
 ## Decisions
@@ -221,3 +222,28 @@ spawned: diff-bug, blame-history, prior-review, ripple
 - ripple #1, #2, #4, #5, #6, #7, #8, #11: viewer header, CLAUDE.md :427 :104 :267 :437 :495, ROADMAP and DESIGN "1.2.6", ROADMAP row "Check native save names and slide embeds" text — fix now.
 - ripple #3: the absorbed candidate row is still listed — reject: planned change; step 9 hygiene graduates it.
 - ripple #9, #10: viewer :179 and DESIGN :199 describe Safari's refusal after an `<object>` load — reject: dated observations of `<object>`, and the lines beside them name the `<iframe>` case.
+
+Pass 2 (2026-10-20, after review return 1). Consistency gate: `cairn_validate.py` exit 0 (one advisory: 11 tasks); no principle text changed. AC6 procedures at 09d2daa: `grep -n -i -B2 "page 1" README.md CLAUDE.md` Safari hits are README:66 (`<object>`) and CLAUDE.md:186-187 (`<object>`), both limited to the `<object>` cases; `grep "blank frame\|error page"` over README.md and cairn/DESIGN.md finds nothing; CLAUDE.md:19 names `page_test.qmd`.
+
+spawned: diff-bug, blame-history, prior-review, ripple
+
+- diff-bug #1: no check tests the 5 s limit — fix now: frame_rule_check embed 10 (HEAD after 7 s → `<object>`) and plant `notimeout`.
+- diff-bug #2: the no-JS download link shows while the HEAD request waits, then the embed replaces it — follow-up, row "Check embeds open at their page option".
+- diff-bug #3: a same-origin PDF redirected to another origin with `Access-Control-Allow-Origin` reads as inline — fix now: `frameAllowed` rejects `res.url` on another origin; frame_rule_check embed 12 (302 to a third origin's attachment → `<object>`) and plant `noredirect`.
+- diff-bug #4: the 5 s limit counts time waiting for a connection — follow-up, same row.
+- diff-bug #5: a page CSP that limits `frame-src` but allows `object-src` — follow-up, same row.
+- diff-bug #6: a sandboxed page's origin is not caught as opaque — fix now: `self.origin`.
+- diff-bug #7: stale `pdfjsAddress` comment — fix now (same as blame-history #2).
+- diff-bug #8: docs say "site" where the code compares origins — fix now: README and DESIGN say origin (scheme, host, port).
+- diff-bug #9: no case for a HEAD with no Content-Type, nor a redirect — fix now: frame_rule_check embeds 11 and 12.
+- diff-bug #10: author CSS for `.embedpdf object` misses the `<iframe>` — fix now: DESIGN Known issues says so.
+- blame-history #1: an Android browser that reports a built-in PDF viewer gets the `<iframe>`, while comments say desktop — fix now (viewer header and DESIGN wording) and follow-up (the unchecked Android case, same row).
+- blame-history #2: `pdfjsAddress` comment says a cross-origin embed may be an `<iframe>` — fix now.
+- blame-history #3: no line now checks that Safari opens an `<object>` at page 1 — reject: false as an extension defect; it is Safari's behavior, a dated observation from M020's runs and this milestone's probes.
+- prior-review #1: ios_check's header says every run fails on a native embed that is not an `<object>`, but an embed that did not hydrate as native is skipped — fix now: header narrowed to embeds that hydrated as native.
+- prior-review #2: frame_rule_check exits 1, not 2, when puppeteer-core or a tab cannot start — fix now.
+- prior-review #3: frame_rule_check's Firefox launch has no `pdfjs.viewOnLoad` pref — reject: false as a defect; the script takes no screenshots, so the viewer's opening page does not reach its result.
+- ripple #1: PROFILE.md's verify list omits frame_rule_check — fix now.
+- ripple #2: ROADMAP row "Run the render checks in Firefox" says only native_check runs in Firefox — fix now.
+- ripple #3: ROADMAP row "Close the native name check gaps" names only `<object>` — fix now.
+- ripple (noted): render_check and ios_check comments cite D-007 for the device rule — fix now: D-008.

@@ -6,7 +6,7 @@
 // renderer=native -> always the native viewer
 // renderer=pdfjs  -> always the PDF.js canvas viewer
 // A native embed is an <object type="application/pdf">. One with page > 1 is
-// an <iframe> instead where nativeSupported() is true (a desktop browser with
+// an <iframe> instead where nativeSupported() is true (a browser that reports
 // a built-in PDF viewer; not iPhone or iPad) and the PDF's answer allows it,
 // because desktop Safari opens an <object> at page 1 whatever its #page= says
 // (frameAllowed, hydrateNative).
@@ -120,8 +120,9 @@ function nativeSupported() {
 // <object> shows it. So the <iframe> is for an inlined PDF (a blob: of type
 // application/pdf), or a PDF on the page's own origin whose HEAD answer is OK
 // within 5 s, application/pdf, and not an attachment. Anything else (another
-// origin, whose Content-Disposition a page cannot read; a file: page, whose
-// origin is opaque; an error or no answer) keeps the <object>.
+// origin, or a redirect to one, whose Content-Disposition a page cannot read;
+// a file: or sandboxed page, whose origin is opaque; an error or no answer)
+// keeps the <object>.
 async function frameAllowed(opts) {
   if (!(opts.page > 1 && nativeSupported())) return false;
   if (opts.blob) return true;
@@ -131,11 +132,12 @@ async function frameAllowed(opts) {
   } catch {
     return false;
   }
-  const own = new URL(location.href).origin;
+  // self.origin is "null" on a file: page and in a sandboxed frame
+  const own = self.origin;
   if (own === "null" || url.origin !== own) return false;
   try {
     const res = await fetch(url.href, { method: "HEAD", signal: AbortSignal.timeout(5000) });
-    if (!res.ok) return false;
+    if (!res.ok || new URL(res.url).origin !== own) return false;
     const type = (res.headers.get("Content-Type") || "").split(";")[0].trim().toLowerCase();
     const disposition = (res.headers.get("Content-Disposition") || "").split(";")[0].trim().toLowerCase();
     return type === "application/pdf" && disposition !== "attachment";
@@ -213,8 +215,8 @@ function showFailure(el, opts) {
 // other site sends Access-Control-Allow-Origin (desktop Safari 27.0.1, iOS
 // 27.0); a read of the same address with an added query works (desktop Safari
 // 27.0.1, and PDF.js in iOS 27.0). So for a PDF on
-// another site that a native embed on the page also shows (an <object>, or an
-// <iframe> for page > 1, whose read was not tried in Safari), PDF.js adds
+// another site that a native embed on the page also shows (always an <object>:
+// frameAllowed gives a PDF on another site no <iframe>), PDF.js adds
 // "embedpdf=pdfjs" to the query, in every browser, and still loads the PDF by
 // byte ranges.
 function pdfjsAddress(src) {
