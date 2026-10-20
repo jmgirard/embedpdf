@@ -2,14 +2,14 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M024: Safari names in the iOS simulators
 
-- **Status:** planned
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1
 - **Resolves:** —
 - **Surface tier:** user-facing — README's statement of what was checked in iOS Safari changes
-- **Branch/PR:** —
+- **Branch/PR:** m024-ios-safari-names
 
 ## Goal
 
@@ -44,22 +44,23 @@ scroll.
 
 ## Acceptance criteria
 
-- [ ] AC1: On `example.html` and `page_test.html`, in the iOS 27.0 "embedpdf iPhone" and "embedpdf iPad" simulators, Safari's names as Web Inspector reports them (the `label` of `DOM.getAccessibilityPropertiesForNode`) match what `tests/safari_check.mjs` expects: each native `<object>` has its `--expect-name` name and no `title`, and each PDF.js embed has its `--expect-name` name; each control of each PDF.js toolbar has its title as its name; and each toolbar's page indicator, read with role heading, reads "Page 1 of n" at the top of its pages and "Page 2 of n" after a scroll to page 2, where page 1 can scroll above the middle of its frame. Shown by the two lines below, each run on both simulators (four runs), exiting 0:
+- [x] AC1: On `example.html` and `page_test.html`, in the iOS 27.0 "embedpdf iPhone" and "embedpdf iPad" simulators, Safari's names as Web Inspector reports them (the `label` of `DOM.getAccessibilityPropertiesForNode`) match what `tests/safari_check.mjs` expects: each native `<object>` has its `--expect-name` name and no `title`, and each PDF.js embed has its `--expect-name` name; each control of each PDF.js toolbar has its title as its name; and each toolbar's page indicator, read with role heading, reads "Page 1 of n" at the top of its pages and "Page 2 of n" after a scroll to page 2, where page 1 can scroll above the middle of its frame. Shown by the two lines below, each run on both simulators (four runs), exiting 0:
       `node tests/safari_check.mjs --target simulator --device "<simulator>" --expect-native 1 --expect-pdfjs 10 --expect-name sample.pdf`
       `node tests/safari_check.mjs --target simulator --device "<simulator>" --page page_test.html --expect-native 2 --expect-pdfjs 1 --expect-name sample.pdf`
-- [ ] AC2: README.md's screen-reader item and CLAUDE.md's "Still unverified" list state, with the date of the runs, that in the iOS 27.0 simulators Safari's names for native `<object>` and PDF.js embeds, toolbar controls, and the page indicator (read with role heading) were checked through Web Inspector on `example.html` and `page_test.html`. `grep -n -E 'Remote Automation|The names that Safari gives screen readers were not checked there|two ways to read those names failed|computed names in the iOS simulators|--target simulator. and .--target page-script. probes fail|only the page.s attributes and text were checked|session hosts' README.md CLAUDE.md cairn/DESIGN.md tests/safari_check.mjs` prints nothing.
+- [x] AC2: README.md's screen-reader item and CLAUDE.md's "Still unverified" list state, with the date of the runs, that in the iOS 27.0 simulators Safari's names for native `<object>` and PDF.js embeds, toolbar controls, and the page indicator (read with role heading) were checked through Web Inspector on `example.html` and `page_test.html`. `grep -n -E 'Remote Automation|The names that Safari gives screen readers were not checked there|two ways to read those names failed|computed names in the iOS simulators|--target simulator. and .--target page-script. probes fail|only the page.s attributes and text were checked|session hosts' README.md CLAUDE.md cairn/DESIGN.md tests/safari_check.mjs` prints nothing.
 
 ## Coverage
 
 - AC1 → T1, T2, T3
-- AC2 → T4
+- AC2 → T4, T5
 
 ## Tasks
 
-- [ ] T1: Write `tests/webinspector.mjs`: a binary plist encoder and decoder, the socket lookup by `simctl getenv`, the page lookup by URL, and Web Inspector commands sent through `Target.sendMessageToTarget`. Add `tests/helpers_test.mjs` cases for the plist codec, one of them decoding a file that `plutil -convert binary1` wrote. Add the file to CLAUDE.md's list of check helpers. The 2026-10-20 probe (work log) is the starting point.
-- [ ] T2: Switch `safari_check.mjs --target simulator` to it: open the page with `xcrun simctl openurl`, and run scripts, find elements, and read names and attributes through Web Inspector. `--target mac` stays on safaridriver. Run the AC1 lines on both simulators, and the CLAUDE.md `--target mac` lines. If Safari on iOS gives a name the viewer gets wrong, stop: it is a viewer defect.
-- [ ] T3: Show that the simulator runs can fail: on the iPhone simulator, `--plant rawindicator`, `nonumber`, `nativename`, and `nativetitle` each make the `example.html` line exit 1 with a failure line naming the planted defect. A `--device` that names a shut-down simulator exits 2 with a line naming that cause.
-- [ ] T4: Docs. In CLAUDE.md, add the four AC1 run lines to the verify block, and update the `safari_check.mjs` paragraph, the screen-reader entries of "Still unverified" (the toolbar-control and computed-name entries), and the helper list. Update README.md line 91 and the header of `tests/safari_check.mjs`. Correct the M010 lesson in `cairn/LESSONS.md` in place (safaridriver still finds no simulator session host; Web Inspector reads the names). Run the AC2 `grep`.
+- [x] T1: Write `tests/webinspector.mjs`: a binary plist encoder and decoder, the socket lookup by `simctl getenv`, the page lookup by URL, and Web Inspector commands sent through `Target.sendMessageToTarget`. Add `tests/helpers_test.mjs` cases for the plist codec, one of them decoding a file that `plutil -convert binary1` wrote. Add the file to CLAUDE.md's list of check helpers. The 2026-10-20 probe (work log) is the starting point.
+- [x] T2: Switch `safari_check.mjs --target simulator` to it: open the page with `xcrun simctl openurl`, and run scripts, find elements, and read names and attributes through Web Inspector. `--target mac` stays on safaridriver. Run the AC1 lines on both simulators, and the CLAUDE.md `--target mac` lines. If Safari on iOS gives a name the viewer gets wrong, stop: it is a viewer defect.
+- [x] T3: Show that the simulator runs can fail: on the iPhone simulator, `--plant rawindicator`, `nonumber`, `nativename`, and `nativetitle` each make the `example.html` line exit 1 with a failure line naming the planted defect. A `--device` that names a shut-down simulator exits 2 with a line naming that cause.
+- [x] T4: Docs. In CLAUDE.md, add the four AC1 run lines to the verify block, and update the `safari_check.mjs` paragraph, the screen-reader entries of "Still unverified" (the toolbar-control and computed-name entries), and the helper list. Update README.md line 91 and the header of `tests/safari_check.mjs`. Correct the M010 lesson in `cairn/LESSONS.md` in place (safaridriver still finds no simulator session host; Web Inspector reads the names). Run the AC2 `grep`.
+- [x] T5: Review return 1: README.md item 91 names `example.html` and `page_test.html` and says the indicator was read with role heading.
 
 ## Work log
 
@@ -88,3 +89,50 @@ scroll.
 - 2026-10-20: collision check: unchanged from the first plan (rows "Check Safari names in iOS simulators" in full and "Close the name and indicator check gaps" in part; D-006); no D-entry covers Web Inspector.
 - 2026-10-20: criteria audit (full mode, Opus reader): 4 findings, all fixed. AC1 native clause gains "and no `title`" (the `nativetitle` plant tests it); AC2 grep pattern for the CLAUDE.md probe sentence fixed to match its first line; `only the page.s attributes and text were checked` and `session hosts` added for README's stale sentences; T4 names the CLAUDE.md screen-reader entries. Each grep pattern matched current text before the work.
 - 2026-10-20: agent decisions: a new helper file `tests/webinspector.mjs` rather than code inside safari_check, so helpers_test can test the plist codec; no version bump (no viewer change); changelog none.
+- 2026-10-20: implement started on branch m024-ios-safari-names, cut from main at ee5e5db.
+- 2026-10-20: T1: `tests/webinspector.mjs` written (plist codec, framing, `simulatorSocket`, `openSafariPage` with run/find/label/attribute). helpers_test 169 passed, 0 failed; with the UTF-16 byte swap removed from the decoder it gave 2 failures (plutil fixture, round trip). `plutil -p` read the encoder's output. A smoke run on page_test.html in the iPhone simulator read "PDF: sample.pdf (1 of 3)", the three toolbar names, and the two native names. Helper added to CLAUDE.md's helper list and PROFILE.md's verify slot. The simple-english hook flags 40 older hits in CLAUDE.md and 18 in PROFILE.md outside the edited lines; left as they are.
+- 2026-10-20: T2: `--target simulator` opens `<page>?run=<token>` with `simctl openurl` (retried once), reads it through `openSafariPage`, and waits for `document.readyState` "complete" (WebDriver's navigation waited for the load); a simulator that is not booted exits 2. `--target mac` keeps safaridriver behind the same run/find/label/attribute calls. AC1's four lines exit 0 (iPhone and iPad: example.html 1 native, 10 PDF.js, 9 toolbars, indicators "Page 1 of 2" then "Page 2 of 2"; page_test.html 2 native with no title, 1 PDF.js). The three CLAUDE.md `--target mac` lines exit 0, and `--remote cors` on the iPhone exits 0.
+- 2026-10-20: T3: on "embedpdf iPhone", example.html: `--plant rawindicator` exit 1 (indicator read as "Page 1 of 2 1 / 2", and "Page 2 of 2 2 / 2" after the scroll); `nonumber` exit 1 (name "PDF: sample.pdf", not "(1 of 11)"); `nativename` exit 1 ("PDF: wrong.pdf"); `nativetitle` exit 1 (element has a title). `--device "embedpdf iPhone Duo"` (shut down) exit 2: "is Shutdown, not booted".
+- 2026-10-20: T4: CLAUDE.md gains the four AC1 lines (example.html in the first verify block, page_test.html in the page_test block), a rewritten safari_check paragraph, and rewritten screen-reader entries in "Still unverified" (the computed-names entry removed). README item 91 and the safari_check header updated; M010 lesson corrected in place. AC2 grep prints nothing (exit 1); helpers_test 169 passed, 0 failed; cairn_validate passes. The simple-english hook's counts did not rise from the new text (CLAUDE.md 40 to 39, after one long sentence of mine was split).
+- 2026-10-20: claim audit: 32 claims read, 4 corrected — tests/webinspector.mjs (10 s is per protocol message; openSafariPage waits up to 30 s), tests/safari_check.mjs (exit-2 list gains an unreachable socket and a 30 s load timeout; stale indicator comment names the Web Inspector label), tests/helpers_test.mjs (fixture made on macOS 27.0.1). The reader's own page_test.html run on the iPhone simulator exited 0.
+- 2026-10-20: implement done; status review. helpers_test 169 passed, 0 failed after the comment fixes.
+- 2026-10-20: review: AC1's four lines re-run fresh, all exit 0.
+- 2026-10-20: review return 1: AC2 fails as written: README.md item 91 says the names were checked "on two test pages" and does not name `example.html` and `page_test.html`, nor that the indicator was read with role heading (CLAUDE.md states both). Status in-progress.
+- 2026-10-20: T5 added for review return 1 (minor amendment; Coverage AC2 → T4, T5). README item 91 now names both pages and "read with the role heading"; AC2 grep still prints nothing. Status review.
+- 2026-10-20: step-7 approval: m024-ios-safari-names approved for merge
+
+## Review
+
+- AC1: 2026-10-20, the four lines run at ea3f4bb (no code changed to HEAD 5f57c96: only README.md and this file). "embedpdf iPhone" and "embedpdf iPad", example.html: exit 0, native `<object>` "PDF: sample.pdf (10 of 11)" with no title, 10 PDF.js names "(1 of 11)" to "(11 of 11)" except 10, 9 toolbars whose 3 controls are named by their titles, indicators "Page 1 of 2" then "Page 2 of 2", 0 failures. page_test.html: exit 0, natives "(2 of 3)" and "(3 of 3)" with no title, PDF.js "(1 of 3)" with 3 controls named by title, indicator "Page 1 of 2" then "Page 2 of 2", 0 failures.
+- AC2: 2026-10-20 at 5f57c96. README.md item 91: "On 2026-10-20, the names that Safari gives screen readers were also checked there, through Web Inspector, on the test pages `example.html` and `page_test.html`", naming the embed's name, the toolbar controls' names, and the indicator "read with the role heading", and the native `<object>` name "on 2026-10-20 through Web Inspector". CLAUDE.md "Still unverified": the PDF.js entry says `--target simulator` reads Safari's names through Web Inspector for the group, toolbar controls, and indicator (read with role heading) on both pages, "These runs passed on 2026-10-20"; the native entry says the `<object>` name was checked through Web Inspector on both pages on 2026-10-20. The AC2 grep printed nothing (exit 1).
+- gate: cairn_validate exit 0, all checks passed; profile consistency-gate is none (generic); no principle changed, so no cairn_impact run.
+- spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1: a message the client cannot decode or parse threw inside the socket handler, an uncaught exit 1 with no report — fix now, fixed a99add8 (the handler ends the connection and waiting calls reject with the error).
+- diff-bug #2: the page target was fixed at the first `Target.targetCreated`; a process swap would send later calls to a dead target — fix now, fixed a99add8 (provisional targets skipped, `Target.didCommitProvisionalTarget` followed).
+- diff-bug #3: an error answer to the `Target.sendMessageToTarget` wrapper was never matched, so the call waited 10 s — fix now, fixed a99add8.
+- diff-bug #4: an `openurl` that times out but opens, then the retry, gives two tabs with the token and the client reads the first — follow-up, row "Harden the Web Inspector check client".
+- diff-bug #5: the Safari wait checks its limit only between 10 s reads, misses an `_rpc_applicationConnected:` in the same chunk, and reports a closed socket as "Safari is not running" — follow-up, same row.
+- diff-bug #6: a socket close does not reject waiting calls before their 10 s timer — follow-up, same row.
+- diff-bug #7: mac path: a failed `POST /url` left the session open, and a failed navigation became exit 2 instead of 1; spawn failures now print the JSON report first — fix now, fixed a99add8 (session kept before navigation, navigation outside the setup block, exit 1 again); the printed report is rejected as style.
+- diff-bug #8: the socket stayed open when the load wait threw — fix now, fixed a99add8.
+- diff-bug #9: over 65,535 objects threw a RangeError, not the named error — fix now, fixed a99add8 (checked in `add`, helper test).
+- diff-bug #10: `decodePlist` did not check the trailer against the buffer, so a cut-off body could decode as other values — fix now, fixed a99add8 (helper test; with both guards planted off it failed).
+- diff-bug #11: `close()` leaves the tab open, so tabs pile up — follow-up, same row.
+- diff-bug #12: a `--page` with a query gave a second `?` — fix now, fixed a99add8.
+- diff-bug #13: no helper test for 15 or more entries, 2-byte references, or a large payload — fix now, fixed a99add8 (301 keys, 200,000-byte value).
+- blame-history #1: same session leak as diff-bug #7 — fix now, fixed a99add8.
+- blame-history #2: D-005's `--remote cors` case has no `--target simulator` line in CLAUDE.md — reject, planned change (Scope Out: no criterion runs it; ios_check runs `cors` on the simulators).
+- blame-history #3: the switch to Web Inspector has no D-entry, and VoiceOver agreement is untested — reject, false: the choice, its rejected alternative, and its falsifier are in this file's work log (question set lines), and CLAUDE.md "Still unverified" keeps the real-screen-reader entries.
+- blame-history #4: the M010 lesson was rewritten in place — reject, false: LESSONS corrections are made in place and marked (corrected M024).
+- prior-review #1: tabs left open per run, unlike the WebDriver session delete — follow-up, row "Harden the Web Inspector check client".
+- prior-review #2: the load and hydration waits are flat 30 s limits, not M017's progress-based waits — follow-up, same row.
+- prior-review #3: README equated the Web Inspector label with the screen-reader name — fix now, fixed a99add8 (README says the names were read as Web Inspector reports them).
+- prior-review #4: a long comment line in helpers_test — reject, style.
+- ripple #1: ROADMAP row "Check Safari names in iOS simulators" still says the names cannot be read — fix now at post-merge hygiene (the row graduates).
+- ripple #2: row "Close the name and indicator check gaps" points at that row for the indicator part — fix now at post-merge hygiene (row narrowed).
+- ripple #3: CLAUDE.md describes the simulator page-DOM check and the Web Inspector name check in two places — reject, false: they are two checks (ios_check, safari_check) and do not disagree.
+- ripple #4: DESIGN.md Known issues sits beside the new claim — reject, false: it speaks of page text, which the diff does not change.
+- ripple #5: PROFILE.md's verify slot names safari_check without the new lines — reject, false: the slot runs every safari_check line in CLAUDE.md, which now holds the four.
+- ripple #6: native_check's header said safaridriver is how safari_check works — fix now, fixed a99add8 ("--target mac").
+- after the fixes: helpers_test 172 passed, 0 failed; AC1's four lines exit 0 again; `--plant nonumber` on the iPhone exit 1; the three `--target mac` lines exit 0 and `--target mac --plant nativename` exit 1; AC2 grep prints nothing.
+- AC2 re-read at a99add8: README item 91 now reads "On 2026-10-20, the names that Safari gives screen readers were also checked there, on the test pages `example.html` and `page_test.html`. These names were read as Web Inspector reports them.", with the embed's name, toolbar controls' names, and the indicator "read with the role heading", and the native name "on 2026-10-20 through Web Inspector". CLAUDE.md unchanged since the AC2 line. AC2 grep prints nothing.

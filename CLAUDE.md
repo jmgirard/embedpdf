@@ -86,14 +86,19 @@ node tests/ios_check.mjs --device "embedpdf iPhone" --page percent_page_test.htm
 node tests/ios_check.mjs --device "embedpdf iPad" --page percent_page_test.html --expect-embeds 5 --expect-pages 2 --expect-name "100%.pdf|100%.pdf|100%.pdf|50%off.pdf|sample copy.pdf" --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/name_rule_test.mjs
 node tests/safari_check.mjs --target mac --expect-native 9 --expect-pdfjs 2 --expect-name sample.pdf
+node tests/safari_check.mjs --target simulator --device "embedpdf iPhone" --expect-native 1 --expect-pdfjs 10 --expect-name sample.pdf
+node tests/safari_check.mjs --target simulator --device "embedpdf iPad" --expect-native 1 --expect-pdfjs 10 --expect-name sample.pdf
 ```
 
 `name_rule_test.mjs` checks the viewer's file-name rule over a table of
-addresses in Chrome. `safari_check.mjs` reads Safari's names through
-safaridriver (WebDriver "Get Computed Label"). Turn on safaridriver once with
-`safaridriver --enable` or Safari Settings > Developer > "Allow remote
-automation". Its `--target simulator` and `--target page-script` probes fail
-on the iOS 27.0 simulators (see "Still unverified").
+addresses in Chrome. `safari_check.mjs --target mac` reads desktop Safari's
+names through safaridriver (WebDriver "Get Computed Label"). Turn on
+safaridriver once with `safaridriver --enable` or Safari Settings >
+Developer > "Allow remote automation". `--target simulator` reads the names in Safari
+in a booted iOS simulator through the simulator's Web Inspector socket
+(`tests/webinspector.mjs`), with no setup. The simulator must be booted, or
+the run exits 2. safaridriver opened no session in the iOS 27.0 simulators,
+and `--target page-script` fails there (see `cairn/LESSONS.md`).
 
 `--expect-text` checks the hidden page text that screen readers read. It
 takes one phrase per page, and phrase k must be on page k and on no other
@@ -271,6 +276,8 @@ node tests/render_check.mjs page_test.html --device android --expect-native 2 --
 node tests/ios_check.mjs --device "embedpdf iPhone" --page page_test.html --expect-native 2 --expect-embeds 1 --expect-name sample.pdf
 node tests/ios_check.mjs --device "embedpdf iPad" --page page_test.html --expect-native 2 --expect-embeds 1 --expect-name sample.pdf
 node tests/safari_check.mjs --target mac --page page_test.html --expect-native 3 --expect-pdfjs 0 --expect-name sample.pdf
+node tests/safari_check.mjs --target simulator --device "embedpdf iPhone" --page page_test.html --expect-native 2 --expect-pdfjs 1 --expect-name sample.pdf
+node tests/safari_check.mjs --target simulator --device "embedpdf iPad" --page page_test.html --expect-native 2 --expect-pdfjs 1 --expect-name sample.pdf
 ```
 
 Which element a native embed with `page` over 1 gets: the viewer reads the
@@ -452,8 +459,8 @@ xcrun simctl create "embedpdf iPad" "iPad Air 11-inch (M4)" com.apple.CoreSimula
 ```
 
 **After any change to a check helper** (`tests/ink.mjs`,
-`tests/serve_docs.mjs`, `tests/expect_names.mjs`, or `tests/png_diff.mjs`),
-run the helper tests (Node only, no browser). Then run the browser checks
+`tests/serve_docs.mjs`, `tests/expect_names.mjs`, `tests/png_diff.mjs`, or
+`tests/webinspector.mjs`), run the helper tests (Node only, no browser). Then run the browser checks
 above:
 
 ```
@@ -554,19 +561,21 @@ errors.
   page text, its group name ("PDF: <file name>", numbered or "PDF"), its toolbar controls'
   `title`-only names, and the page indicator's "Page i of n". All of these are
   checked in Chromium's accessibility tree. In Safari's page DOM in the iOS
-  simulators, the group name, hidden text, and indicator are checked, but not
-  the toolbar controls. In desktop Safari 27.0.1, `safari_check.mjs --target
-  mac` checks the group name, toolbar controls, and indicator, but not the
-  page text.
+  simulators, the group name, hidden text, and indicator are checked. In
+  desktop Safari 27.0.1, `safari_check.mjs --target mac` checks the group
+  name, toolbar controls, and indicator, but not the page text. In the iOS
+  27.0 iPhone and iPad simulators, `safari_check.mjs --target simulator`
+  reads Safari's names through Web Inspector. It checks the group, the
+  toolbar controls, and the indicator (read with role heading) on
+  `example.html` and `page_test.html`. These runs passed on 2026-10-20. The
+  page text is not read through Safari's names there.
 - A real screen reader reading a native embed's name, the `aria-label` on its
   `<object>` or `<iframe>`. It is checked in Chromium's accessibility tree, in desktop
   Safari 27.0.1 by `safari_check.mjs --target mac`, and in Safari's page DOM
-  in the iOS simulators.
-- Safari's computed names in the iOS simulators. On 2026-10-19 with iOS 27.0,
-  `safari_check.mjs --target simulator` got "Could not find any session hosts
-  that match the requested capabilities" from safaridriver. The simulators'
-  Safari "Remote Automation" setting was not turned on. `--target
-  page-script` found no `Element.prototype.computedName`.
+  in the iOS simulators. On 2026-10-20 Safari's name for a native `<object>`
+  was checked through Web Inspector in the iOS 27.0 simulators, on
+  `example.html` and `page_test.html`. No check reads a native `<iframe>`'s
+  name in iOS Safari: iPhone and iPad keep native embeds as `<object>`s.
 - The cost of reading every page's text at load on a constrained phone: memory
   and first-paint delay for a long PDF were not measured.
 

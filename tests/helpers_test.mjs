@@ -1,7 +1,8 @@
 // Unit tests for the helpers the browser checks share: the ink rule
 // (tests/ink.mjs), the expected embed names (tests/expect_names.mjs), the PNG
 // reader and image comparison (tests/png_diff.mjs), and in tests/serve_docs.mjs the docs/ server, the remote
-// server, pointPdfsAt, embedSrcsOffRemote, and docsFile. No browser.
+// server, pointPdfsAt, embedSrcsOffRemote, and docsFile. Also the property-list
+// codec and message framing of tests/webinspector.mjs. No browser.
 //
 // Usage:  node tests/helpers_test.mjs      # must print "N passed, 0 failed"
 
@@ -12,6 +13,7 @@ import { inkInPixels } from "./ink.mjs";
 import { expectedNames } from "./expect_names.mjs";
 import { decodePng, diffShare } from "./png_diff.mjs";
 import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, docsFile, REMOTE_MODES, DOCS, SLOW_ABOVE, NO_EVAL_CSP } from "./serve_docs.mjs";
+import { encodePlist, decodePlist, messageReader, frameMessage } from "./webinspector.mjs";
 
 // the one test PDF over SLOW_ABOVE bytes
 const LARGE = fs.readFileSync(path.join(DOCS, "files", "large.pdf"));
@@ -232,6 +234,111 @@ check("point: data: URL unchanged", point(inlined) === inlined, point(inlined));
 // the page path is read as a URL path, as the scripts put it in the page URL
 check("point: %20 in the page folder is kept", point(div("x.pdf"), "a%20b/p.html") === div(R + "a%20b/x.pdf"), point(div("x.pdf"), "a%20b/p.html"));
 check("point: a ?query on the page does not move the folder", point(div("x.pdf"), "p.html?q=a/b") === div(R + "x.pdf"), point(div("x.pdf"), "p.html?q=a/b"));
+
+// --- webinspector: property lists and framing ----------------------------------
+// Written by `plutil -convert binary1` (macOS 27.0.1) from an XML plist of
+// {__selector: "_rpc_applicationSentListing:", count: 70000, yes: true,
+// no: false, data: <7b 7d>, list: ["a", 3], name: "Zoom – in"}, the dash
+// being U+2013, so its string is UTF-16.
+const PLUTIL = Buffer.from(
+  "YnBsaXN0MDDXAQIDBAUGBwgJCgsMDQ5aX19zZWxlY3RvclRkYXRhVWNvdW50Um5vU3llc1RuYW1lVGxpc3RfEBxfcnBjX2FwcGxpY2F0aW9uU2VudExpc3Rpbmc6Qnt9EgABEXAICWkAWgBvAG8AbQAgIBMAIABpAG6iDxBRYRADCBciJy0wNDk+XWBlZmd6fX8AAAAAAAABAQAAAAAAAAARAAAAAAAAAAAAAAAAAAAAgQ==",
+  "base64"
+);
+const fromPlutil = decodePlist(PLUTIL);
+check(
+  "plist: decodes plutil's binary file",
+  same({ ...fromPlutil, data: [...fromPlutil.data] }, { __selector: "_rpc_applicationSentListing:", data: [0x7b, 0x7d], count: 70000, no: false, yes: true, name: "Zoom – in", list: ["a", 3] }),
+  JSON.stringify(fromPlutil)
+);
+check("plist: plutil's data is a Buffer", Buffer.isBuffer(fromPlutil.data));
+const message = {
+  __selector: "_rpc_forwardSocketData:",
+  __argument: {
+    WIRSocketDataKey: Buffer.from('{"id":1}'),
+    small: 7,
+    big: 70000,
+    negative: -5,
+    zero: 0,
+    yes: true,
+    no: false,
+    ascii: "a string over fifteen characters",
+    wide: "Zoom – in, a string over fifteen characters",
+    empty: "",
+    list: [1, "x", false, []],
+    nested: { a: { b: "c" } },
+  },
+};
+const back = decodePlist(encodePlist(message));
+check(
+  "plist: a message survives encode and decode",
+  same({ ...back, __argument: { ...back.__argument, WIRSocketDataKey: back.__argument.WIRSocketDataKey.toString() } }, { ...message, __argument: { ...message.__argument, WIRSocketDataKey: '{"id":1}' } }),
+  JSON.stringify(back)
+);
+check("plist: data comes back as a Buffer", Buffer.isBuffer(back.__argument.WIRSocketDataKey));
+check("plist: output starts with bplist00", encodePlist({}).toString("latin1", 0, 8) === "bplist00");
+let threw = "";
+try {
+  decodePlist(Buffer.from("<?xml version='1.0'?><plist></plist>                    "));
+} catch (err) {
+  threw = err.message;
+}
+check("plist: an XML plist is refused by name", threw.includes("not a bplist00"), threw);
+threw = "";
+try {
+  encodePlist({ a: undefined });
+} catch (err) {
+  threw = err.message;
+}
+check("plist: undefined is refused by name", threw.includes("cannot encode undefined"), threw);
+threw = "";
+try {
+  encodePlist({ a: 1.5 });
+} catch (err) {
+  threw = err.message;
+}
+check("plist: a fraction is refused by name", threw.includes("cannot encode number 1.5"), threw);
+// 301 keys (a count over 15, over 255 object references) and a 200,000-byte
+// data value (a 4-byte length)
+const wide = {};
+for (let i = 0; i < 300; i++) wide["k" + i] = i % 2 ? "v" + i : i * 1000;
+wide.payload = Buffer.alloc(200000, 7);
+const wideBack = decodePlist(encodePlist(wide));
+check(
+  "plist: 301 keys and a 200,000-byte value survive",
+  Object.keys(wideBack).length === 301 && wideBack.k299 === "v299" && wideBack.k298 === 298000 && wideBack.payload.length === 200000 && wideBack.payload.every((b) => b === 7),
+  String(Object.keys(wideBack).length)
+);
+threw = "";
+try {
+  decodePlist(PLUTIL.subarray(0, PLUTIL.length - 20));
+} catch (err) {
+  threw = err.message;
+}
+check("plist: a cut-off body is refused", threw.startsWith("decodePlist:"), threw);
+threw = "";
+try {
+  encodePlist(Array.from({ length: 70000 }, (_, i) => i));
+} catch (err) {
+  threw = err.message;
+}
+check("plist: over 65536 objects is refused by name", threw.includes("more than 65536 objects"), threw);
+// framing: a 4-byte big-endian length, then the plist; a reader joins split
+// chunks and splits joined ones
+const f1 = frameMessage("_rpc_reportIdentifier:", { WIRConnectionIdentifierKey: "A" });
+const f2 = frameMessage("_rpc_forwardGetListing:", { WIRApplicationIdentifierKey: "PID:1" });
+check("frame: length prefix is the plist's length", f1.readUInt32BE(0) === f1.length - 4, String(f1.readUInt32BE(0)));
+const reader = messageReader();
+const both = Buffer.concat([f1, f2]);
+const got = [...reader.push(both.subarray(0, 3)), ...reader.push(both.subarray(3, f1.length + 5)), ...reader.push(both.subarray(f1.length + 5))].map(decodePlist);
+check(
+  "frame: a reader splits two messages sent in odd chunks",
+  same(got, [
+    { __selector: "_rpc_reportIdentifier:", __argument: { WIRConnectionIdentifierKey: "A" } },
+    { __selector: "_rpc_forwardGetListing:", __argument: { WIRApplicationIdentifierKey: "PID:1" } },
+  ]),
+  JSON.stringify(got)
+);
+check("frame: a partial message gives nothing yet", messageReader().push(f1.subarray(0, f1.length - 1)).length === 0);
 
 // --- docsFile -------------------------------------------------------------------
 check("docsFile: a page", docsFile("example.html") === path.join(DOCS, "example.html"), String(docsFile("example.html")));

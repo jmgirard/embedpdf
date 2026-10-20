@@ -93,7 +93,7 @@
 // until its folder ~/Library/Application Support/Firefox exists. On
 // 2026-10-19 one launch through macOS open made it:
 // `open -g -n -a Firefox --args -headless -screenshot <png> <url>`. --browser safari drives desktop Safari
-// through safaridriver, as tests/safari_check.mjs does (turn safaridriver on
+// through safaridriver, as tests/safari_check.mjs --target mac does (turn safaridriver on
 // once with `safaridriver --enable`).
 //
 // --plant puts one defect into the native embed --plant-at names (1-based in
