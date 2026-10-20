@@ -129,7 +129,7 @@ than `attachment` (both compared without case or parameters); any other answer, 
       Safari native_check lines without `--same-pages`, and the native_check paragraph. README `page` row and
       self-contained paragraph; DESIGN.md architecture and Known issues.
 - [x] T7: Run every AC5 line and `quarto render`; record each result in the Review section.
-- [ ] T8: Viewer (review return 1): before `hydrateNative()`, choose the element by the Scope rule (HEAD with a
+- [x] T8: Viewer (review return 1): before `hydrateNative()`, choose the element by the Scope rule (HEAD with a
       5 s limit; opaque origins never match). 1.2.7 is unreleased, so the version stays.
 - [ ] T9: `tests/frame_rule_check.mjs` (Chromium, Firefox, Safari): AC7's cases plus an HTTP 404 case, each
       embed at its own address; the octet-stream, Attachment, and 405 addresses end in `.pdf`, one `<iframe>`
@@ -178,6 +178,7 @@ than `attachment` (both compared without case or parameters); any other answer, 
 - 2026-10-20: re-audit: AC6 (full) — 5 findings on the first amended wording (dangling AC7 reference, missing-PDF text left in docs, page-1 cases unnamed, no procedure for "no longer say", D-007 contradiction); fixed in the second wording, D-008 to supersede D-007.
 - 2026-10-20: re-audit: AC6 (full) — 7 findings on the second wording (cross-reference to Scope, not-OK answers, `file:` pages with inlined PDFs, desktop qualifier, wrapped lines for grep, "every" unclear, phrase vs claim); a third wording is the second-re-audit stop, posed to the user.
 - 2026-10-20: substantive amendment: Scope In gains the header rule; AC6 reworded (third wording, approved by the user at the second-re-audit stop); AC7 added (adopted at the user's review decision, a widening); tasks T8-T11 added; D-008 supersedes D-007's rule.
+- 2026-10-20: T8 done: `frameAllowed()` decides the element before `hydrateNative()` (inlined → `<iframe>`; same non-opaque origin → HEAD with `AbortSignal.timeout(5000)`, `<iframe>` for OK + `application/pdf` + non-`attachment`, compared without case or parameters; else `<object>`); `allowfullscreen` on the `<iframe>` (diff-bug #9); header comment no longer says renderer=native is always `<object>` (ripple #1); version stays 1.2.7 (unreleased). After `quarto render`, native_check chromium on page_test.html and selfcontained `--alone file` pass.
 - 2026-10-20: the Goal stays as written (never edited in place); after the user's review decision it holds for PDFs that pass the header rule, and the docs name the rest (AC6).
 
 ## Decisions

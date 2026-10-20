@@ -1,14 +1,15 @@
 // embedpdf-viewer.js
 // Hydrates every div.embedpdf placeholder emitted by the embedpdf shortcode.
-// renderer=auto  -> native <object> when the browser can display PDFs inline
+// renderer=auto  -> native viewer when the browser can display PDFs inline
 //                   (navigator.pdfViewerEnabled), otherwise a PDF.js canvas viewer;
 //                   always PDF.js on iPhone and iPad
-// renderer=native -> always <object type="application/pdf">
+// renderer=native -> always the native viewer
 // renderer=pdfjs  -> always the PDF.js canvas viewer
-// A native embed with page > 1 is an <iframe> instead of an <object> where
-// nativeSupported() is true (a desktop browser with a built-in PDF viewer; not
-// iPhone or iPad), because desktop Safari opens an <object> at page 1 whatever
-// its #page= says (hydrateNative).
+// A native embed is an <object type="application/pdf">. One with page > 1 is
+// an <iframe> instead where nativeSupported() is true (a desktop browser with
+// a built-in PDF viewer; not iPhone or iPad) and the PDF's answer allows it,
+// because desktop Safari opens an <object> at page 1 whatever its #page= says
+// (frameAllowed, hydrateNative).
 //
 // PDF.js core (pdf.min.mjs + pdf.worker.min.mjs, vendored from pdfjs-dist) is
 // added by the shortcode as two scripts whose types are not JavaScript types,
@@ -110,19 +111,50 @@ function nativeSupported() {
   return !/Mobi|Android/i.test(navigator.userAgent);
 }
 
-function hydrateNative(el, opts) {
+// Whether a native embed with page > 1 may be an <iframe> (D-008). Desktop
+// Safari 27.0.1 opens an <object> or <embed> of a PDF at page 1 whatever
+// #page= says, and an <iframe> at that page, as Chromium 155 and Firefox 158 do
+// (2026-10-20, a file and a blob: URL alike). But an <iframe> follows the
+// server's answer: a PDF sent as application/octet-stream or as an attachment
+// shows nothing in it and downloads (Firefox 158, Safari 27.0.1), where an
+// <object> shows it. So the <iframe> is for an inlined PDF (a blob: of type
+// application/pdf), or a PDF on the page's own origin whose HEAD answer is OK
+// within 5 s, application/pdf, and not an attachment. Anything else (another
+// origin, whose Content-Disposition a page cannot read; a file: page, whose
+// origin is opaque; an error or no answer) keeps the <object>.
+async function frameAllowed(opts) {
+  if (!(opts.page > 1 && nativeSupported())) return false;
+  if (opts.blob) return true;
+  let url;
+  try {
+    url = new URL(opts.href, document.baseURI);
+  } catch {
+    return false;
+  }
+  const own = new URL(location.href).origin;
+  if (own === "null" || url.origin !== own) return false;
+  try {
+    const res = await fetch(url.href, { method: "HEAD", signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return false;
+    const type = (res.headers.get("Content-Type") || "").split(";")[0].trim().toLowerCase();
+    const disposition = (res.headers.get("Content-Disposition") || "").split(";")[0].trim().toLowerCase();
+    return type === "application/pdf" && disposition !== "attachment";
+  } catch {
+    return false;
+  }
+}
+
+function hydrateNative(el, opts, framed) {
   const address = opts.page > 1 ? `${opts.href}#page=${opts.page}` : opts.href;
-  // Desktop Safari 27.0.1 opens an <object> or <embed> of a PDF at page 1
-  // whatever #page= says, and an <iframe> at that page, as Chromium 155 and
-  // Firefox 158 do (2026-10-20, a file and a blob: URL alike). So an embed with
-  // page > 1 is an <iframe> where nativeSupported() is true (D-007). Elsewhere
-  // (renderer=native on iPhone, iPad, or a browser with no built-in PDF viewer)
-  // it stays an <object>, whose fallback content shows when the browser cannot
-  // display the PDF.
-  const framed = opts.page > 1 && nativeSupported();
+  // framed (frameAllowed): an <iframe>, which opens at #page= in desktop
+  // Safari too. Otherwise an <object>, whose fallback content shows when the
+  // browser cannot display the PDF (renderer=native on iPhone, iPad, or a
+  // browser with no built-in PDF viewer, too).
   const frame = document.createElement(framed ? "iframe" : "object");
   if (framed) {
     frame.src = address;
+    // lets the PDF viewer in the frame ask for full screen
+    frame.allowFullscreen = true;
   } else {
     frame.type = "application/pdf";
     frame.data = address;
@@ -571,7 +603,7 @@ async function hydrate(el, name) {
     }
   }
   if (!usesPdfjs(el)) {
-    hydrateNative(el, opts);
+    hydrateNative(el, opts, await frameAllowed(opts));
   } else {
     await hydratePdfjs(el, opts);
   }
