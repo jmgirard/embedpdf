@@ -103,7 +103,7 @@ v1.2.1, v1.2.2, v1.2.3, v1.2.4, v1.2.5, v1.2.6, v1.2.7, v1.2.8, v1.2.9.
       in the `git log --reverse` of the In paragraph whose `_extension.yml`
       carries it, it is on `git log --first-parent main`, and nothing else
       in `<previous>..V` touches `_extensions/`.
-- [ ] T3: Draft the 16 notes in files under the scratchpad (not the repo).
+- [x] T3: Draft the 16 notes in files under the scratchpad (not the repo).
       For each body, write one entry in this file's Decisions section that
       lists, per sentence, the diff hunk, file, or commit that supports it, and run the option
       rule of AC5. Commit subjects give the change; the diff decides what a
@@ -135,7 +135,26 @@ v1.2.1, v1.2.2, v1.2.3, v1.2.4, v1.2.5, v1.2.6, v1.2.7, v1.2.8, v1.2.9.
 - 2026-10-20: implement started on branch m026-tag-and-release-backlog, cut from main at e0b7be8.
 - 2026-10-20: T1 before-state: releases v0.5.0 2025-11-26T01:09:39Z, v0.4.1 2024-03-19T01:14:59Z, v0.4.0 2024-03-18T23:41:34Z, v0.2.0 2023-04-14T14:32:15Z, v0.1.0 2023-04-14T00:19:20Z, each named by its tag, none draft or prerelease; body SHA-256 prefixes v0.5.0 c1c9358b1e82fd5a, v0.4.1 403229f58d485754, v0.4.0 0daf0cca7e6c3c56, v0.2.0 21030e8ccbc6afc1, v0.1.0 dd95d5e454acab6d; `git ls-remote --tags origin` gave the eight tag objects and three `^{}` commits that AC2 lists. All match AC2 and AC4.
 - 2026-10-20: T2 confirmed the Scope table: each of the 13 commits is the first in the `git log --reverse` whose `_extension.yml` carries its version, is on main's first-parent line with one parent, and is the only commit touching `_extensions/` since the version before; the `embedpdf.lua` version marker matches at each (`version = "1.0.3"` at 1.0.3, `local VERSION` from 1.1.0).
+- 2026-10-20: T3 drafted the 16 notes in the session scratchpad and checked each sentence against its diff (Decisions entry); two drafts changed: the v1.0.0 escaping line now says only `button` was escaped before (v0.5.0 lua), and a v1.2.0 line on toolbar names was cut, since the v1.1.1 controls already had `title` names.
 
 ## Decisions
+
+- 2026-10-20 (T3): support for each sentence of the 16 notes, per release, in sentence order. "diff" is `git diff <previous> V` of `_extensions/embedpdf/`; "lua" is `embedpdf.lua`, "js" is `embedpdf-viewer.js`. Option rule of AC5 run: v1.0.0 adds page, renderer, toolbar; v1.0.1 removes image, image_border, image_class, image_force, image_height, image_width; every other version changes no option name.
+  - v1.0.0: js `hydratePdfjs` and lua `inject_dependency` (new PDF.js viewer); `pdf.min.mjs` `pdfjsVersion = 6.1.200`; lua `opt('renderer', 'auto')` and js `nativeSupported()` on `navigator.pdfViewerEnabled`; lua `opt('toolbar', 'true')`, js toolbar of zoomOut, zoomIn, indicator, download; lua `opt('page')`, js `#page=` on the object and `scrollIntoView` of that page; lua lines 51–58 read `meta['embedpdf']`; lua `\includepdf[pages=-]` and the `html:js` check that gives other formats a `pandoc.Link`; v0.5.0 lua calls `html_escape` on `button` only, v1.0.0 on each attribute.
+  - v1.0.1: js `renderVisible` and `kickInitial`, with the comment that the observer's first callback can fire before layout and a short document never scrolls; diff of lua drops the six `opt('image…')` reads and the image markup, and the fallback is `Download PDF file.`
+  - v1.0.2: js `enqueueRender` and its comment on the shared worker; `MAX_CANVAS_PIXELS = 8_000_000` and `Math.min(window.devicePixelRatio || 1, 2)`; the `catch` that logs and clears `renderKey`; `tries++ < 40` with `setTimeout(kickInitial, 100)`.
+  - v1.0.3: js `isAppleMobile()` (iPhone/iPod/iPad agent, or Macintosh with `maxTouchPoints > 1`) and its comment naming issue #3; squash subject names #9.
+  - v1.1.0: js `pdfjsUrl()` reads the `text/x-embedpdf-*` scripts or their inlined text, `inlinedPdf()`; js `hydrate` points the fallback and button links at the blob with `download` set to `opts.filename`; lua `inject_pdfjs()` runs only when `renderer ~= 'native'`; subject names #10.
+  - v1.1.1: js `showFailure()` text and its `target = "_blank"` link "Open the PDF", called from the `catch` around `getDocument`; subject names #11.
+  - v1.2.0: js page `role="group"` with `aria-label` "Page i of n" and the `.embedpdf-text` block, css hides it; js `renderTasks` before `textTasks` in `runQueue`, and the 10000 ms text timeout; subject names #12.
+  - v1.2.1: js `aria-label` "PDF: " + name or "PDF" on the embed; js `label()` sets `title` only, with the comment on Chrome reading a repeated title; subject names #13.
+  - v1.2.2: js `fileName()` query-value rule and `embedNames()` numbering of PDF.js embeds ("(k of n)"); js `showPage()` writes "Page i of n" hidden text and the shown "i / n"; subject names #18.
+  - v1.2.3: js `showFailure()` gives a `download` link "Download the PDF" when `opts.blob` is set and no link when `opts.href` is null; js `catch` around `inlinedPdf()` runs before either renderer; subject names #19.
+  - v1.2.4: js `object.setAttribute("aria-label", opts.name)`; `embedNames()` drops the `usesPdfjs` filter; subject names #20.
+  - v1.2.5: js `pdfjsAddress()` and its comment on Safari, appending `embedpdf=pdfjs` for another site's address that `nativeAddresses` holds, in every browser; subject names #22.
+  - v1.2.6: subject names `%` in HTML and PDF output and #23; lua `url_path()` writes `%25` for a `%` not followed by two hex digits; lua `latex_path()` decodes 0x20–0x7E escapes outside `LATEX_UNSAFE`, and the `\catcode` group.
+  - v1.2.7: subject names desktop Safari and #29; js `frameAllowed()` (page over 1, `nativeSupported()`, `opts.blob`, same origin, HEAD with `application/pdf` and no `attachment`) and `hydrateNative(el, opts, framed)`.
+  - v1.2.8: js `ResizeObserver` waits for `offsetWidth` and `offsetHeight` over 0 before it sets `frame.src`; subject names hidden slides and #30.
+  - v1.2.9: js `inlinedPdf(src, filename)` makes a `File` named `filename`; subject names Firefox and #33.
 
 ## Review
