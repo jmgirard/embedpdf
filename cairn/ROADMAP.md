@@ -7,7 +7,7 @@ _Last hygiene check: 2026-10-20 (M022 done: narrowed "Check native save names an
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M023 | Save name of inlined PDFs in native viewers | in-progress | — | normal | milestones/M023-native-save-name.md |
+| M023 | Save name of inlined PDFs in native viewers | review | — | normal | milestones/M023-native-save-name.md |
 | M022 | Native embeds on self-contained slides checked | done | — | normal | milestones/archive/M022-slides-native-check.md |
 | M021 | Native embeds open at their page in Safari | done | — | normal | milestones/archive/M021-native-page-iframe.md |
 | M020 | Self-contained native display check | done | — | normal | milestones/archive/M020-self-contained-native.md |
