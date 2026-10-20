@@ -44,7 +44,7 @@
 - [x] T1: Add the `--expect-pages` list to ios_check: parse it and its exit-2 cases near `tests/ios_check.mjs:278`, check each embed against its own entry at the `e.pages !== expectPages` site (`tests/ios_check.mjs:997`), and update the header comment. Run the AC1 runs.
 - [x] T2: Add the two `revealjs_test.html` ios_check lines to CLAUDE.md and run both. If the deck needs more than the 180 s report timeout, add `--timeout` to the lines. Replace the CLAUDE.md sentence that says the page has no ios_check line.
 - [x] T3: Add `--expect-links` to ios_check. The probe reads the links by render_check's selector, with each href's scheme. Node checks the count and the schemes. Add the plants `nolink` and `linkfile` and update the header comment. Run the AC3 runs.
-- [ ] T4: Add `--expect-links 4` to the four self-contained ios_check lines in CLAUDE.md and run them.
+- [x] T4: Add `--expect-links 4` to the four self-contained ios_check lines in CLAUDE.md and run them.
 - [ ] T5: Run the AC5 lines, then every other ios_check line in CLAUDE.md. Search README.md, cairn/DESIGN.md, and CLAUDE.md for text that says iOS does not check `revealjs_test.html` or that download links are counted only in Chromium, and correct what the search finds.
 
 ## Work log
@@ -61,6 +61,7 @@
 - 2026-10-19: T1 done: `--expect-pages` takes a `|` list, judged by each embed's position among the embeds not set to `renderer=native`. On revealjs_test.html (iPhone, `--expect-embeds 2 --expect-native 1`): "2|1" exit 0 in 17 s, "1|2" exit 1 naming embeds 2 and 3, "2" exit 1 naming embed 3, "2|1|1" and "2|x" exit 2.
 - 2026-10-19: T2 done: CLAUDE.md gains the iPhone and iPad revealjs_test.html ios_check lines, both exit 0 (no `--timeout` needed), and its "has no ios_check line" sentence now says how `--expect-pages` counts. The simple-english lint hook reports 38 hits in CLAUDE.md, the same count as before this edit, so the added text adds none and the older text stays as it is.
 - 2026-10-19: T3 done: ios_check `--expect-links` reads the page's links by render_check's selector at report time, and `linkfile` sets the first link's href to its download name. On selfcontained_test.html `--alone yes` (iPhone, `--expect-links 4`): no plant exit 0 with 4 `blob:` links, `nolink` exit 1 "expected 4 download links, found 3", `linkfile` exit 1 naming href "sample.pdf". On native.html, which holds no embedpdf link, both plants exit 2 "found nothing to plant in".
+- 2026-10-19: T4 done: the four self-contained ios_check lines in CLAUDE.md pass `--expect-links 4`, and all four exit 0.
 
 ## Decisions
 
