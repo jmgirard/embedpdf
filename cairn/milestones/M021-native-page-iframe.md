@@ -186,6 +186,7 @@ than `attachment` (both compared without case or parameters); any other answer, 
 - 2026-10-20: implement complete after review return 1; status review.
 - 2026-10-20: review pass 2 in progress (checkpoint): evidence run of all 102 lines started at 09d2daa; four lenses spawned; ripple fix-now edits landed (PROFILE.md verify list names frame_rule_check, ROADMAP rows "Run the render checks in Firefox" and "Close the native name check gaps" corrected, D-008 cited in render_check and ios_check comments).
 - 2026-10-20: review pass 2 fix-now landed: `frameAllowed` uses `self.origin` and rejects a redirect to another origin; frame_rule_check gains embeds 10-12 (late HEAD, no Content-Type, cross-origin redirect), plants `noredirect` and `notimeout`, and setup exit 2; docs and comments as listed in the Review section. After `quarto render`, frame_rule_check passes in Chromium, Firefox, Safari and with `--slow-head`; each of its 8 plants exits 1 in Chromium naming its embed; ~/Downloads unchanged. The evidence run started at 09d2daa was stopped at line 39 (viewer code changed); a new full run follows.
+- 2026-10-20: step-7 approval: m021-native-page-iframe approved for merge
 - 2026-10-20: the Goal stays as written (never edited in place); after the user's review decision it holds for PDFs that pass the header rule, and the docs name the rest (AC6).
 
 ## Decisions
