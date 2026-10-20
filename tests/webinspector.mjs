@@ -44,6 +44,7 @@ export function encodePlist(root) {
   }
   function add(v) {
     const index = parts.length;
+    if (index > 0xffff) throw new Error("encodePlist: more than 65536 objects");
     parts.push(null);
     let b;
     if (v === true || v === false) b = Buffer.from([v ? 0x09 : 0x08]);
@@ -76,7 +77,6 @@ export function encodePlist(root) {
     return b;
   }
   add(root);
-  if (parts.length > 0xffff) throw new Error("encodePlist: more than 65535 objects");
   const magic = Buffer.from("bplist00");
   let at = magic.length;
   const offsets = Buffer.alloc(parts.length * 4);
@@ -106,8 +106,13 @@ export function decodePlist(buf) {
     for (let i = 0; i < n; i++) v = v * 256 + buf[at + i];
     return v;
   };
+  // a cut-off body must throw, not read as other values
+  if (!offsetSize || !refSize || root >= count || table < 8 || table + count * offsetSize > buf.length - 32) {
+    throw new Error("decodePlist: the trailer does not fit the data");
+  }
   const offsets = [];
   for (let i = 0; i < count; i++) offsets.push(uint(table + i * offsetSize, offsetSize));
+  if (offsets.some((o) => o < 8 || o >= table)) throw new Error("decodePlist: an object offset is outside the data");
   function object(i) {
     const at = offsets[i];
     const marker = buf[at];
@@ -213,10 +218,17 @@ export async function openSafariPage({ socket, url, waitMs = 30000 }) {
   const reader = messageReader();
   const listeners = new Set();
   let closed = null;
+  // a message the client cannot read ends the connection; each waiting call
+  // then rejects with that error instead of the process throwing
   c.on("data", (chunk) => {
-    for (const body of reader.push(chunk)) {
-      const m = decodePlist(body);
-      for (const l of [...listeners]) l(m);
+    try {
+      for (const body of reader.push(chunk)) {
+        const m = decodePlist(body);
+        for (const l of [...listeners]) l(m);
+      }
+    } catch (err) {
+      closed = closed || new Error(`cannot read a Web Inspector message: ${err.message}`);
+      c.destroy();
     }
   });
   c.on("error", (err) => (closed = closed || err));
@@ -278,11 +290,23 @@ export async function openSafariPage({ socket, url, waitMs = 30000 }) {
       });
     // the page's protocol messages, unwrapped from their target
     const fromPage = new Set();
+    // wrapper message id -> the id of the call it carries
+    const outer = new Map();
     let target = null;
     listeners.add((m) => {
       if (m.__selector !== "_rpc_applicationSentData:" || m.__argument.WIRDestinationKey !== sender) return;
       const j = JSON.parse(m.__argument.WIRMessageDataKey.toString("utf8"));
-      if (j.method === "Target.targetCreated" && j.params.targetInfo.type === "page") target = target || j.params.targetInfo.targetId;
+      const info = j.method === "Target.targetCreated" ? j.params.targetInfo : null;
+      if (info && info.type === "page" && !info.isProvisional) target = target || info.targetId;
+      // a load in a new process swaps the page target
+      if (j.method === "Target.didCommitProvisionalTarget") target = j.params.newTargetId;
+      // an error answer to the wrapper itself goes to the call it carried
+      if (j.id && j.error && outer.has(j.id)) {
+        const n = outer.get(j.id);
+        outer.delete(j.id);
+        for (const l of [...fromPage]) l({ id: n, error: j.error });
+        return;
+      }
       const inner = j.method === "Target.dispatchMessageFromTarget" ? JSON.parse(j.params.message) : j;
       for (const l of [...fromPage]) l(inner);
     });
@@ -298,19 +322,23 @@ export async function openSafariPage({ socket, url, waitMs = 30000 }) {
     const call = (method, params = {}) =>
       new Promise((resolve, reject) => {
         const n = ++id;
+        const wrapper = ++id;
         const l = (inner) => {
           if (inner.id !== n) return;
           fromPage.delete(l);
+          outer.delete(wrapper);
           clearTimeout(timer);
           if (inner.error) reject(new Error(`${method}: ${inner.error.message}`));
           else resolve(inner.result);
         };
         const timer = setTimeout(() => {
           fromPage.delete(l);
+          outer.delete(wrapper);
           reject(closed || new Error(`${method}: no answer after ${CALL_MS / 1000} s`));
         }, CALL_MS);
         fromPage.add(l);
-        forward({ id: ++id, method: "Target.sendMessageToTarget", params: { targetId: target, message: JSON.stringify({ id: n, method, params }) } });
+        outer.set(wrapper, n);
+        forward({ id: wrapper, method: "Target.sendMessageToTarget", params: { targetId: target, message: JSON.stringify({ id: n, method, params }) } });
       });
 
     let root = null;

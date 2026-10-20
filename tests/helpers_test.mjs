@@ -297,6 +297,31 @@ try {
   threw = err.message;
 }
 check("plist: a fraction is refused by name", threw.includes("cannot encode number 1.5"), threw);
+// 301 keys (a count over 15, over 255 object references) and a 200,000-byte
+// data value (a 4-byte length)
+const wide = {};
+for (let i = 0; i < 300; i++) wide["k" + i] = i % 2 ? "v" + i : i * 1000;
+wide.payload = Buffer.alloc(200000, 7);
+const wideBack = decodePlist(encodePlist(wide));
+check(
+  "plist: 301 keys and a 200,000-byte value survive",
+  Object.keys(wideBack).length === 301 && wideBack.k299 === "v299" && wideBack.k298 === 298000 && wideBack.payload.length === 200000 && wideBack.payload.every((b) => b === 7),
+  String(Object.keys(wideBack).length)
+);
+threw = "";
+try {
+  decodePlist(PLUTIL.subarray(0, PLUTIL.length - 20));
+} catch (err) {
+  threw = err.message;
+}
+check("plist: a cut-off body is refused", threw.startsWith("decodePlist:"), threw);
+threw = "";
+try {
+  encodePlist(Array.from({ length: 70000 }, (_, i) => i));
+} catch (err) {
+  threw = err.message;
+}
+check("plist: over 65536 objects is refused by name", threw.includes("more than 65536 objects"), threw);
 // framing: a 4-byte big-endian length, then the plist; a reader joins split
 // chunks and splits joined ones
 const f1 = frameMessage("_rpc_reportIdentifier:", { WIRConnectionIdentifierKey: "A" });

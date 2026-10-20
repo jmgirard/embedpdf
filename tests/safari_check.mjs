@@ -236,9 +236,9 @@ const server = await startServer(remoteBase ? { transformHtml: (html) => pointPd
 let driver = null;
 
 // Each browser gives run(script, ...args), find(css), label(id),
-// attribute(id, name), and close(), and opens `url` before it resolves.
-// Desktop Safari: a safaridriver session.
-async function macBrowser(url) {
+// attribute(id, name), and close().
+// Desktop Safari: a safaridriver session, which open(url) navigates.
+async function macBrowser() {
   const sdPort = await freePort();
   driver = spawn("safaridriver", ["-p", String(sdPort)], { stdio: "ignore" });
   const started = new Promise((resolve, reject) => {
@@ -269,8 +269,8 @@ async function macBrowser(url) {
   // no session (remote automation off) is a setup failure
   const session = (await wd("POST", "/session", { capabilities: { alwaysMatch: { browserName: "safari" } } })).sessionId;
   const s = `/session/${session}`;
-  await wd("POST", `${s}/url`, { url });
   return {
+    open: (url) => wd("POST", `${s}/url`, { url }),
     run: (script, ...a) => wd("POST", `${s}/execute/sync`, { script, args: a }),
     find: async (css) => (await wd("POST", `${s}/elements`, { using: "css selector", value: css })).map((e) => Object.values(e)[0]),
     label: (id) => wd("GET", `${s}/element/${id}/computedlabel`),
@@ -280,10 +280,11 @@ async function macBrowser(url) {
 }
 // Safari in the simulator: the page opened with simctl, then read through
 // the simulator's Web Inspector socket (tests/webinspector.mjs). The
-// address carries a token, so a tab left from another run is not read.
+// address carries a token, so a tab left from another run is not read. It
+// resolves once the page has loaded.
 async function simulatorBrowser(url) {
   const socket = simulatorSocket(dev.udid);
-  const own = `${url}?run=${Date.now().toString(36)}`;
+  const own = `${url}${url.includes("?") ? "&" : "?"}run=${Date.now().toString(36)}`;
   try {
     simctl("openurl", dev.udid, own);
   } catch {
@@ -292,10 +293,15 @@ async function simulatorBrowser(url) {
   }
   const p = await openSafariPage({ socket, url: own });
   // WebDriver's navigation waits for the load; this read does not
-  const start = Date.now();
-  while ((await p.run(`return document.readyState;`)) !== "complete") {
-    if (Date.now() - start > 30000) throw new Error(`${own} did not finish loading in 30 s`);
-    await sleep(250);
+  try {
+    const start = Date.now();
+    while ((await p.run(`return document.readyState;`)) !== "complete") {
+      if (Date.now() - start > 30000) throw new Error(`${own} did not finish loading in 30 s`);
+      await sleep(250);
+    }
+  } catch (err) {
+    p.close();
+    throw err;
   }
   return p;
 }
@@ -311,11 +317,13 @@ try {
   if (dev) report.device = dev.name;
   const url = `http://127.0.0.1:${server.address().port}/${page}`;
   try {
-    browser = dev ? await simulatorBrowser(url) : await macBrowser(url);
+    browser = dev ? await simulatorBrowser(url) : await macBrowser();
   } catch (err) {
     setupError = err.message;
     throw err;
   }
+  // a failed desktop navigation is a check failure (exit 1)
+  if (!dev) await browser.open(url);
   const { run, find, label, attribute } = browser;
   // the check reads one page at a time and does not move between slides
   if (await run(`return !!document.querySelector(".reveal .slides");`)) {
