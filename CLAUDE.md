@@ -235,6 +235,28 @@ node tests/native_check.mjs --browser safari --page selfcontained_slides_test.ht
 node tests/native_check.mjs --browser safari --page selfcontained_slides_test.html --alone http --expect-native 3 --reference sample.pdf
 ```
 
+The name under which a native viewer's own save control saves the PDF:
+`save_name_check.mjs` presses that control for each native embed and reads
+the saved file's name and bytes. The bytes must be the embed's own PDF.
+`--expect-save` gives one name per native embed, or one for all. `@blob`
+stands for the id of the embed's `blob:` URL plus `.pdf`. In Chromium the
+check reads the name from CDP download events. In desktop Safari it finds
+the PDF's control bar in a window screenshot and clicks its download
+button. It then reads the one new PDF in `~/Downloads` and deletes it, and
+it deletes no other file. Safari needs safaridriver turned on (as above).
+Keep the Safari window in front and the screen unlocked while it runs. Leave
+a few minutes between Safari runs. Safari stopped saving for a few minutes
+after a burst of saves. A locked screen exits 2. Firefox's
+viewer saved no file under automation, so Firefox is not checked (the
+script's header). The header states the plants:
+
+```
+node tests/save_name_check.mjs --browser chromium --page selfcontained_test.html --alone file --expect-native 3 --expect-save @blob
+node tests/save_name_check.mjs --browser chromium --page selfcontained_test.html --alone http --expect-native 3 --expect-save @blob
+node tests/save_name_check.mjs --browser safari --page selfcontained_test.html --alone file --expect-native 3 --expect-save Unknown.pdf
+node tests/save_name_check.mjs --browser safari --page selfcontained_test.html --alone http --expect-native 3 --expect-save Unknown.pdf
+```
+
 The other checks on `page_test.html`: on desktop its three embeds are
 native. On iPhone, iPad, and Android, the `renderer=auto` embed uses PDF.js,
 and the two `renderer=native` embeds stay `<object>`s. If a native embed on
@@ -489,10 +511,11 @@ errors.
   a RevealJS scale other than 1. Also a route to a slide other than the
   check's walk (slides 1, 2, 4, counting the title slide as 0). One Chromium
   probe of a jump from slide 0 opened its `<iframe>` at page 2. Also a tab or
-  other part of a page hidden at load. Also the file name that a native
-  viewer's save button gives the copy of the PDF in Firefox and Safari. In
-  headless Chromium 155 one probe got the `blob:` URL's id, not
-  `sample.pdf` (DESIGN Known issues), and no check reads it.
+  other part of a page hidden at load. Also the file name that Firefox's
+  native viewer gives a saved copy of the PDF. Under puppeteer-core its save
+  control saved no file (DESIGN Known issues). Chromium and desktop Safari
+  are checked by `save_name_check.mjs` on `selfcontained_test.html` only,
+  not on slides.
 - A native `<iframe>` embed (`page` over 1) in Chromium or Firefox with a
   window. Also such an embed of a PDF whose own site forbids framing, and a
   real screen reader reading its name.
@@ -524,8 +547,8 @@ errors.
 - A PDF missing from the page's own site (HTTP 404) on a real phone. It is
   checked only in Chromium and in the iOS 27.0 simulators.
 - A self-contained embed that cannot show its PDF gives a "Download the PDF"
-  link. Only Chromium saves the file in a check. No check saves it in Safari
-  (desktop or iOS) or Firefox. In the iOS 27.0 simulators only the link's text,
+  link. Only Chromium saves the file in a check. No check saves the link's
+  file in Safari (desktop or iOS) or Firefox. In the iOS 27.0 simulators only the link's text,
   `blob:` address, download name, and missing target are checked.
 - A real screen reader (VoiceOver, TalkBack) reading a PDF.js embed's hidden
   page text, its group name ("PDF: <file name>", numbered or "PDF"), its toolbar controls'
