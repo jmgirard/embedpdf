@@ -457,16 +457,29 @@ try {
   // changes which slide the walk below shows
   if (plant === "refcontrol") report.planted = "refcontrol: every reference shows the control";
   else if (plant === "noslide") report.planted = `noslide in native embed ${plantAt || 1}`;
-  // --plant: change the target embed's element
-  else if (plant) {
+  // --plant: change the target embed's element. On a slide deck this waits
+  // until the walk below shows the embed's slide, because the viewer gives an
+  // <iframe> that has no box (its slide not displayed) its address only once
+  // it has one.
+  let plantTarget = null;
+  if (plant && plant !== "refcontrol" && plant !== "noslide") {
     let k = plantAt;
     if (!k) k = PAGE_PLANTS.includes(plant) ? st.native.findIndex((d, i) => wantFrag(i)) + 1 : 1;
     if (k < 1 || k > st.native.length || (PAGE_PLANTS.includes(plant) && !wantFrag(k - 1))) {
       throw new SetupError(`--plant ${plant} found nothing to plant in (native embed ${k || "with #page="})`);
     }
-    const cur = st.native[k - 1];
-    if (["object", "border", "fallback"].includes(plant) && cur.tag !== "iframe") {
-      throw new SetupError(`--plant ${plant} needs an <iframe>, and native embed ${k} is <${cur.tag}>`);
+    if (["object", "border", "fallback"].includes(plant) && st.native[k - 1].tag !== "iframe") {
+      throw new SetupError(`--plant ${plant} needs an <iframe>, and native embed ${k} is <${st.native[k - 1].tag}>`);
+    }
+    plantTarget = k;
+  }
+  const applyPlant = async (k) => {
+    // the embed's address now (at most 5 s for one that is still empty)
+    let cur = st.native[k - 1];
+    for (let t = 0; !cur.address && t < 25; t++) {
+      await sleep(200);
+      st = await state();
+      cur = st.native[k - 1];
     }
     const bytes = plantBytes[plant] ? plantBytes[plant]() : null;
     const frag = cur.address.includes("#") ? cur.address.slice(cur.address.indexOf("#")) : "";
@@ -515,7 +528,8 @@ try {
     if (!done) throw new SetupError(`--plant ${plant} found no hidden fallback content beside native embed ${k}`);
     report.planted = `${plant} in native embed ${k}`;
     st = await state();
-  }
+  };
+  if (plantTarget && !deck) await applyPlant(plantTarget);
 
   // each native embed: its element, address, box, a stable screenshot, its size
   // on a slide deck: show the slide that holds native embed i (with --plant
@@ -562,6 +576,7 @@ try {
       // the embed's own state on its slide: on a slide that is not shown its
       // element has no box, and nothing of its placeholder shows
       st = await state();
+      if (plantTarget === i + 1) await applyPlant(plantTarget);
       current = await onCurrent(i);
     }
     const e = st.native[i];
