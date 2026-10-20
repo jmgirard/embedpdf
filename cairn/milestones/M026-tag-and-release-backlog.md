@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M026: Tag and release every 1.x version
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -51,10 +51,10 @@ what users install, and no install change is planned.
 The AC1 list is v1.0.0, v1.0.1, v1.0.2, v1.0.3, v1.1.0, v1.1.1, v1.2.0,
 v1.2.1, v1.2.2, v1.2.3, v1.2.4, v1.2.5, v1.2.6, v1.2.7, v1.2.8, v1.2.9.
 
-- [ ] AC1: For each version V in the AC1 list,
+- [x] AC1: For each version V in the AC1 list,
       `gh release view V --repo jmgirard/embedpdf --json tagName,isDraft,isPrerelease`
       shows a release with tag name V, `isDraft` false, and `isPrerelease` false.
-- [ ] AC2: `git ls-remote --tags origin` lists exactly v0.1.0, v0.2.0,
+- [x] AC2: `git ls-remote --tags origin` lists exactly v0.1.0, v0.2.0,
       v0.4.0, v0.4.1, v0.5.0 and the 16 tags of the AC1 list, plus `^{}`
       lines. Each AC1-list tag is annotated (it has a `^{}` line), and that
       line names the commit that the Scope table gives (v1.0.0 d27bd412,
@@ -64,9 +64,9 @@ v1.2.1, v1.2.2, v1.2.3, v1.2.4, v1.2.5, v1.2.6, v1.2.7, v1.2.8, v1.2.9.
       exist stay: v0.1.0 f99bbaa7, v0.2.0 c8a52f3f, v0.4.0 f4d7ee07, v0.4.1
       61efac62, v0.5.0 67e6974b, v1.0.0 a62c1fde, v1.0.1 a77ec2f8, v1.0.2
       511e73a7.
-- [ ] AC3: `gh api repos/jmgirard/embedpdf/releases/latest --jq .tag_name`
+- [x] AC3: `gh api repos/jmgirard/embedpdf/releases/latest --jq .tag_name`
       prints `v1.2.9`.
-- [ ] AC4: `gh api repos/jmgirard/embedpdf/releases --paginate --jq '.[].tag_name'`
+- [x] AC4: `gh api repos/jmgirard/embedpdf/releases --paginate --jq '.[].tag_name'`
       lists exactly v0.1.0, v0.2.0, v0.4.0, v0.4.1, v0.5.0 and the AC1 list.
       Those five keep their name (equal to the tag name) and published_at
       (v0.1.0 2023-04-14T00:19:20Z, v0.2.0 2023-04-14T14:32:15Z, v0.4.0
@@ -141,6 +141,7 @@ v1.2.1, v1.2.2, v1.2.3, v1.2.4, v1.2.5, v1.2.6, v1.2.7, v1.2.8, v1.2.9.
 - 2026-10-20: T6 deleted the DESIGN.md Known issues entry on the stale badge.
 - 2026-10-20: claim audit: not owed — no added lines outside cairn/.
 - 2026-10-20: implement done; verify slot has no check for a `cairn/`-only change; status set to review.
+- 2026-10-20: review return 1: AC5's commit-subject clause fails for v1.0.1 (README and example polish), v1.0.2 (realistic sample PDF in the example), v1.0.3 (iOS simulator check), and v1.2.8 (check of native embeds on self-contained slides); their bodies need a line for each.
 
 ## Decisions
 
@@ -163,3 +164,11 @@ v1.2.1, v1.2.2, v1.2.3, v1.2.4, v1.2.5, v1.2.6, v1.2.7, v1.2.8, v1.2.9.
   - v1.2.9: js `inlinedPdf(src, filename)` makes a `File` named `filename`; subject names Firefox and #33.
 
 ## Review
+
+Pass 1 (2026-10-20), branch at 5d25ed7, main not moved since the cut.
+
+- AC1: `gh release view` for each of the 16 versions gave its tag name, `isDraft` false, `isPrerelease` false (16/16).
+- AC2: `git ls-remote --tags origin` listed the 21 names v0.1.0–v1.2.9 and 16 `^{}` lines; each AC1-list `^{}` line equals its Scope-table commit and each tagged `_extension.yml` gives the matching `version:` (16/16); the eight older tag objects match the criterion's prefixes (8/8).
+- AC3: `releases/latest` gave `v1.2.9`.
+- AC4: `gh api ... releases --paginate` listed exactly the five v0.x releases and the 16; the five keep names equal to their tags and the five published_at values of the criterion, and their body SHA-256 prefixes equal T1's.
+- AC5: failed. Tails (16/16), the option names of v1.0.0 and v1.0.1, the `embedpdf` metadata key, and "Breaking change" in v1.0.1 hold. The commit-subject clause fails for four bodies: v1.0.1 omits "polish README and example" (808b403), v1.0.2 omits "Use a realistic sample PDF in the example" (9887d47), v1.0.3 omits "with an iOS simulator check" (8f1c68d), and v1.2.8 omits "check native embeds on self-contained slides" (9c43bf9).
