@@ -1,6 +1,6 @@
 # M021: Native embeds open at their page in Safari
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -137,6 +137,8 @@ placeholder, hidden. Every other native embed stays an `<object>`. Version 1.2.7
 - 2026-10-20: after the claim-audit fixes (comments, the README row, and native_check's percent-size skip), `quarto render` ran again (docs/ library copies changed in comments only); native_check chromium page_test, render_check example.html desktop, and render_check selfcontained `--alone file` exited 0 again.
 - 2026-10-20: implement complete; status review.
 - 2026-10-20: review pass 1: four lenses ran; the evidence run was stopped at line 39 of 98 (lines 1-38 exit 0) because fix-now edits touch the viewer; a review probe confirmed diff-bug #1 (an `<iframe>` downloads a PDF sent as `application/octet-stream` or as an attachment, where an `<object>` shows it in Firefox 158 and Safari 27.0.1), which falsifies D-007's choice for such servers; stopped for the user's decision on the approach (the probe's Safari run saved att.pdf and oct.pdf, copies of sample.pdf, in ~/Downloads).
+- 2026-10-20: review decision: the user chose "Check headers first": for a native embed with `page` over 1 the viewer reads the PDF's headers (HEAD) where it can, and uses the `<iframe>` only for an `application/pdf` answer shown inline, else an `<object>`; rejected "Keep iframe, document it", "Revert to object", "Stop for now". The widening this needs (a criterion for the header rule) is adopted at the user's selection.
+- 2026-10-20: review return 1: diff-bug #1 — a page>1 native `<iframe>` embed of a PDF sent as `application/octet-stream` or as an attachment downloads the file and shows nothing in Firefox 158 and Safari 27.0.1, where v1.2.6's `<object>` showed it; fix by the header rule above, add a criterion and a check for it, amend Scope and D-007; also land the review's fix-now items (diff-bug #5 #6 #9 #10 #11, prior-review #1 #2 #4, ripple #1 #2 #4-#8 #11) and file the follow-ups into row "Check embeds open at their page option".
 
 ## Decisions
 

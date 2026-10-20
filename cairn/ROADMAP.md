@@ -7,7 +7,7 @@ _Last hygiene check: 2026-10-20 (triage: split "Embed name follow-ups" into "Fix
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M021 | Native embeds open at their page in Safari | review | — | normal | milestones/M021-native-page-iframe.md |
+| M021 | Native embeds open at their page in Safari | in-progress | — | normal | milestones/M021-native-page-iframe.md |
 | M020 | Self-contained native display check | done | — | normal | milestones/archive/M020-self-contained-native.md |
 | M019 | Large PDF text check | done | — | normal | milestones/archive/M019-large-pdf-text.md |
 | M018 | iOS deck and link checks | done | — | normal | milestones/archive/M018-ios-deck-and-links.md |
