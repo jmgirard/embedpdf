@@ -1,16 +1,15 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-20 (triage: split "Embed name follow-ups" into "Fix edge cases in embed addresses" and "Close the name and indicator check gaps"; retitled 15 rows to 5+ word titles, old title kept in each row: Self-contained native checks, GitHub releases for v1.0.x, Safari names on iOS, First-paint robustness, Inlined failure check gaps, Decode failure button link, Native name check gaps, Shared remote check gaps, LaTeX path escapes, Percent path follow-ups, LaTeX inline shortcode, Self-contained no-JS link, Eager text cost, Screen-reader text gaps, Shared query fallback; no drops, no re-rates, no token changes, no decision entry; validate green)_
+_Last hygiene check: 2026-10-20 (M021 done: graduated "Make Safari native embeds honor page"; M018 row pruned; one lesson added; validate green)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M021 | Native embeds open at their page in Safari | review | — | normal | milestones/M021-native-page-iframe.md |
+| M021 | Native embeds open at their page in Safari | done | — | normal | milestones/archive/M021-native-page-iframe.md |
 | M020 | Self-contained native display check | done | — | normal | milestones/archive/M020-self-contained-native.md |
 | M019 | Large PDF text check | done | — | normal | milestones/archive/M019-large-pdf-text.md |
-| M018 | iOS deck and link checks | done | — | normal | milestones/archive/M018-ios-deck-and-links.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
@@ -22,7 +21,6 @@ _Last hygiene check: 2026-10-20 (triage: split "Embed name follow-ups" into "Fix
      open each row with its short title, the words the cairn pane shows, then `: `;
      tracking-rules "Candidate short title" has the whole rule -->
 - Check native save names and slide embeds: Self-contained native checks: in a self-contained page a native embed gets a `blob:` PDF (corrected M021). M020's `native_check.mjs` checks its display and `#page=` on a single HTML page in Chromium, Firefox, and desktop Safari. Not checked: the file name that a native viewer's own save button gives that copy, and native embeds on self-contained RevealJS slides in any browser (M002 review; narrowed 2026-10-20 by M020) — added 2026-10-18
-- Make Safari native embeds honor page: desktop Safari 27.0.1 opened a native `<object>` of `sample.pdf#page=2` at page 1, for the file address and a `blob:` copy alike, while README's `page` option promises the initial page; Chromium 155 and Firefox 158 opened page 2 (M020 plan probe) — added 2026-10-19 — started M021
 - Publish GitHub releases for 1.0 tags: GitHub releases for v1.0.x: publish GitHub releases for tags v1.0.0 to v1.0.2. The README version badge shows the latest release, 0.5.0, while the extension is at 1.2.7, and v1.1.0 to v1.2.7 have no tags, so these releases alone do not make the badge current (corrected M021) — added 2026-10-18 — DESIGN Known issues
 - Check Safari names in iOS simulators: Safari names on iOS: on iPhone and iPad, Safari's names are not checked: ios_check reads only the page DOM (embed name, hidden text, indicator text), and not the toolbar controls. On 2026-10-19 `tests/safari_check.mjs --target simulator` got "Could not find any session hosts that match the requested capabilities" from safaridriver on the iOS 27.0 simulators, whose Safari "Remote Automation" setting was not turned on, and `--target page-script` found no `Element.prototype.computedName`. Turning that setting on is the next try (M010 implement) — added 2026-10-19
 - [low] Check embeds open at their page option: a PDF.js embed scrolls to its `page` (`embedpdf-viewer.js:411`), but no check reads which page it shows first; on iPhone and iPad a `renderer=native` embed stays an `<object>`, and whether iOS Safari opens it at its `page` is not checked; a native embed with a `page` over 1 can become an `<iframe>` (D-008), and a PDF whose own site forbids framing (`X-Frame-Options`, `frame-ancestors`) is not checked in that form (M021 plan); no test page puts such an `<iframe>` on RevealJS slides, and the viewer appends `#page=N` to an address that may already hold a fragment; while the HEAD request waits (up to 5 s, which also counts time waiting for a connection) the no-JS download link shows, and then the embed replaces it; a page whose CSP allows `object-src` but limits `frame-src` gets a blank `<iframe>`; an Android browser that reports a built-in PDF viewer would get the `<iframe>` too, not checked (M021 review) — added 2026-10-20
