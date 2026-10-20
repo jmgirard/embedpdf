@@ -1,13 +1,13 @@
 # M015: Percent sign in PDF paths
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, IP3
 - **Resolves:** —
 - **Surface tier:** user-facing — it changes the HTML and LaTeX that authors get from the shortcode
-- **Branch/PR:** —
+- **Branch/PR:** m015-percent-sign-paths
 
 ## Goal
 
@@ -102,7 +102,7 @@ Version 1.2.6.
 
 ## Tasks
 
-- [ ] T1: In `tests/test_shortcode.lua`, add checks for every AC1 path: the
+- [x] T1: In `tests/test_shortcode.lua`, add checks for every AC1 path: the
       address in `data-src`, the `button` link, the no-JavaScript link, and
       the non-HTML link, and the whole LaTeX line. Run them against v1.2.5
       and see the new checks fail.
@@ -138,6 +138,9 @@ Version 1.2.6.
 - 2026-10-19: plan gate chose encoding only a `%` not followed by two hex digits over encoding every `%`, because `%20` paths work today and must keep working; falsified by an author file name with a bare `%` and two hex digits after it.
 - 2026-10-19: plan gate chose a one-off native fetch probe over extending render_check to fetch native PDFs on normal pages, because widening a checker was not posed at the question set; falsified by a native embed that passes the probe and fails for readers.
 - 2026-10-19: version 1.2.6, the repo's practice of one patch bump per user-facing fix (v1.2.2 bumped for a Lua-only change).
+
+- 2026-10-19: implement started on branch m015-percent-sign-paths.
+- 2026-10-19: T1: 70 percent checks in tests/test_shortcode.lua (14 paths × data-src, no-JS link, button link, other-format link, LaTeX line). Against v1.2.5: 68 passed, 42 failed (the 7 bare-% paths in the 4 link targets, and all 14 LaTeX lines).
 
 ## Decisions
 

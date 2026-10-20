@@ -135,6 +135,45 @@ reset("docx")
 check("other: inline context yields a Link", pdf({ "a.pdf" }, {}, {}, {}, "inline").t == "Link")
 
 -- ---------------------------------------------------------------------------
+-- A % in the PDF path
+-- ---------------------------------------------------------------------------
+-- HTML and other link targets write a % that is not followed by two hex
+-- digits as %25, in one pass. LaTeX decodes the %XX escapes of printable
+-- ASCII other than \ { } # $ & ~ ^ _, and puts a path that still holds a %
+-- in a group where % is a plain character.
+local function grouped(p)
+  return "\\begingroup\\catcode`\\%=12\\relax\\includepdf[pages=-]{" .. p .. "}\\endgroup"
+end
+local function plain(p) return "\\includepdf[pages=-]{" .. p .. "}" end
+for _, case in ipairs({
+  { "files/100%.pdf",          "files/100%25.pdf",        grouped("files/100%.pdf") },
+  { "files/100%25.pdf",        "files/100%25.pdf",        grouped("files/100%.pdf") },
+  { "files/sample%20copy.pdf", "files/sample%20copy.pdf", plain("files/sample copy.pdf") },
+  { "a%2fb.pdf",               "a%2fb.pdf",               plain("a/b.pdf") },
+  { "a%2Fb.pdf",               "a%2Fb.pdf",               plain("a/b.pdf") },
+  { "a%zz.pdf",                "a%25zz.pdf",              grouped("a%zz.pdf") },
+  { "a%4g.pdf",                "a%254g.pdf",              grouped("a%4g.pdf") },
+  { "a%",                      "a%25",                    grouped("a%") },
+  { "%.pdf",                   "%25.pdf",                 grouped("%.pdf") },
+  { "50%-100%.pdf",            "50%25-100%25.pdf",        grouped("50%-100%.pdf") },
+  { "a%%b.pdf",                "a%25%25b.pdf",            grouped("a%%b.pdf") },
+  { "%2525.pdf",               "%2525.pdf",               grouped("%25.pdf") },
+  { "a%7Bb.pdf",               "a%7Bb.pdf",               grouped("a%7Bb.pdf") },
+  { "%C3%A9.pdf",              "%C3%A9.pdf",              grouped("%C3%A9.pdf") },
+}) do
+  local path, url, latex = case[1], case[2], case[3]
+  reset("html:js")
+  local h = pdf({ path }, { button = "Get" }, {}, {}, "block").text
+  check("percent " .. path .. ": data-src", has(h, 'data-src="' .. url .. '"'))
+  check("percent " .. path .. ": no-JS link", has(h, '<a href="' .. url .. '" download>Download PDF file.</a>'))
+  check("percent " .. path .. ": button link", has(h, '<a class="embedpdf-btn" href="' .. url .. '" download>'))
+  reset("docx")
+  check("percent " .. path .. ": other-format link", pdf({ path }, {}, {}, {}, "inline").target == url)
+  reset("latex")
+  check("percent " .. path .. ": latex line", pdf({ path }, {}, {}, {}, "block").text == latex)
+end
+
+-- ---------------------------------------------------------------------------
 -- Missing source
 -- ---------------------------------------------------------------------------
 reset("html:js")
