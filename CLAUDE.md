@@ -93,9 +93,11 @@ safaridriver (WebDriver "Get Computed Label"). Turn on safaridriver once with
 automation". Its `--target simulator` and `--target page-script` probes fail
 on the iOS 27.0 simulators (see "Still unverified").
 
-`--expect-text` checks the hidden page text that screen readers read. The
-phrases come from `pdftotext sample.pdf`: phrase 1 is on page 1, phrase 2 on
-page 2. In render_check it also checks Chrome's accessibility tree.
+`--expect-text` checks the hidden page text that screen readers read. It
+takes one phrase per page, and phrase k must be on page k and on no other
+page. For `sample.pdf` the phrases come from `pdftotext sample.pdf`: phrase
+1 is on page 1, phrase 2 on page 2. For `files/large.pdf` they are its 14
+page headings (see the byte-range lines below). In render_check it also checks Chrome's accessibility tree.
 `revealjs_test.html` uses other PDFs and gets no text check. `--expect-name`
 checks that each PDF.js embed is a group with its expected name: "PDF:
 <file name>", numbered, or "PDF" alone, as below. It also checks that each
@@ -243,16 +245,18 @@ A PDF that PDF.js loads by byte ranges: PDF.js asks for ranges only for a PDF
 over 128 KB (131,072 bytes). `files/large.pdf` has 14 pages and is over that
 size. Each page's heading is a phrase that no other page holds. The
 `--expect-text` list of the lines below gives these phrases in page order.
-`files/large-2.pdf` is a copy of it. To change the PDF, edit `files/large-source.md` and build both
-files again:
+`files/large-2.pdf` is a copy of it. To change the PDF, edit `files/large-source.md`, build both
+files again, and run `quarto render`, because the checks serve the copies
+in `docs/files/`:
 
 ```
-sh tests/make_large_pdf.sh files/large.pdf && cp files/large.pdf files/large-2.pdf
+sh tests/make_large_pdf.sh files/large.pdf && cp files/large.pdf files/large-2.pdf && quarto render
 ```
 
 The script renders each page apart and joins the pages with `pdfunite`,
 because one render of the whole source is under 128 KB. It fails unless the
-PDF has 14 pages and is over 131,072 bytes. `large_test.html` shows `large.pdf` with `renderer=pdfjs` and
+source has 14 parts, each part is one page, and the PDF is over 131,072
+bytes. It needs `lualatex` (TinyTeX) and poppler's `pdfunite` and `pdfinfo`. `large_test.html` shows `large.pdf` with `renderer=pdfjs` and
 `large-2.pdf` with `renderer=auto`, so the two embeds load different
 addresses. `--expect-ranges` (no value) makes the server that serves the PDFs
 send each whole `.pdf` file over 128 KB slowly (with `--remote cors`, see
