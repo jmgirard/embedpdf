@@ -236,7 +236,7 @@ check("point: %20 in the page folder is kept", point(div("x.pdf"), "a%20b/p.html
 check("point: a ?query on the page does not move the folder", point(div("x.pdf"), "p.html?q=a/b") === div(R + "x.pdf"), point(div("x.pdf"), "p.html?q=a/b"));
 
 // --- webinspector: property lists and framing ----------------------------------
-// Written by `plutil -convert binary1` (macOS 27.0) from an XML plist of
+// Written by `plutil -convert binary1` (macOS 27.0.1) from an XML plist of
 // {__selector: "_rpc_applicationSentListing:", count: 70000, yes: true,
 // no: false, data: <7b 7d>, list: ["a", 3], name: "Zoom – in"}, the dash
 // being U+2013, so its string is UTF-16.

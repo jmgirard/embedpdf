@@ -21,7 +21,8 @@
 //                         DOM.getAccessibilityPropertiesForNode
 //   attribute(id, name)   the attribute's value, or null when it is missing
 //   close()
-// Each call rejects after 10 s with no answer.
+// Each protocol message rejects after 10 s with no answer (the first find()
+// sends two). openSafariPage itself waits up to waitMs (30 s) for the page.
 
 import net from "node:net";
 import { randomUUID } from "node:crypto";

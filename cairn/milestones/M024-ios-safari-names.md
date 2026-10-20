@@ -2,7 +2,7 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M024: Safari names in the iOS simulators
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -93,3 +93,5 @@ scroll.
 - 2026-10-20: T2: `--target simulator` opens `<page>?run=<token>` with `simctl openurl` (retried once), reads it through `openSafariPage`, and waits for `document.readyState` "complete" (WebDriver's navigation waited for the load); a simulator that is not booted exits 2. `--target mac` keeps safaridriver behind the same run/find/label/attribute calls. AC1's four lines exit 0 (iPhone and iPad: example.html 1 native, 10 PDF.js, 9 toolbars, indicators "Page 1 of 2" then "Page 2 of 2"; page_test.html 2 native with no title, 1 PDF.js). The three CLAUDE.md `--target mac` lines exit 0, and `--remote cors` on the iPhone exits 0.
 - 2026-10-20: T3: on "embedpdf iPhone", example.html: `--plant rawindicator` exit 1 (indicator read as "Page 1 of 2 1 / 2", and "Page 2 of 2 2 / 2" after the scroll); `nonumber` exit 1 (name "PDF: sample.pdf", not "(1 of 11)"); `nativename` exit 1 ("PDF: wrong.pdf"); `nativetitle` exit 1 (element has a title). `--device "embedpdf iPhone Duo"` (shut down) exit 2: "is Shutdown, not booted".
 - 2026-10-20: T4: CLAUDE.md gains the four AC1 lines (example.html in the first verify block, page_test.html in the page_test block), a rewritten safari_check paragraph, and rewritten screen-reader entries in "Still unverified" (the computed-names entry removed). README item 91 and the safari_check header updated; M010 lesson corrected in place. AC2 grep prints nothing (exit 1); helpers_test 169 passed, 0 failed; cairn_validate passes. The simple-english hook's counts did not rise from the new text (CLAUDE.md 40 to 39, after one long sentence of mine was split).
+- 2026-10-20: claim audit: 32 claims read, 4 corrected — tests/webinspector.mjs (10 s is per protocol message; openSafariPage waits up to 30 s), tests/safari_check.mjs (exit-2 list gains an unreachable socket and a 30 s load timeout; stale indicator comment names the Web Inspector label), tests/helpers_test.mjs (fixture made on macOS 27.0.1). The reader's own page_test.html run on the iPhone simulator exited 0.
+- 2026-10-20: implement done; status review. helpers_test 169 passed, 0 failed after the comment fixes.

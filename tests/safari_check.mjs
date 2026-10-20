@@ -56,9 +56,10 @@
 // Exits 0 on a pass, 1 on a failed check or a probe that cannot read names,
 // 2 on a bad argument, when --plant finds nothing to plant in, when the
 // server, safaridriver, a safaridriver session, or simctl cannot start, when
-// the --device simulator is not booted or its Web Inspector socket does not
-// list the page, or when --page is a RevealJS slide deck (the check does not
-// move between slides).
+// the --device simulator is not booted, when its Web Inspector socket cannot
+// be reached or does not list the page, when the page does not finish loading
+// in 30 s, or when --page is a RevealJS slide deck (the check does not move
+// between slides).
 
 import { spawn, execFileSync } from "node:child_process";
 import net from "node:net";
@@ -438,7 +439,8 @@ try {
           i,
           k
         );
-        // Get Computed Label gives a plain span no name, so the indicator
+        // Get Computed Label and the Web Inspector label give a plain span
+        // no name, so the indicator
         // briefly takes role heading, whose name Safari computes from its
         // content: the text Safari would read there, without aria-hidden parts
         const role = (on) =>
