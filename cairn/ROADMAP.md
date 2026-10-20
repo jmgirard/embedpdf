@@ -1,16 +1,15 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-20 (M022 done: narrowed "Check native save names and slide embeds" and "Check embeds open at their page option"; added "Check native frames hidden at page load"; M019 row pruned; two lessons added; validate green)_
+_Last hygiene check: 2026-10-20 (M023 done: deleted "Check native save names and slide embeds"; added "Name inlined PDFs in Firefox's viewer" at implement; M020 row pruned; two lessons added; validate green)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M023 | Save name of inlined PDFs in native viewers | review | — | normal | milestones/M023-native-save-name.md |
+| M023 | Save name of inlined PDFs in native viewers | done | — | normal | milestones/archive/M023-native-save-name.md |
 | M022 | Native embeds on self-contained slides checked | done | — | normal | milestones/archive/M022-slides-native-check.md |
 | M021 | Native embeds open at their page in Safari | done | — | normal | milestones/archive/M021-native-page-iframe.md |
-| M020 | Self-contained native display check | done | — | normal | milestones/archive/M020-self-contained-native.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
@@ -21,7 +20,6 @@ _Last hygiene check: 2026-10-20 (M022 done: narrowed "Check native save names an
      the opening token is `[high]`/`[low]` or absent (`normal`) — tracking-rules "Candidate priority token";
      open each row with its short title, the words the cairn pane shows, then `: `;
      tracking-rules "Candidate short title" has the whole rule -->
-- Check native save names and slide embeds: Self-contained native checks: in a self-contained page a native embed gets a `blob:` PDF (corrected M021). `native_check.mjs` checks its display and `#page=` in Chromium, Firefox, and desktop Safari, on a single HTML page (M020) and on self-contained slides (M022). Not checked: the file name that a native viewer's own save button gives that copy. An M022 probe in headless Chromium 155 pressed the save control through the viewer's `chrome-extension://` target and read the name from CDP `Browser.downloadWillBegin`: the `blob:` id plus `.pdf`, not `sample.pdf` (DESIGN Known issues). So a check can read it in Chromium; Firefox and desktop Safari are not probed (M002 review; narrowed 2026-10-20 by M020; narrowed 2026-10-20 by M022) — added 2026-10-18 — started M023
 - Publish GitHub releases for 1.0 tags: GitHub releases for v1.0.x: publish GitHub releases for tags v1.0.0 to v1.0.2. The README version badge shows the latest release, 0.5.0, while the extension is at 1.2.8, and v1.1.0 to v1.2.8 have no tags, so these releases alone do not make the badge current (corrected M021; corrected M022) — added 2026-10-18 — DESIGN Known issues
 - Check Safari names in iOS simulators: Safari names on iOS: on iPhone and iPad, Safari's names are not checked: ios_check reads only the page DOM (embed name, hidden text, indicator text), and not the toolbar controls. On 2026-10-19 `tests/safari_check.mjs --target simulator` got "Could not find any session hosts that match the requested capabilities" from safaridriver on the iOS 27.0 simulators, whose Safari "Remote Automation" setting was not turned on, and `--target page-script` found no `Element.prototype.computedName`. Turning that setting on is the next try (M010 implement) — added 2026-10-19
 - Name inlined PDFs in Firefox's viewer: Firefox 158's native viewer reports `document.pdf` for an inlined PDF's `blob:` address, and `sample.pdf` for a `blob:` of a `File` named `sample.pdf` or for a `#filename=sample.pdf` fragment, but its save control saved no file under puppeteer-core, so no saved name was seen (M023 T1). A `File` changed no saved name in Chromium 155 or desktop Safari 27.0.1. A saved file read from Firefox's viewer, by a route that works under automation or by hand, is what planning it needs (M023 implement) — added 2026-10-20
