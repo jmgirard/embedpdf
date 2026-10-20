@@ -158,14 +158,18 @@ node tests/ios_check.mjs --device "embedpdf iPhone" --page selfcontained_test.ht
 node tests/ios_check.mjs --device "embedpdf iPad" --page selfcontained_test.html --alone yes --expect-embeds 2 --expect-native 1 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/ios_check.mjs --device "embedpdf iPhone" --page selfcontained_slides_test.html --alone yes --expect-embeds 2 --expect-native 1 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/ios_check.mjs --device "embedpdf iPad" --page selfcontained_slides_test.html --alone yes --expect-embeds 2 --expect-native 1 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/ios_check.mjs --device "embedpdf iPhone" --page revealjs_test.html --expect-embeds 2 --expect-native 1 --expect-pages "2|1" --expect-name "dummy.pdf|dummy2.pdf|dummy.pdf"
+node tests/ios_check.mjs --device "embedpdf iPad" --page revealjs_test.html --expect-embeds 2 --expect-native 1 --expect-pages "2|1" --expect-name "dummy.pdf|dummy2.pdf|dummy.pdf"
 ```
 
 On a RevealJS page, both scripts show each slide in turn before they check
 its embeds. ios_check also fails a PDF.js embed whose ink or text it read
 while another slide was current. ios_check's `--plant noslide` skips the last
 slide that holds a PDF.js embed. On the iPhone simulator, RevealJS shows the slides
-in its scrolled view (the report's `scrollView`). `revealjs_test.html` has no
-ios_check line, because ios_check takes one `--expect-pages` for all embeds.
+in its scrolled view (the report's `scrollView`). ios_check's `--expect-pages`
+takes one count for every embed not set to `renderer=native`. It also takes a
+`|` list with one count per such embed, in page order. On `revealjs_test.html` these are
+`dummy2.pdf` (2 pages) and then `dummy.pdf` with `renderer=auto` (1 page).
 
 A self-contained page whose embeds cannot show their PDF:
 `selfcontained_failed_test.html` holds `files/broken.pdf`, a text file that
