@@ -14,7 +14,7 @@ Key files:
 - `example.qmd` (guide), `native.qmd`, `revealjs_test.qmd` → rendered into `docs/`
   (GitHub Pages). `dummy*.pdf` are blank test files; `sample.pdf` is the realistic
   example used by `example.qmd`.
-- `name_test.qmd`, `name_edge_test.qmd`, `percent_test.qmd`,
+- `name_test.qmd`, `name_edge_test.qmd`, `percent_test.qmd`, `percent_page_test.qmd`,
   `selfcontained_test.qmd`, `selfcontained_slides_test.qmd`,
   `selfcontained_failed_test.qmd`, `large_test.qmd`, and `shared_test.qmd` are test pages, also
   rendered into `docs/`. `files/` holds copies of `sample.pdf` under the names
@@ -22,7 +22,8 @@ Key files:
   `name_edge_test.qmd` includes. It also holds `broken.pdf` and
   `undecodable-embeds.md` for `selfcontained_failed_test.qmd`, and
   `large.pdf` and `large-2.pdf` for `large_test.qmd`. `shared_test.qmd` shows
-  `large.pdf` too.
+  `large.pdf` too. `100%.pdf` is for `percent_test.qmd` and `percent_page_test.qmd`, and
+  `50%off.pdf` is for `percent_page_test.qmd`.
 
 ## Verify before finishing — you are the test runner (no CI)
 
@@ -39,6 +40,16 @@ pandoc lua tests/test_shortcode.lua      # must print "N passed, 0 failed"
 
 Add a matching `check(...)` in that file whenever you add or change shortcode
 behavior (a new option, output format, escaping rule, default, etc.).
+
+When the change touches how the shortcode writes the PDF path, also run
+`quarto render` and the `percent_page_test.html` lines in the next block. Then
+render that page to PDF outside `docs/`. The render must end with no error, and
+the PDF must hold the phrase 5 times, once per embed:
+
+```
+quarto render percent_page_test.qmd --to pdf --output-dir "$TMPDIR/embedpdf-pdf"
+pdftotext "$TMPDIR/embedpdf-pdf/percent_page_test.pdf" - | grep -c "On the Origin of Coastlines"   # must print 5
+```
 
 **After any change to `embedpdf-viewer.js` or `embedpdf.css`** — bump `version:`
 in **both** `_extension.yml` and the `add_html_dependency{ version = ... }` call
@@ -64,6 +75,13 @@ node tests/ios_check.mjs --device "embedpdf iPhone" --page name_test.html --expe
 node tests/ios_check.mjs --device "embedpdf iPad" --page name_test.html --expect-embeds 2 --expect-name "sample copy.pdf"
 node tests/ios_check.mjs --device "embedpdf iPhone" --page name_edge_test.html --expect-embeds 2 --expect-name "sample.pdf|-" --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/ios_check.mjs --device "embedpdf iPad" --page name_edge_test.html --expect-embeds 2 --expect-name "sample.pdf|-" --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/render_check.mjs percent_page_test.html --expect-native 1 --expect-pdfjs 4 --expect-pages 2 --expect-name "100%.pdf|100%.pdf|100%.pdf|50%off.pdf|sample copy.pdf" --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/render_check.mjs percent_page_test.html --device mac-safari --expect-native 1 --expect-pdfjs 4 --expect-pages 2 --expect-name "100%.pdf|100%.pdf|100%.pdf|50%off.pdf|sample copy.pdf" --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/render_check.mjs percent_page_test.html --device windows-touch --expect-native 1 --expect-pdfjs 4 --expect-pages 2 --expect-name "100%.pdf|100%.pdf|100%.pdf|50%off.pdf|sample copy.pdf" --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/render_check.mjs percent_page_test.html --device iphone --expect-native 0 --expect-pdfjs 5 --expect-pages 2 --expect-name "100%.pdf|100%.pdf|100%.pdf|50%off.pdf|sample copy.pdf" --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/render_check.mjs percent_page_test.html --device android --expect-native 0 --expect-pdfjs 5 --expect-pages 2 --expect-name "100%.pdf|100%.pdf|100%.pdf|50%off.pdf|sample copy.pdf" --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/ios_check.mjs --device "embedpdf iPhone" --page percent_page_test.html --expect-embeds 5 --expect-pages 2 --expect-name "100%.pdf|100%.pdf|100%.pdf|50%off.pdf|sample copy.pdf" --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/ios_check.mjs --device "embedpdf iPad" --page percent_page_test.html --expect-embeds 5 --expect-pages 2 --expect-name "100%.pdf|100%.pdf|100%.pdf|50%off.pdf|sample copy.pdf" --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/name_rule_test.mjs
 node tests/safari_check.mjs --target mac --expect-native 9 --expect-pdfjs 2 --expect-name sample.pdf
 ```
@@ -100,6 +118,12 @@ embed uses the query-style address `files/get?file=sample.pdf`, and
 `files/inlined-sample.md`. It holds the PDF as a `data:` address (made with
 `base64`) and has no download link. `percent_test.html` is self-contained. It shows
 `files/100%.pdf` by `files/100%25.pdf` and by a bare `%`.
+`percent_page_test.html` is a normal page with five embeds. It shows
+`files/100%.pdf` by a bare `%` (PDF.js), by `%25` (PDF.js), and by a bare
+`%` (`auto`, so native on desktop). It shows `files/50%off.pdf`, where a
+letter follows the `%`, and `files/sample copy.pdf` by `%20`. Its own text
+does not hold "On the Origin of Coastlines", so a PDF render of it holds
+that phrase once per embed.
 `--plant` in each script plants one defect so you can see a
 check fail. render_check, ios_check, safari_check, and name_rule_test take
 `--plant`, and each header says what its `--plant` does.
@@ -305,6 +329,9 @@ errors.
   first, and each text read gives up after 10 s.
 
 ## Still unverified
+- GitHub Pages' answer to an address with `%25`, which the shortcode writes
+  for a bare `%` in a PDF path since v1.2.6. It is checked only on the local
+  test server.
 - A real Android device loading the GitHub Pages site (the actual target
   environment; can only be checked by a human on a phone).
 - A real iPhone or iPad loading the GitHub Pages site, and any iOS version
