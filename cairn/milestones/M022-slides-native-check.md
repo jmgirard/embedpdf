@@ -24,14 +24,14 @@ A check shows that each native embed on the self-contained RevealJS slides shows
 
 ## Acceptance criteria
 
-- [ ] AC1: `selfcontained_slides_test.qmd` has a fourth slide with `{{< pdf sample.pdf renderer=native page=2 width=600 height=400 >}}`. After `quarto render`, the CLAUDE.md lines for `selfcontained_slides_test.html` exit 0 with counts changed for that embed. These are the two `render_check.mjs` lines with `--alone file` and again with `--alone http` (desktop `--expect-native 3`, iphone `--expect-native 2`, both `--expect-links 5`), and the two `ios_check.mjs` lines (`--expect-native 2`, `--expect-links 5`).
-- [ ] AC2: `node tests/native_check.mjs --browser <b> --page selfcontained_slides_test.html --alone <a> --expect-native 3 --reference sample.pdf` exits 0 for each `<b>` in chromium, firefox, and safari and each `<a>` in file and http (six runs). With the page rendered with the v1.2.7 `embedpdf-viewer.js`, the chromium and safari runs, with `--alone file` and with `--alone http`, exit 1 with a mismatch failure for native embed 3.
-- [ ] AC3: With `--plant noslide --plant-at 3` added to the chromium `--alone file` run of AC2, the run exits 1, and its failure names native embed 3 as not on the current slide (`Reveal.getCurrentSlide()`) at its screenshot.
-- [ ] AC4: Each of the plants `otherpdf`, `broken`, `nopage`, `object`, `border`, and `fallback`, added to the chromium `--alone file` run of AC2, makes the run exit 1 with a failure that names the planted embed. Each of `otherpdf`, `broken`, `nopage`, and `object`, added to the safari `--alone file` run of AC2, makes the run exit 1 with a mismatch failure for that embed.
-- [ ] AC5: The nine `native_check.mjs` lines already in CLAUDE.md (on `page_test.html` and `selfcontained_test.html`) exit 0.
+- [x] AC1: `selfcontained_slides_test.qmd` has a fourth slide with `{{< pdf sample.pdf renderer=native page=2 width=600 height=400 >}}`. After `quarto render`, the CLAUDE.md lines for `selfcontained_slides_test.html` exit 0 with counts changed for that embed. These are the two `render_check.mjs` lines with `--alone file` and again with `--alone http` (desktop `--expect-native 3`, iphone `--expect-native 2`, both `--expect-links 5`), and the two `ios_check.mjs` lines (`--expect-native 2`, `--expect-links 5`).
+- [x] AC2: `node tests/native_check.mjs --browser <b> --page selfcontained_slides_test.html --alone <a> --expect-native 3 --reference sample.pdf` exits 0 for each `<b>` in chromium, firefox, and safari and each `<a>` in file and http (six runs). With the page rendered with the v1.2.7 `embedpdf-viewer.js`, the chromium and safari runs, with `--alone file` and with `--alone http`, exit 1 with a mismatch failure for native embed 3.
+- [x] AC3: With `--plant noslide --plant-at 3` added to the chromium `--alone file` run of AC2, the run exits 1, and its failure names native embed 3 as not on the current slide (`Reveal.getCurrentSlide()`) at its screenshot.
+- [x] AC4: Each of the plants `otherpdf`, `broken`, `nopage`, `object`, `border`, and `fallback`, added to the chromium `--alone file` run of AC2, makes the run exit 1 with a failure that names the planted embed. Each of `otherpdf`, `broken`, `nopage`, and `object`, added to the safari `--alone file` run of AC2, makes the run exit 1 with a mismatch failure for that embed.
+- [x] AC5: The nine `native_check.mjs` lines already in CLAUDE.md (on `page_test.html` and `selfcontained_test.html`) exit 0.
 - [x] AC6: `cairn/DESIGN.md` Known issues has a dated entry on the file name that headless Chromium's native PDF viewer gives a saved copy of a native embed on `selfcontained_test.html` opened alone. The entry gives either the name or the fact that it is still unknown.
 - [x] AC7: Every line that `grep -n -i "revealjs\|slide" CLAUDE.md README.md cairn/DESIGN.md` prints and that this milestone adds or changes is true of the repo at the milestone's head. No line that this grep prints says that no browser checks native embeds on self-contained RevealJS slides, and CLAUDE.md lists the six AC2 lines.
-- [ ] AC8: The viewer is 1.2.8 (`version:` in `_extensions/embedpdf/_extension.yml` and the `add_html_dependency` version in `_extensions/embedpdf/embedpdf.lua`). Each `node tests/render_check.mjs`, `ios_check.mjs`, `name_rule_test.mjs`, `safari_check.mjs`, `native_check.mjs`, and `frame_rule_check.mjs` line in a fenced block of CLAUDE.md "Verify before finishing" at commit 6a70301, with AC1's count changes, exits 0, and so do the six AC2 lines. `pandoc lua tests/test_shortcode.lua` prints `0 failed`.
+- [x] AC8: The viewer is 1.2.8 (`version:` in `_extensions/embedpdf/_extension.yml` and the `add_html_dependency` version in `_extensions/embedpdf/embedpdf.lua`). Each `node tests/render_check.mjs`, `ios_check.mjs`, `name_rule_test.mjs`, `safari_check.mjs`, `native_check.mjs`, and `frame_rule_check.mjs` line in a fenced block of CLAUDE.md "Verify before finishing" at commit 6a70301, with AC1's count changes, exits 0, and so do the six AC2 lines. `pandoc lua tests/test_shortcode.lua` prints `0 failed`.
 
 ## Coverage
 
@@ -100,27 +100,34 @@ A check shows that each native embed on the self-contained RevealJS slides shows
 - Consistency gate: `cairn_validate.py` all checks passed (1 advisory: 8 criteria > 7); profile `generic` names no toolchain checks; no principle changed, `cairn_impact` skipped.
 - spawned: diff-bug, blame-history, prior-review, ripple.
 - A first full check run (41 of 125 lines, all exit 0) was stopped because fix-now work changed the viewer; the evidence below is from runs after the fixes.
-- diff-bug #1: `applyPlant` goes on after 5 s with an empty address, so a plant can fail for another reason — fix now: exits 2 (SetupError).
-- diff-bug #2: a deck embed that is not the plant target gets no wait for its `<iframe>` address — fix now: the walk waits up to 5 s for it.
-- diff-bug #3: the passing runs load the slide-4 `<iframe>` when slide 2 is current (slide 4 then displayed, opacity 0), and README's "more than the view distance" is off by one (Reveal hides distance ≥ 3) — fix now: README says "at least"; the Scope In text has the same off-by-one, left as plan-owned wording (logged in the work log).
-- diff-bug #4: DESIGN Known issues and the ROADMAP releases row say 1.2.7 — fix now: 1.2.8.
+- diff-bug #1: `applyPlant` goes on after 5 s with an empty address, so a plant can fail for another reason — fix now, fixed 99739ed: exits 2 (SetupError).
+- diff-bug #2: a deck embed that is not the plant target gets no wait for its `<iframe>` address — fix now, fixed 99739ed: the walk waits up to 5 s for it.
+- diff-bug #3: the passing runs load the slide-4 `<iframe>` when slide 2 is current (slide 4 then displayed, opacity 0), and README's "more than the view distance" is off by one (Reveal hides distance ≥ 3) — fix now, fixed 99739ed: README says "at least"; the Scope In text has the same off-by-one, left as plan-owned wording (logged in the work log).
+- diff-bug #4: DESIGN Known issues and the ROADMAP releases row say 1.2.7 — fix now, fixed 99739ed: 1.2.8.
 - diff-bug #5: the viewer tests "has a box", not "is visible", so a frame with `visibility:hidden`, opacity 0, or in a closed `<details>` loads at hydration — follow-up: new candidate row at hygiene.
-- diff-bug #6: no ResizeObserver feature guard; a browser without it throws and leaves an empty `<iframe>` — fix now: such a browser loads at once, as in 1.2.7.
+- diff-bug #6: no ResizeObserver feature guard; a browser without it throws and leaves an empty `<iframe>` — fix now, fixed 99739ed: such a browser loads at once, as in 1.2.7.
 - diff-bug #7: an observer of a frame removed before it gets a box stays — follow-up: new candidate row (a removed 0 x 0 frame gets no callback, so an `isConnected` check does not help).
 - diff-bug #8: `src` set after `appendChild` gives an initial about:blank — reject (false: no history entry and no `load` listener, as the reviewer found).
-- diff-bug #9: "slides 1, 2, and 4" are 0-based with the title as 0, unstated — fix now: README, CLAUDE.md, DESIGN say so.
-- blame-history #1: the same slide numbering — fix now (with diff-bug #9).
-- blame-history #2: README says slides were checked "in the same way" but only at Reveal scale 1 — fix now: README, CLAUDE.md "Still unverified", DESIGN, and the native_check header say other scales are not checked.
+- diff-bug #9: "slides 1, 2, and 4" are 0-based with the title as 0, unstated — fix now, fixed 99739ed: README, CLAUDE.md, DESIGN say so.
+- blame-history #1: the same slide numbering — fix now, fixed 99739ed (with diff-bug #9).
+- blame-history #2: README says slides were checked "in the same way" but only at Reveal scale 1 — fix now, fixed 99739ed: README, CLAUDE.md "Still unverified", DESIGN, and the native_check header say other scales are not checked.
 - blame-history #3: the T3 work-log falsifier line reads as falsifying the chosen trigger — reject (false: the line names the evidence that would falsify the chosen approach, the form the plan template asks for; the work log is append-only).
-- blame-history #4: `noslide` passes silently if `showSlide` returns null — fix now: an embed whose slide Reveal did not show in 5 s fails.
-- blame-history #5: `applyPlant` empty address — fix now (with diff-bug #1).
+- blame-history #4: `noslide` passes silently if `showSlide` returns null — fix now, fixed 99739ed: an embed whose slide Reveal did not show in 5 s fails.
+- blame-history #5: `applyPlant` empty address — fix now, fixed 99739ed (with diff-bug #1).
 - blame-history #6: a framed embed hidden at load on a normal page has an empty `src` until shown, unchecked — follow-up: new candidate row (Scope Out names it; DESIGN Known issues lists it).
-- blame-history #7: "no window size gives a scale of exactly 1" is too broad — fix now: scoped to Quarto's 1050 x 700 deck with margin 0.1 (scale = window size x 0.9 / deck size, so exactly 1 needs 1166.67 or 777.78 px).
+- blame-history #7: "no window size gives a scale of exactly 1" is too broad — fix now, fixed 99739ed: scoped to Quarto's 1050 x 700 deck with margin 0.1 (scale = window size x 0.9 / deck size, so exactly 1 needs 1166.67 or 777.78 px).
 - blame-history #8: CLAUDE.md "the self-contained page" lost the file name — reject (planned change: the sentence now covers two self-contained pages).
-- prior-review #1: the walk uses `Reveal.getSlides()`, which leaves out uncounted slides (M016 finding and lesson) — fix now: the walk finds slides as sections with no section inside.
+- prior-review #1: the walk uses `Reveal.getSlides()`, which leaves out uncounted slides (M016 finding and lesson) — fix now, fixed 99739ed: the walk finds slides as sections with no section inside.
 - prior-review #2: a frame in a container that is never shown never loads — reject (planned change: the fix loads the PDF only once the frame has a box).
 - ripple #1: row "Check native save names and slide embeds" says slides are unchecked and the save name unknown — fix at step 9 hygiene (records-hygiene §1 narrows the row).
 - ripple #2: row "Check embeds open at their page option" says no test page puts such an `<iframe>` on slides — fix at step 9 hygiene (narrowed there).
-- ripple #3: DESIGN releases entry says 1.2.7 — fix now (with diff-bug #4).
-- ripple #4: ROADMAP releases row says 1.2.7 — fix now (with diff-bug #4).
-- ripple #5: ROADMAP row cites `embedpdf-viewer.js:411`, already wrong — fix now: names `hydratePdfjs` instead.
+- ripple #3: DESIGN releases entry says 1.2.7 — fix now, fixed 99739ed (with diff-bug #4).
+- ripple #4: ROADMAP releases row says 1.2.7 — fix now, fixed 99739ed (with diff-bug #4).
+- ripple #5: ROADMAP row cites `embedpdf-viewer.js:411`, already wrong — fix now, fixed 99739ed: names `hydratePdfjs` instead.
+- Evidence runs after 99739ed (scratch `review_runs.sh`, 2026-10-20; Chromium 155, Firefox 158, desktop Safari 27.0.1, iOS 27.0 simulators):
+- AC1: the four render_check lines (desktop and iphone, `--alone file` and `http`) and the two ios_check lines for `selfcontained_slides_test.html`, with native 3/2 and links 5, exit 0; `selfcontained_slides_test.qmd` holds the fourth slide. Pass.
+- AC2: the six native_check runs exit 0. With `main`'s v1.2.7 `embedpdf-viewer.js` copied in and the page rendered, chromium file and http exit 1 with "native embed 3: does not match the <iframe> reference at #page=2 (differs: 0.1371)", safari file and http exit 1 with the same failure (0.0447); the new viewer was then restored and the page re-rendered, `git status` clean. Pass.
+- AC3: `--plant noslide --plant-at 3` (chromium file) exits 1 with "native embed 3: its slide is not the current slide (Reveal.getCurrentSlide()) at its screenshot". Pass.
+- AC4: chromium plants each exit 1 naming the planted embed: otherpdf (embed 1 mismatch 0.0784), broken (embed 1 mismatch 0.8844), nopage (embed 3 fragment and mismatch), object (embed 3 element), border (embed 3 border, box, mismatch), fallback (embed 3 placeholder shows); safari otherpdf (embed 1, 0.1051), broken (embed 1, 0.0804), nopage (embed 3, 0.0947), object (embed 3, 0.0947) each exit 1 with a mismatch. Pass.
+- AC5: the nine native_check lines on `page_test.html` and `selfcontained_test.html` exit 0 (within the AC8 run). Pass.
+- AC8: `_extension.yml` and `embedpdf.lua` read 1.2.8; all 125 lines (the 119 that `lines.py` builds from CLAUDE.md at 6a70301, its fenced check lines plus the prose re-runs, with AC1's counts, and the six AC2 lines) exit 0, 1,207 s; `pandoc lua tests/test_shortcode.lua` 162 passed, 0 failed. Pass.
