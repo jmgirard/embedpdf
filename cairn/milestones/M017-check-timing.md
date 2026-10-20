@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M017: Check timing and ink report
 
-- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** review   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate; M<xx>, M<yy> or — -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate; RR<NN> whose Binding criteria bind this milestone's ACs (binding-criteria check), or — -->
@@ -55,7 +55,7 @@ Make `render_check.mjs` measure ink when the pages have rendered rather than aft
 - [x] T3: ios_check ink states. Make `inkOf` (`ios_check.mjs:557`) return "ok", "no canvas", "no ink", or "unreadable (…)", update the report check (`:995-996`) to name each failing page's state, count `blank` as planted only where the last page has a canvas (`:564-573`), and add `nocanvas` to the ink plants. Run `blank` and `nocanvas` in the "embedpdf iPhone" simulator.
 - [x] T4: Ink rule without eval. First, a one-off probe: in a page served with the `--csp` header, `new Function` throws, so the old code fails under it. Then replace `new Function` (`render_check.mjs:1118`) with a function handle from `page.evaluateHandle` of the rule's source, passed into the measure. Add a `csp` option to `serveDocs` (`tests/serve_docs.mjs`) and a `helpers_test.mjs` case each for the header sent and not sent. The header allows what Quarto's inline scripts and the viewer need, and omits `'unsafe-eval'`. If the viewer does not render under it, stop at the amendment gate with a candidate row for the viewer gap.
 - [x] T5: Docs. Update the render_check and ios_check headers and CLAUDE.md for the new wait, `--cpu-throttle`, `--csp`, `nocanvas`, and `norender` without `--expect-text`, and add the AC3 line. Run the AC5 grep.
-- [ ] T6: Verify. With `CHROME_PATH` set to Chromium, run every render_check and ios_check line in CLAUDE.md with the extra runs each block names, and `node tests/helpers_test.mjs`. Record each result in the work log.
+- [x] T6: Verify. With `CHROME_PATH` set to Chromium, run every render_check and ios_check line in CLAUDE.md with the extra runs each block names, and `node tests/helpers_test.mjs`. Record each result in the work log.
 
 ## Work log
 <!-- owner: any skill · append-only; one line per entry; absolute dates. -->
@@ -77,6 +77,9 @@ Make `render_check.mjs` measure ink when the pages have rendered rather than aft
 - 2026-10-19: T4 probe refuted the row's premise: with `NO_EVAL_CSP` (`script-src 'self' 'unsafe-inline' blob:`) on example.html in Chromium 155, a script the page runs at load gets "EvalError: Evaluating a string as JavaScript violates the following Content Security Policy directive", but `new Function` and `eval` inside puppeteer's `page.evaluate` run, and so does a script element added during an evaluate; the old render_check passed the AC3 line under the header. So `--csp` cannot tell the old rebuild from the new one; it shows the viewer renders under a CSP that forbids eval.
 - 2026-10-19: T4 done: render_check gets the ink rule as a function handle (`page.evaluateHandle` of its source) and runs no `new Function` in the page; `serveDocs` takes `csp` and `NO_EVAL_CSP` is exported; `--csp` sends it, records the header the page arrived with, fails when it differs, and exits 2 for a URL target or `--alone file`. helpers_test: 133 passed, 0 failed (new csp cases for 200, 206, 416, with and without the option). Chromium 155: AC3 line exits 0 (every page "ok", header present, only the favicon 404 also seen without `--csp`); the iphone line under `--csp` exits 0; `--plant blank` exits 1 with "page 2 no ink" with and without `--csp`. The Out item's viewer gap does not arise: the viewer renders under the header.
 - 2026-10-19: T5 done: render_check header describes the canvas wait, `--cpu-throttle`, `--csp` (with the 2026-10-19 Chromium 155 eval observation), and `norender` as an ink plant; ios_check header gives the four page states and `nocanvas`; CLAUDE.md adds the page-state paragraph and the `--csp` paragraph with the AC3 line. AC5 grep over the three files prints no line; the new CLAUDE.md text adds no simple-english hits (still 38).
+- 2026-10-19: T6 done (Chromium 155, iOS 27.0 simulators): a script read CLAUDE.md "Verify before finishing" and ran every render_check line (65 runs, with `--alone http` for each `--alone file` line, mac-safari and windows-touch for the selfcontained_test, `--remote`, and `--missing-pdfs` desktop lines, ipad for the selfcontained_test iphone lines) and every ios_check line (28 runs); all 93 exit 0. One ios run (iPad, example.html) failed at `simctl openurl` with "Operation timed out" and passed on its repeat. The throttled line took 59 s; with `--plant norender` added it exits 1 with "no canvas" on all 28 pages after a 17.8 s wait. name_rule_test 32 passed, 0 failed; helpers_test 133 passed, 0 failed. safari_check not run: the branch does not change it or the viewer.
+- 2026-10-19: claim audit: not owed — internal tier.
+- 2026-10-19: implement done; status set to review.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local. -->
