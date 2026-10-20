@@ -107,7 +107,7 @@ Firefox's viewer" row's detail stays the record of the tried forms.
       Blob. Bump `version:` to 1.2.9 in `_extension.yml` and in the
       `add_html_dependency` call in `embedpdf.lua`. Run `quarto render`, then
       the four T1 lines, which must pass.
-- [ ] T3: Stop once for the user, as the question set granted. Give the
+- [x] T3: Stop once for the user, as the question set granted. Give the
       local-file path and the HTTP address of the page copy opened alone. Ask
       the user to clear `sample*` files from the save folder before each save,
       or to read the name in the save dialog. Ask for one save for each native
@@ -140,6 +140,7 @@ Firefox's viewer" row's detail stays the record of the tried forms.
 - 2026-10-20: implement started on branch m025-firefox-save-name; tree clean at the cut.
 - 2026-10-20: T1 done: `--browser firefox` in save_name_check.mjs reads `_docFilename` in the frame whose address (no fragment) is the embed's; Firefox takes only file-name entries and the wrongname and nosave plants. On a deck the check now shows the slide of an `<iframe>` with no address yet and of the embed it checks (the slides line read nothing for embed 3 before). Before T2 all four lines exited 1 with `document.pdf` for each of the 12 embeds.
 - 2026-10-20: T2 done: `inlinedPdf` makes a `File` named `opts.filename` (Blob where `File` is not a constructor); version 1.2.9; `quarto render` clean; shortcode tests 162 passed, 0 failed. All four Firefox lines exit 0 (`sample.pdf` x 12). Plants on the http line: wrongname at 1 and at 3 exit 1 naming the embed (`dummy.pdf`), nosave at 2 exits 1 (no viewer); otherbytes and `@blob` exit 2. Chromium save line (file) still saves `<blob id>.pdf`.
+- 2026-10-20: T3 done: the user saved each of the 3 native embeds of `selfcontained_test.html` (1.2.9) alone in windowed Firefox 158 on macOS, as a local file (scratchpad copy) and over HTTP (serveDocs on port 8765), clearing `sample*` files or reading the dialog before each save; the user reported the 6 names as `sample.pdf`, `sample.pdf`, `sample.pdf` (file) and `sample.pdf`, `sample.pdf`, `sample.pdf` (HTTP), in one answer ("All six: sample.pdf").
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local. -->
