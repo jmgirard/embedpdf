@@ -161,6 +161,7 @@ Version 1.2.6.
 - 2026-10-19: re-audit: AC2 (full) — no path mixes a decoded and a kept escape. Closed in the test table with `a%20%7B.pdf`, with no change to the AC wording. Mutants (scratch): a per-path `url_path` fails 4 checks on `sample%20100%.pdf`, a per-path `latex_path` fails on `a%20%7B.pdf`, and removing `_` from `LATEX_UNSAFE` fails the all-kept path. The per-path `url_path` passes the table at 90b8754 (110 passed). Unit tests: 160 passed, 0 failed.
 - 2026-10-19: claim audit: 29 claims read, 2 corrected — _extensions/embedpdf/embedpdf.lua, README.md, tests/test_shortcode.lua, CLAUDE.md (re-read once by the same reader: both correct).
 - 2026-10-19: implement done; status review.
+- 2026-10-19: step-7 approval: m015-percent-sign-paths approved for merge
 
 ## Decisions
 
