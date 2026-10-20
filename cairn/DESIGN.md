@@ -168,6 +168,15 @@ load on the same queue, and a text task runs only when no page render waits
 - Self-contained RevealJS slides are checked in Chromium and in Safari in the
   iOS 27.0 iPhone and iPad simulators, not on a real phone or in desktop
   Safari (corrected M016) — observed 2026-10-19.
+- Desktop Safari 27.0.1 opens a native embed at page 1 whatever its `page`
+  option says, for the PDF file and the in-page copy of a self-contained page
+  alike (ROADMAP row "Make Safari native embeds honor page"). The native
+  embeds of a self-contained HTML page showing `sample.pdf` are checked in
+  Chromium 155 and Firefox 158 (headless) and desktop Safari 27.0.1, over a
+  local file and HTTP (`tests/native_check.mjs`). Not checked: such embeds on
+  self-contained RevealJS slides in desktop Safari and Firefox, and the file
+  name that a native viewer's save button gives the in-page copy (added
+  M020) — observed 2026-10-19.
 - The PDF.js viewer has no text selection or search (out of scope, see the
   contract boundary).
 - A PDF.js embed's hidden page text is checked in Chromium's accessibility

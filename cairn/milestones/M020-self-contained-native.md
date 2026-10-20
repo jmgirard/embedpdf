@@ -122,7 +122,7 @@ true or stale.
       `--same-pages`, the plants, and that Firefox started from Claude Code
       first needs its folder made by one `open -g -a Firefox` launch. Run the
       six lines.
-- [ ] T5: Update README's self-contained item and `page` option row,
+- [x] T5: Update README's self-contained item and `page` option row,
       DESIGN.md Known issues, and CLAUDE.md "Still unverified" from the T1 and
       T4 runs (derived from their output, dated).
 
@@ -144,3 +144,4 @@ true or stale.
 - 2026-10-19: minor amendment to T1: the `page=2` embed got `width=600 height=400`; at the default 300 x 150 Firefox's toolbar and outline panel filled most of the box, and its page-1 and page-2 references differed in only 3% of pixels. helpers_test's count of the page's inlined embeds went from 3 to 4.
 - 2026-10-19: T3: every plant run in Chromium 155, Firefox 158, and desktop Safari 27.0.1 (`--alone http`), and in Chromium at `--plant-at 1`, `2`, `3` (`--alone file`): each exits 1 naming the planted embed; otherpdf and broken fail as a mismatch in every browser; nopage at embeds 1 and 2 exits 2 (no page option there). Deviation: nopage fails in desktop Safari too, on the address's missing fragment, since the expected fragment now comes from `data-page`.
 - 2026-10-19: T4: added the six `native_check.mjs` lines and their paragraph to CLAUDE.md, and `tests/png_diff.mjs` to the helper-change rule in CLAUDE.md and PROFILE.md's verify slot. All six exit 0 (Chromium 155.0.8059.39, Firefox 158.0, Safari 27.0.1): embed vs reference at most 0.0035 of blocks (Firefox page-2 embed); page-1 vs page-2 references 0.1371 (Chromium), 0.0530 (Firefox), 0.0000 (Safari). The T1 lines (10 render_check, 2 ios_check) exit 0 again with the resized page-2 embed.
+- 2026-10-19: T5: README's `page` row names the desktop Safari 27.0.1 case; README's self-contained item states the 2026-10-19 native checks (Chromium 155 and Firefox 158 headless, desktop Safari 27.0.1, local file and HTTP, `sample.pdf`, not RevealJS slides, save-button name not checked); DESIGN.md Known issues gains one entry for both facts; CLAUDE.md "Still unverified" gains the headless, slides, and save-name gaps. README and CLAUDE.md add no simple-english lint hits beyond the older ones, except the quoted Firefox error ("Could not find profile folder").

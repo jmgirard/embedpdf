@@ -416,6 +416,10 @@ errors.
   first, and each text read gives up after 10 s.
 
 ## Still unverified
+- A native embed of a self-contained page in Chromium or Firefox with a
+  window. `native_check.mjs` runs them headless. Also such an embed on
+  self-contained RevealJS slides in desktop Safari or Firefox. Also the file
+  name that a native viewer's save button gives the copy of the PDF.
 - GitHub Pages' answer to an address with `%25`, which the shortcode writes
   for a bare `%` in a PDF path since v1.2.6. It is checked only on the local
   test server.
