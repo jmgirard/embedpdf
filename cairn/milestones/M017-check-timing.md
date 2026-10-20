@@ -33,7 +33,7 @@ Make `render_check.mjs` measure ink when the pages have rendered rather than aft
 <!-- owner: plan · create/amend-via-gate; review reads, never reinterprets. -->
 
 - [ ] AC1: After it scrolls, `tests/render_check.mjs` measures ink only once every PDF.js page in scope (the whole page, or on a RevealJS page the slide shown) has a canvas, or once 10 s pass in which no page in scope newly got one. It no longer waits a fixed 4 s before the measure. The 300 ms pause per page scroll and the 1500 ms pause per slide may stay, as scroll and slide pacing. A new `--cpu-throttle <rate>` option slows Chromium's CPU by that rate. With the rate that CLAUDE.md's throttled line gives, `node tests/render_check.mjs large_test.html --device iphone --expect-native 0 --expect-pdfjs 2 --expect-pages 14 --expect-name "large.pdf|large-2.pdf" --cpu-throttle <rate>` exits 0, and the same line with `--plant norender` added exits 1 with a "no canvas" failure (`norender` then needs no other flag).
-- [ ] AC2: `tests/ios_check.mjs` reports each PDF.js page's ink as "ok", "no canvas", "no ink", or "unreadable (…)", and its failure line names the state of each failing page. In the "embedpdf iPhone" simulator, `node tests/ios_check.mjs --device "embedpdf iPhone" --plant blank` exits 1 with a line naming "no ink" for the last page of the first PDF.js embed (`blank` counts as planted only where that page has a canvas), and the same line with a new `--plant nocanvas`, which removes that page's canvas and keeps the page, exits 1 with a line naming "no canvas".
+- [x] AC2: `tests/ios_check.mjs` reports each PDF.js page's ink as "ok", "no canvas", "no ink", or "unreadable (…)", and its failure line names the state of each failing page. In the "embedpdf iPhone" simulator, `node tests/ios_check.mjs --device "embedpdf iPhone" --plant blank` exits 1 with a line naming "no ink" for the last page of the first PDF.js embed (`blank` counts as planted only where that page has a canvas), and the same line with a new `--plant nocanvas`, which removes that page's canvas and keeps the page, exits 1 with a line naming "no canvas".
 - [ ] AC3: `tests/render_check.mjs` measures ink without eval in the page. With a new `--csp` option, the test server sends a Content-Security-Policy header whose `script-src` omits `'unsafe-eval'`, and `node tests/render_check.mjs example.html --csp --expect-native 9 --expect-pdfjs 2 --expect-pages 2` exits 0.
 - [ ] AC4: Every `node tests/render_check.mjs` and `node tests/ios_check.mjs` line in CLAUDE.md "Verify before finishing" as it stands at the milestone's end, with the extra runs each block names for its own lines, exits 0, and `node tests/helpers_test.mjs` prints "N passed, 0 failed".
 - [x] AC5: The render_check header names `--cpu-throttle` and `--csp`, the ios_check header names `nocanvas`, and CLAUDE.md names all three. `grep -nE '4 s|4000|four seconds'` over CLAUDE.md, `tests/render_check.mjs`, and `tests/ios_check.mjs` shows no line that describes a fixed wait before render_check's ink measure.
@@ -90,3 +90,35 @@ Make `render_check.mjs` measure ink when the pages have rendered rather than aft
 Pass 1, 2026-10-19, branch head 03e0a2e (main 55820d4 already merged in; Copilot round off).
 
 - AC5: the render_check header (before its first `import`) names `--cpu-throttle` (line 242) and `--csp` (line 245); the ios_check header names `nocanvas` (lines 35, 46-47); CLAUDE.md names `--cpu-throttle` (2 lines), `--csp` (2), `nocanvas` (1). `grep -nE '4 s|4000|four seconds' CLAUDE.md tests/render_check.mjs tests/ios_check.mjs` prints no line. Pass.
+- AC2: at 3fa8f81 (ios_check unchanged since), "embedpdf iPhone", example.html: `--plant blank` exits 1, report `inkPlanted: "blank"`, failures `["embed 1: page 2 no ink"]`; `--plant nocanvas` exits 1, `inkPlanted: "nocanvas"`, failures `["embed 1: page 2 no canvas"]`. The report's per-page values read "ok", "no ink", "no canvas" (the "unreadable (…)" branch is in `inkState`, ios_check.mjs, not triggered). Pass.
+
+spawned: diff-bug, blame-history, prior-review, ripple
+
+- diff-bug #1: `--csp` blocked the viewer on a self-contained page (`NO_EVAL_CSP` had no `data:`, and `--alone http` was allowed) — fix now, fixed 5fce77b: `data:` added; selfcontained_test `--alone http --csp` line exits 0, and with the old policy exits 1 ("3 embed(s) still not hydrated")
+- diff-bug #2: `waitForCanvases` checked its 10 s and 120 s limits only between passes, so a pass could run past them (17.1 s observed) — fix now, fixed 5fce77b: limits checked before each 300 ms step; norender wait now ends at 10.2 s
+- diff-bug #3: `--cpu-throttle` lengthens only the page-load limit, not the text or name waits — fix now, fixed 5fce77b: the header says so
+- diff-bug #4: `--csp` cannot catch a return to `new Function` — reject (planned change): AC3 names this line, and the T4 work-log line and CLAUDE.md record that it shows the viewer under the policy, not the eval removal
+- diff-bug #5: header cross-references for `norender` pointed the wrong way — fix now, fixed 5fce77b
+- diff-bug #6: CLAUDE.md wait text left out hydration progress — fix now, fixed 5fce77b
+- diff-bug #7: the canvas wait's end state is not judged, so an embed that never hydrated passes when no count is given — follow-up: row "Canvas wait follow-ups"
+- diff-bug #8: ios_check's unreadable state no longer goes to page errors and the else-if chain can skip it — reject (false): a page-count mismatch already fails the run, and no check read the "ink:" errors
+- diff-bug #9: missing space in ios_check's plant error text — reject (style)
+- diff-bug #10: CLAUDE.md `blank`/`nocanvas` text left out "first PDF.js embed", and its run time did not match — fix now, fixed 5fce77b
+- blame-history #1: one page render over 10 s ends the wait and reports "no canvas" — reject (planned change): AC1 sets the 10 s no-progress limit
+- blame-history #2: CLAUDE.md said the viewer renders under the policy, wider than the one PDF tested — fix now, fixed 5fce77b: narrowed to `sample.pdf`, JPEG 2000 and JBIG2 named as unchecked
+- blame-history #3: the canvas wait rescrolls pages on a RevealJS slide without showing the slide again — follow-up: row "Canvas wait follow-ups"
+- blame-history #4: `blank` no longer counts a page with no canvas — reject (planned change): AC2
+- blame-history #5: the "ink: " page error is gone — reject (false): no failure check read it, and the state still fails the run
+- blame-history #6: `inkRule.dispose()` has no finally — reject (false): every exit path closes the browser
+- blame-history #7: "about 2 minutes" vs 59 s — fix now, fixed 5fce77b: CLAUDE.md gives 59 s to 127 s, the measured runs
+- prior-review #1: a `blank` plant on a page with no canvas now exits 2 — reject (planned change): AC2, and the failure list naming "no canvas" prints before the exit
+- prior-review #2: ios_check's deck walk measures after fixed pauses, so a slow simulator can reach that exit 2 — follow-up: row "Canvas wait follow-ups"
+- prior-review #3: `--expect-text --plant norender` pays the canvas wait and then the tree check's 10 s per embed — follow-up: row "Canvas wait follow-ups"
+- prior-review #4: a 1000 ms pause after each slide was removed — reject (false): the removed 1000 ms ended the no-slide scroll loop; the 1500 ms per-slide pause stays
+- prior-review #5: an outside URL under a CSP stays unchecked — reject (planned change): `--csp` refuses a URL by design, and the T4 probe shows eval run through puppeteer is not blocked by the header
+- ripple #1: ROADMAP row "Ink check follow-ups" describes fixed gaps — fix now at post-merge hygiene: the row graduates, and "Text check follow-ups" is re-pointed
+- ripple #2: `serveDocs` signature comment lacked `csp` — fix now, fixed 5fce77b
+- ripple #3: the `--expect-text` entry's "a wait of at most 10 s per embed" now reads as the canvas wait — fix now, fixed 5fce77b
+- ripple #4: "a slide whose canvas wait runs out stops the run" holds only with `--expect-text` — reject (false): the sentence sits in the `--expect-text` entry
+- ripple #5: "no fixed time" claims vs the kept 1500 ms slide pause — fix now, fixed 5fce77b: the text says the ink measure waits for the canvas wait and names the pacing pauses
+- ripple #6: PROFILE's "exit 0" vs CLAUDE.md's `norender` "must exit 1" — reject (false): PROFILE speaks of the listed lines, and the `norender` run is prose
