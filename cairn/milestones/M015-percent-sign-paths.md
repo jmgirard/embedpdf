@@ -176,3 +176,30 @@ Pass 1, 2026-10-19, at b3bf552 (branch level with origin/main bd99b3f).
 - AC4: `quarto render percent_page_test.qmd --to pdf --output-dir <scratch>/review/pdf` exits 0 with no error line. `pdftotext` finds "On the Origin of Coastlines" 5 times, and `git status` stays clean.
 - AC5: the 9 `node` lines of `git show 61d6f12:CLAUDE.md` that name `percent_test.html` or `name_test.html`, and the 2 `example.html` lines of its second fenced block (no `--device`, `--device iphone`), all 11 exit 0.
 - Record note: commit db7f9da ticked AC3, AC4, and AC5 before these evidence lines landed (the evidence edit failed on a repeated anchor). The runs above happened before db7f9da, and the lines were written in the next commit.
+- Consistency gate: `cairn_validate.py` exit 0, "all checks passed". No IP or GP text changed (DESIGN.md gained an Architecture sentence and a Known issues entry), so `cairn_impact` is skipped. The generic profile names no toolchain checks.
+- spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1: the catcode group fails where TeX already read the line, such as an inline shortcode in a footnote — follow-up, row "LaTeX inline shortcode".
+- diff-bug #2: a kept escape stops the render against IP2, recorded as a Known issue, not a D-entry — follow-up, row "Percent path follow-ups" (the D-entry is the user's decision).
+- diff-bug #3: LaTeX decoding of remote and query paths leaves bare `&` or `#` — follow-up, absorbed by row "LaTeX path escapes" (bare special characters not handled). Pre-existing.
+- diff-bug #4: LaTeX output returns a RawBlock in inline context — follow-up, row "LaTeX inline shortcode". Pre-existing.
+- diff-bug #5: a leading `%20` gives a leading space in the LaTeX path, not probed — follow-up, row "Percent path follow-ups".
+- diff-bug #6: `%2F` decodes to `/` in LaTeX but is one segment for a web server — reject, planned change (AC2 and the `a%2fb.pdf` row).
+- diff-bug #7: a raw `data:` URL gets its bare `%` encoded — reject, planned change (AC1's rule, and the result is a valid URL).
+- diff-bug #8: no check for a `%` path given by `file=`, or for `&` with `%`, or for LaTeX inline context — fix now (two checks added); the inline part goes to row "LaTeX inline shortcode".
+- diff-bug #9: the CLAUDE.md PDF render command may leave files in the repo — reject, false (AC4 evidence: `git status` clean after the render).
+- diff-bug #10: a CLAUDE.md Key files line is long — reject, style.
+- diff-bug #11: the `LATEX_UNSAFE` comment names lualatex only, while pdflatex fails the same way — fix now (comment names both).
+- diff-bug #12: the native fetch probe is a scratch script that later runs cannot repeat — reject, planned change (plan-gate work-log line).
+- blame-history #1: a kept escape still stops the render against IP2 — follow-up, row "Percent path follow-ups".
+- blame-history #2: percent_test's bare-`%` embed no longer reaches the viewer's name decoding fallback — reject, false: `tests/name_rule_test.mjs:21` checks `files/100%.pdf` → "100%.pdf".
+- blame-history #3: docx, epub, and gfm links carry `%25`, not checked in Word — follow-up, row "Percent path follow-ups".
+- blame-history #4: CLAUDE.md's percent_test note describes paths the page no longer writes — reject, false: the note describes the `.qmd` paths, which are unchanged.
+- blame-history #5: README does not say a bare `%` works in PDF output — reject, false: README.md:57's first sentence covers every format.
+- prior-review #1: README's "`%25` always works" is not checked on GitHub Pages (M010 README pattern) — reject, false: the sentence states how the shortcode reads a path, which the unit tests and local server check, and CLAUDE.md "Still unverified" records the Pages answer.
+- prior-review #2: other-format links now point at `%25`, unchecked — follow-up, row "Percent path follow-ups".
+- prior-review #3: the new check lines add no `--plant` — reject, planned change: they use existing flags, and the v1.2.5 render showed them failing (T3, T4).
+- prior-review #4: no `--remote` run covers a `%25` `data-src` — follow-up, row "Percent path follow-ups".
+- ripple #1: ROADMAP row "Bare percent path" still says a bare `%` fails — reject, planned change: step 9 hygiene graduates the row.
+- ripple #2: DESIGN.md IP2 text and the new Known issues entry disagree — follow-up, row "Percent path follow-ups" (D-entry decision).
+- ripple #3: tests' "data-src as written" comments — reject, false: they mean the attribute value on the page, which the viewer's failure line names.
+- Tally: 24 findings — 2 fix now, 10 follow-up (2 new rows, 1 absorbed), 12 rejected. None shows a criterion failing, so no return.
