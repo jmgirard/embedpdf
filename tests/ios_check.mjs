@@ -133,6 +133,15 @@
 //                          with --expect-download, plant a defect as
 //                          render_check's plants of those names do; the
 //                          check must then fail
+//   --expect-links <n>     fail unless the page holds exactly n download links
+//                          (.embedpdf-download, .embedpdf object a[download],
+//                          a.embedpdf-btn, as render_check selects them),
+//                          each with a data: or blob: href
+//   --plant nolink|linkfile
+//                          with --expect-links: remove the page's first such
+//                          link, or set its href to the PDF's file name (its
+//                          download name); the check must then fail. Each
+//                          exits 2 when the page holds no such link
 //   --alone yes|no         yes: serve a copy of the page from an empty
 //                          temporary directory instead of docs/ (default no)
 //   --remote blocked|cors  serve the PDFs from a second server on another port
@@ -231,8 +240,8 @@
 // same absolute URL as data-src with target _blank, and no "Download PDF
 // file." link. With --remote blocked its data-src must be on the remote
 // server, and the console must show the fetch of that URL failing ("Load
-// failed"); with --missing-pdfs, see that flag. With --expect-text and
-// --expect-name, those checks must pass too, and so must the --expect-ranges
+// failed"); with --missing-pdfs, see that flag. With --expect-text,
+// --expect-name, and --expect-links, those checks must pass too, and so must the --expect-ranges
 // check when it is given; with --expect-text, an embed
 // still not hydrated when the text wait ends is the one failure.
 
@@ -245,7 +254,7 @@ import { inkInPixels } from "./ink.mjs";
 import { expectedNames } from "./expect_names.mjs";
 
 const args = process.argv.slice(2);
-const FLAGS = ["device", "page", "expect-embeds", "expect-native", "expect-pages", "expect-text", "expect-name", "expect-download", "port", "timeout", "screenshot", "shot-embed", "plant", "alone", "remote", "slow-text"];
+const FLAGS = ["device", "page", "expect-embeds", "expect-native", "expect-pages", "expect-links", "expect-text", "expect-name", "expect-download", "port", "timeout", "screenshot", "shot-embed", "plant", "alone", "remote", "slow-text"];
 // flags that take no value
 const BOOL_FLAGS = ["missing-pdfs", "expect-ranges"];
 // parsed flags: a value flag's value is taken as it is, even when it starts
@@ -294,6 +303,12 @@ if (expectPagesList.length > 1 && expectPagesList.length !== expectEmbeds) {
 }
 // the page count expected of the k-th embed not set to renderer=native
 const expectPagesOf = (k) => Number(expectPagesList.length === 1 ? expectPagesList[0] : expectPagesList[k]);
+const expectLinksArg = opt("expect-links", null);
+if (expectLinksArg !== null && !/^\d+$/.test(expectLinksArg)) {
+  console.error("ios_check: --expect-links needs a whole number");
+  process.exit(2);
+}
+const expectLinks = expectLinksArg === null ? null : Number(expectLinksArg);
 // 0: the system picks a free port
 const portArg = opt("port", "0");
 const port = Number(portArg);
@@ -367,8 +382,14 @@ const RANGE_PLANTS = ["noranges"];
 const SLIDE_PLANTS = ["noslide"];
 // planted in the first PDF.js embed just before its ink is measured
 const INK_PLANTS = ["blank", "nocanvas", "missing"];
-if (plant && ![...INK_PLANTS, ...NAME_PLANTS, ...TEXT_PLANTS, ...WAIT_PLANTS, ...DOWNLOAD_PLANTS, ...RANGE_PLANTS, ...SLIDE_PLANTS].includes(plant)) {
-  console.error(`ios_check: --plant must be ${[...INK_PLANTS,...TEXT_PLANTS, ...WAIT_PLANTS, ...NAME_PLANTS, ...DOWNLOAD_PLANTS, ...RANGE_PLANTS, ...SLIDE_PLANTS].join(", ")}`);
+// planted in the page's first download link; needs --expect-links
+const LINK_PLANTS = ["nolink", "linkfile"];
+if (plant && ![...INK_PLANTS, ...NAME_PLANTS, ...TEXT_PLANTS, ...WAIT_PLANTS, ...DOWNLOAD_PLANTS, ...RANGE_PLANTS, ...SLIDE_PLANTS, ...LINK_PLANTS].includes(plant)) {
+  console.error(`ios_check: --plant must be ${[...INK_PLANTS,...TEXT_PLANTS, ...WAIT_PLANTS, ...NAME_PLANTS, ...DOWNLOAD_PLANTS, ...RANGE_PLANTS, ...SLIDE_PLANTS, ...LINK_PLANTS].join(", ")}`);
+  process.exit(2);
+}
+if (LINK_PLANTS.includes(plant) && expectLinks === null) {
+  console.error(`ios_check: --plant ${plant} needs --expect-links`);
   process.exit(2);
 }
 if (RANGE_PLANTS.includes(plant) && !expectRanges) {
@@ -761,6 +782,14 @@ const PROBE = `<script>
     dlPlanted = plant;
   }
 
+  // the page's download links, selected as render_check selects them
+  // (--expect-links); a link plant edits the first one
+  const linkSel = ".embedpdf-download, .embedpdf object a[download], a.embedpdf-btn";
+  let linkPlanted = "";
+  const firstLink = document.querySelector(linkSel);
+  if (firstLink && plant === "nolink") { firstLink.remove(); linkPlanted = plant; }
+  if (firstLink && plant === "linkfile") { firstLink.setAttribute("href", firstLink.getAttribute("download") || "sample.pdf"); linkPlanted = plant; }
+
   const report = {
     run: params.get("run") || "",
     userAgent: navigator.userAgent,
@@ -771,7 +800,9 @@ const PROBE = `<script>
     textPlanted,
     namePlanted,
     dlPlanted,
+    linkPlanted,
     inkPlanted,
+    links: [...document.querySelectorAll(linkSel)].map((a) => a.getAttribute("href") || ""),
     slidePlanted,
     slides: deck ? deck.length : 0,
     // RevealJS's scrolled view, which it can use on a narrow screen
@@ -1069,6 +1100,14 @@ try {
   // decode, and it holds no link. A path: it decoded, and the embed holds one
   // "Download the PDF" link to a blob: URL, with the path's file name as its
   // download name and no target. (Safari is not asked to save the file.)
+  // --expect-links: exactly that many download links, each to the PDF held
+  // in the page (a data: or blob: address), as in render_check
+  if (expectLinks !== null && !report.stuck) {
+    if (report.links.length !== expectLinks) failures.push(`expected ${expectLinks} download links, found ${report.links.length}`);
+    for (const h of report.links) {
+      if (!["data", "blob"].includes(h.split(":")[0])) failures.push(`download link href ${JSON.stringify(h)} is not a data: or blob: address`);
+    }
+  }
   if (expectDownloads && !report.stuck) {
     const inl = report.embeds.filter((e) => e.failure.text && e.inlined);
     if (inl.length !== report.embeds.length) {
@@ -1167,7 +1206,7 @@ try {
     exitCode = 2;
   }
   // a text plant that found nothing proves nothing about the check
-  if ((TEXT_PLANTS.includes(plant) && !report.textPlanted) || (NAME_PLANTS.includes(plant) && !report.namePlanted) || (WAIT_PLANTS.includes(plant) && !report.waitPlanted) || (DOWNLOAD_PLANTS.includes(plant) && !report.dlPlanted) || (SLIDE_PLANTS.includes(plant) && !report.slidePlanted) || (INK_PLANTS.includes(plant) && !report.inkPlanted)) {
+  if ((TEXT_PLANTS.includes(plant) && !report.textPlanted) || (NAME_PLANTS.includes(plant) && !report.namePlanted) || (WAIT_PLANTS.includes(plant) && !report.waitPlanted) || (DOWNLOAD_PLANTS.includes(plant) && !report.dlPlanted) || (SLIDE_PLANTS.includes(plant) && !report.slidePlanted) || (INK_PLANTS.includes(plant) && !report.inkPlanted) || (LINK_PLANTS.includes(plant) && !report.linkPlanted)) {
     console.error(`ios_check: --plant ${plant} found nothing to plant in`);
     exitCode = 2;
   }
