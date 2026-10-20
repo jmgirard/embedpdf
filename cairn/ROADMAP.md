@@ -1,16 +1,15 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-19 (M019 done: graduated "Large PDF text check", pruned the M016 row; validate green)_
+_Last hygiene check: 2026-10-20 (M020 done: narrowed "Self-contained native checks", pruned the M017 row; validate green)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M020 | Self-contained native display check | review | — | normal | milestones/M020-self-contained-native.md |
+| M020 | Self-contained native display check | done | — | normal | milestones/archive/M020-self-contained-native.md |
 | M019 | Large PDF text check | done | — | normal | milestones/archive/M019-large-pdf-text.md |
 | M018 | iOS deck and link checks | done | — | normal | milestones/archive/M018-ios-deck-and-links.md |
-| M017 | Check timing and ink report | done | — | normal | milestones/archive/M017-check-timing.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
@@ -21,7 +20,7 @@ _Last hygiene check: 2026-10-19 (M019 done: graduated "Large PDF text check", pr
      the opening token is `[high]`/`[low]` or absent (`normal`) — tracking-rules "Candidate priority token";
      open each row with its short title, the words the cairn pane shows, then `: `;
      tracking-rules "Candidate short title" has the whole rule -->
-- Self-contained native checks: in a self-contained page the native `<object>` gets a `blob:` PDF, but only its bytes are checked (fetch in Chromium). Its display in desktop Safari and Firefox, `#page=` on a `blob:` URL, and the file name that the native viewer's own save button uses are not checked (M002 review) — added 2026-10-18 — started M020
+- Self-contained native checks: in a self-contained page the native `<object>` gets a `blob:` PDF. M020's `native_check.mjs` checks its display and `#page=` on a single HTML page in Chromium, Firefox, and desktop Safari. Not checked: the file name that a native viewer's own save button gives that copy, and native embeds on self-contained RevealJS slides in any browser (M002 review; narrowed 2026-10-20 by M020) — added 2026-10-18
 - Make Safari native embeds honor page: desktop Safari 27.0.1 opened a native `<object>` of `sample.pdf#page=2` at page 1, for the file address and a `blob:` copy alike, while README's `page` option promises the initial page; Chromium 155 and Firefox 158 opened page 2 (M020 plan probe) — added 2026-10-19
 - GitHub releases for v1.0.x: publish GitHub releases for tags v1.0.0 to v1.0.2. The README version badge shows the latest release, 0.5.0, while the extension is at 1.2.6, and v1.1.0 to v1.2.6 have no tags, so these releases alone do not make the badge current (corrected 2026-10-19) — added 2026-10-18 — DESIGN Known issues
 - Safari names on iOS: on iPhone and iPad, Safari's names are not checked: ios_check reads only the page DOM (embed name, hidden text, indicator text), and not the toolbar controls. On 2026-10-19 `tests/safari_check.mjs --target simulator` got "Could not find any session hosts that match the requested capabilities" from safaridriver on the iOS 27.0 simulators, whose Safari "Remote Automation" setting was not turned on, and `--target page-script` found no `Element.prototype.computedName`. Turning that setting on is the next try (M010 implement) — added 2026-10-19
