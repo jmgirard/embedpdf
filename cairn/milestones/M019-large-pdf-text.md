@@ -31,22 +31,22 @@ text. Desktop Safari byte ranges and real-phone checks stay in CLAUDE.md
 
 ## Acceptance criteria
 
-- [ ] AC1: `files/large.pdf` has 14 pages (`pdfinfo`) and more than 131,072
+- [x] AC1: `files/large.pdf` has 14 pages (`pdfinfo`) and more than 131,072
       bytes (`wc -c`), `cmp files/large.pdf files/large-2.pdf` reports no
       difference, and a loop over pages n = 1 to 14 shows that
       `pdftotext -f n -l n files/large.pdf -` holds page n's phrase and none of
       the other 13 phrases, the phrases being the 14 that CLAUDE.md lists for
       this PDF.
-- [ ] AC2: The repo holds a source file, and CLAUDE.md names a command that
+- [x] AC2: The repo holds a source file, and CLAUDE.md names a command that
       builds a PDF from it. A PDF built by that command into a temporary
       directory passes AC1's page count, size, and phrase loop.
-- [ ] AC3: Each line that
+- [x] AC3: Each line that
       `grep -n '^node tests/.*\(large_test\|shared_test\)\.html' CLAUDE.md | grep -v -- '--cpu-throttle'`
       finds carries `--expect-text` with the 14 phrases in page order.
 - [ ] AC4: Each line that
       `grep -n '^node tests/.*\(large_test\|shared_test\)\.html' CLAUDE.md`
       finds exits 0 when run.
-- [ ] AC5: `quarto render` ends with no error, and
+- [x] AC5: `quarto render` ends with no error, and
       ``grep -n 'seven copies\|copies of `sample.pdf`\|repeats every two pages' CLAUDE.md large_test.qmd shared_test.qmd``
       finds nothing.
 
@@ -96,7 +96,15 @@ text. Desktop Safari byte ranges and real-phone checks stay in CLAUDE.md
 - 2026-10-19: T3 done: `--expect-text` with the 14 phrases added to the 13 non-throttle lines (filtered grep: 13 of 13 carry the list). All 14 lines of the unfiltered grep exit 0 (render_check with Chromium 155 via `CHROME_PATH`, ios_check in the iOS 27.0 "embedpdf iPhone" and "embedpdf iPad" simulators; 10 s to 34 s each; 3 range answers per PDF.js embed on the large_test lines). `--plant swap` on line 2 (render_check iphone) and line 6 (ios_check iPhone) each exit 1 naming page 1's and page 2's phrases on the wrong page.
 - 2026-10-19: claim audit: not owed — internal tier.
 - 2026-10-19: implement complete; status review.
+- 2026-10-19: review checkpoint (half-done): AC1, AC2, AC3, AC5 evidence recorded; consistency gate green; AC4 runs and the four review lenses still running.
 
 ## Decisions
 
 ## Review
+
+Pass 1, 2026-10-19, branch at 0dc7558, main at 82f5284 (not moved).
+
+- AC1: `pdfinfo` 14 pages, `wc -c` 142,962 bytes; `cmp files/large.pdf files/large-2.pdf` no difference; the 14×14 `pdftotext -f n -l n` loop over the 14 phrases of the CLAUDE.md `--expect-text` list: 196 checks, 0 failures.
+- AC2: source `files/large-source.md`; CLAUDE.md:250 names `sh tests/make_large_pdf.sh files/large.pdf && cp …`. `sh tests/make_large_pdf.sh "$TMPDIR/rev-large.pdf"` built 14 pages, 142,962 bytes; the same loop: 196 checks, 0 failures.
+- AC3: the filtered grep finds 13 lines; `grep -c -F` of the full `--expect-text "Harbor Lights at Dawn|…|Lantern Room Logbook"` string over them counts 13.
+- AC5: `quarto render` exit 0, no error or warning lines in its log, `git status` clean after it; the AC5 grep exits 1 (no match).
