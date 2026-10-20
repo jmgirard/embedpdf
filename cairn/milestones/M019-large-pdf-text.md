@@ -2,7 +2,7 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M019: Large PDF text check
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -71,7 +71,7 @@ text. Desktop Safari byte ranges and real-phone checks stay in CLAUDE.md
       large-PDF paragraph (CLAUDE.md:242-262) for the new PDF: its source,
       build command, and phrase list. Grep `cairn/DESIGN.md` and README for
       other mentions of the old PDF. Run `quarto render`.
-- [ ] T3: Add `--expect-text` with the 14 phrases to the CLAUDE.md lines AC3
+- [x] T3: Add `--expect-text` with the 14 phrases to the CLAUDE.md lines AC3
       names. Run every line AC4 names (render_check with
       `CHROME_PATH` set to Chromium, ios_check in both simulators). Run one
       render_check and one ios_check `large_test.html` line with
@@ -93,6 +93,9 @@ text. Desktop Safari byte ranges and real-phone checks stay in CLAUDE.md
 - 2026-10-19: T1 done: `files/large-source.md` (14 parts split at `\newpage`, a heading phrase each) and `tests/make_large_pdf.sh <out.pdf>` (renders each part with `quarto pandoc` and LuaLaTeX, joins with `pdfunite`, fails unless 14 pages and over 131,072 bytes). One whole render was 25,999 bytes and an uncompressed one 61,357, so the parts are rendered apart. New `large.pdf` 142,962 bytes, `large-2.pdf` a `cmp`-equal copy; 196-check phrase loop clean on it and on a fresh build (142,964 bytes; not byte-identical, so no `cmp` against the build), and it named missing phrases on the old `large.pdf`.
 - 2026-10-19: the `quarto render <file>.md --output-dir` route failed ("only be used when rendering projects"), so the script calls `quarto pandoc`.
 - 2026-10-19: T2 done: `large_test.qmd`, `shared_test.qmd`, and CLAUDE.md (key-files list, large-PDF paragraph with the build command) rewritten; CLAUDE.md points at the `--expect-text` list of the run lines for the phrases instead of a second copy of them. Line 20 ("holds copies of `sample.pdf` under the names they test") matched AC5's grep while still true, so it was reworded with the same meaning. `quarto render` exit 0, no error or warning lines; AC5 grep finds nothing; helpers_test 133 passed, 0 failed. No mention in DESIGN.md or README.
+- 2026-10-19: T3 done: `--expect-text` with the 14 phrases added to the 13 non-throttle lines (filtered grep: 13 of 13 carry the list). All 14 lines of the unfiltered grep exit 0 (render_check with Chromium 155 via `CHROME_PATH`, ios_check in the iOS 27.0 "embedpdf iPhone" and "embedpdf iPad" simulators; 10 s to 34 s each; 3 range answers per PDF.js embed on the large_test lines). `--plant swap` on line 2 (render_check iphone) and line 6 (ios_check iPhone) each exit 1 naming page 1's and page 2's phrases on the wrong page.
+- 2026-10-19: claim audit: not owed — internal tier.
+- 2026-10-19: implement complete; status review.
 
 ## Decisions
 

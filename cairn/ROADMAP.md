@@ -7,7 +7,7 @@ _Last hygiene check: 2026-10-19 (triage: dropped "Remote rewrite quoting", "Canv
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M019 | Large PDF text check | in-progress | — | normal | milestones/M019-large-pdf-text.md |
+| M019 | Large PDF text check | review | — | normal | milestones/M019-large-pdf-text.md |
 | M018 | iOS deck and link checks | done | — | normal | milestones/archive/M018-ios-deck-and-links.md |
 | M017 | Check timing and ink report | done | — | normal | milestones/archive/M017-check-timing.md |
 | M016 | Slides check on iOS | done | — | normal | milestones/archive/M016-ios-slide-check.md |
