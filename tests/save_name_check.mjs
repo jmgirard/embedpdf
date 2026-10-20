@@ -7,8 +7,9 @@
 //        --expect-native <n> --expect-save "<entry>|<entry>|…"
 //        [--plant wrongid|wrongname|nosave] [--plant-at <k>]
 //
-// For each native embed of the page (an <object>, or an <iframe> for a page
-// option over 1; embedpdf-viewer.js, D-008), in page order, the check loads
+// For each native embed of the page (an <object>, or for some embeds with a
+// page option over 1 an <iframe>; frameAllowed in embedpdf-viewer.js,
+// D-008), in page order, the check loads
 // the page again, presses the save control of that embed's own PDF viewer,
 // and reads the name of the file the browser saves. --expect-save gives one
 // entry per native embed, or one entry for all of them. An entry is a file
@@ -16,9 +17,11 @@
 // PDF, which the viewer makes in inlinedPdf) followed by ".pdf". The check
 // reads that address before it presses the control. It fails unless the
 // page has exactly --expect-native native embeds and each saved name equals
-// its entry. A saved name is the browser's own name for the file: each save
-// goes into an empty folder, so the browser adds no suffix for a name
-// already taken.
+// its entry. A saved name is the browser's own name for the file. In
+// Chromium each save goes into an empty folder. In Safari the check exits 2
+// if ~/Downloads already holds a literal entry (below). So the browser adds
+// no suffix for a name already taken, when the saved name is the expected
+// one.
 //
 // Without --alone, the page comes from docs/ on the check's own HTTP server.
 // With --alone, the page must be self-contained (embed-resources: true), and
@@ -75,7 +78,8 @@
 //
 // Exits 0 on a pass, 1 on a failed check, 2 on a bad argument, when --plant
 // finds nothing to plant in, when ~/Downloads already holds an expected name
-// (safari), or when the browser, safaridriver, or the server cannot start.
+// (safari), or when the browser, safaridriver, or the server cannot start,
+// and 130 when interrupted (Ctrl-C or a kill) after the browser started.
 
 import fs from "node:fs";
 import os from "node:os";
@@ -219,8 +223,8 @@ function expectedName(i, address) {
 
 // The download button of Safari's PDF control bar inside the embed's box, in
 // CSS pixels of the viewport, or null when no bar shows. view is the embed's
-// box and the window's innerWidth. The bar is a band of gray pixels (r = g =
-// b, 140 to 248: on 2026-10-20 it was 179 to 185 when shown and near 242
+// box and the window's innerWidth. The bar is a band of gray pixels (r and
+// b each less than 8 from g, 140 to 248: on 2026-10-20 it was 179 to 185 when shown and near 242
 // while it faded, once the pointer had stopped) at least BAR_MIN_CSS wide, and its
 // rightmost button, the download button, is centered about 0.9 bar heights
 // left of its right end (measured in 300 x 150 and 600 x 400 embeds on
