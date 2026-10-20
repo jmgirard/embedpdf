@@ -24,7 +24,8 @@ finishing". Run them from the repo root:
 - After a change to `embedpdf-viewer.js` or `embedpdf.css`, run `quarto
   render`. Then run every `node tests/render_check.mjs`,
   `node tests/ios_check.mjs`, `node tests/name_rule_test.mjs`,
-  `node tests/safari_check.mjs`, and `node tests/native_check.mjs` line in
+  `node tests/safari_check.mjs`, `node tests/native_check.mjs`, and
+  `node tests/frame_rule_check.mjs` line in
   CLAUDE.md "Verify before finishing",
   the self-contained lines included. Each one must exit 0. `render_check.mjs` drives Chrome (set
   `CHROME_PATH` for Chromium) and serves `docs/` itself. It needs `npm install

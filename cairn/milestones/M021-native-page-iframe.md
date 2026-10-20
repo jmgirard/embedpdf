@@ -1,13 +1,13 @@
 # M021: Native embeds open at their page in Safari
 
-- **Status:** planned
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP2, GP5
 - **Resolves:** —
 - **Surface tier:** user-facing — it changes the element that readers' browsers get for a native embed with a `page` option
-- **Branch/PR:** —
+- **Branch/PR:** m021-native-page-iframe
 
 ## Goal
 
@@ -21,6 +21,10 @@ built-in PDF viewer (`nativeSupported()` true) and `page` is over 1, the viewer 
 and `aria-label` that the `<object>` gets, no `title`, and no border. The no-JS fallback content stays in the
 placeholder, hidden. Every other native embed stays an `<object>`. Version 1.2.7. A new normal test page,
 `page_test.qmd`. The check scripts learn the `<iframe>` form. README, DESIGN.md, and CLAUDE.md state the result.
+The `<iframe>` is used only when the PDF is inlined (AC2), or comes from the page's own non-opaque origin and a
+HEAD request for it answers OK within 5 s with a media type of `application/pdf` and a disposition type other
+than `attachment` (both compared without case or parameters); any other answer, a failed or late request, a
+`file:` page, or a PDF from another origin gets an `<object>` (review return 1, D-008).
 
 **Out:**
 - A check that a PDF.js embed opens at its `page`, iOS Safari's handling of `#page` on a `renderer=native`
@@ -33,81 +37,110 @@ placeholder, hidden. Every other native embed stays an `<object>`. Version 1.2.7
 
 ## Acceptance criteria
 
-- [ ] AC1: On `page_test.html`, a page that is not self-contained, `tests/native_check.mjs` with
+- [x] AC1: On `page_test.html`, a page that is not self-contained, `tests/native_check.mjs` with
       `--expect-native 3 --reference sample.pdf` and no `--same-pages` exits 0 with `--browser chromium`,
       `--browser firefox`, and `--browser safari`. In each run, each native embed with `page=2` is an
       `<iframe>` whose address ends in `#page=2`, with a computed border width of 0, a 600 x 400 CSS-pixel
       box, and no other element of its placeholder with a rendered box. Its screenshot matches the page-2
       reference, the page-1 and page-2 references are both `<iframe>`s and differ, and the native embed with
       no `page` option is an `<object>` with no fragment.
-- [ ] AC2: On `selfcontained_test.html`, `tests/native_check.mjs` with `--expect-native 3 --reference
+- [x] AC2: On `selfcontained_test.html`, `tests/native_check.mjs` with `--expect-native 3 --reference
       sample.pdf` and no `--same-pages` exits 0 with `--alone file` and with `--alone http`, each with
       `--browser chromium`, `--browser firefox`, and `--browser safari`. In each run, the `page=2` native embed
       is an `<iframe>` with a `blob:` address that ends in `#page=2`, with the border, box, and placeholder of
       AC1. Its screenshot matches the page-2 reference, the page-1 and page-2 references are both `<iframe>`s
       and differ, and the other native embeds are `<object>`s.
-- [ ] AC3: On `page_test.html` and `selfcontained_test.html`, each native embed that is an `<iframe>` has the
+- [x] AC3: On `page_test.html` and `selfcontained_test.html`, each native embed that is an `<iframe>` has the
       embed's name as its `aria-label` and has no `title`. On `page_test.html`, `tests/render_check.mjs` with
       `--expect-native 3 --expect-pdfjs 0 --expect-name sample.pdf` exits 0 in Chromium, which reads the names
       in the DOM and in the accessibility tree, and `tests/safari_check.mjs --target mac` with the same flags
       exits 0 in desktop Safari. The `selfcontained_test.html` render_check lines of AC5 hold for that page.
-- [ ] AC4: On iPhone, iPad, and emulated Android, `renderer=native` with `page=2` stays an `<object>`, and
+- [x] AC4: On iPhone, iPad, and emulated Android, `renderer=native` with `page=2` stays an `<object>`, and
       `page=2` with `renderer=auto` uses PDF.js. On `page_test.html`, `tests/render_check.mjs` with `--device
       iphone` and with `--device android` exits 0 with `--expect-native 2 --expect-pdfjs 1 --expect-pages 2
       --expect-name sample.pdf`. `tests/ios_check.mjs` exits 0 on the "embedpdf iPhone" and "embedpdf iPad"
       simulators with `--expect-native 2 --expect-embeds 1 --expect-name sample.pdf`. In each of these runs
       every native embed is an `<object>`.
-- [ ] AC5: Each `node tests/…` and `pandoc lua tests/…` run line exits 0, and `quarto render` ends with no
+- [x] AC5: Each `node tests/…` and `pandoc lua tests/…` run line exits 0, and `quarto render` ends with no
       error. The lines are those in CLAUDE.md's "Verify before finishing" section at commit 49f134c, with
       `--same-pages` removed from the two Safari `native_check.mjs` lines, plus the `page_test.html` lines that
       T6 adds.
-- [ ] AC6: README.md and CLAUDE.md no longer say that desktop Safari opens a native embed at page 1. README.md
-      and DESIGN.md Known issues say that a native embed with a `page` over 1 is an `<iframe>`, and name the
-      browsers, versions, and date of the AC1 and AC2 runs (recorded in the Review section) in which such an
-      embed opened at page 2. DESIGN.md Known issues says that such an embed of a PDF missing at view time
-      shows a blank frame or the server's error page, where an `<object>` shows its download link. CLAUDE.md's
-      file list names `page_test.qmd`.
+- [x] AC6: README.md and DESIGN.md Known issues say that, in a desktop browser with a built-in PDF viewer, a
+      native embed with a `page` over 1 is an `<iframe>` in the cases the Scope names, and an `<object>`
+      otherwise. They name those other cases: a PDF from another site, an answer that is not OK (such as 404 or
+      405), another media type, an attachment, a late answer, and a PDF file that is not inlined on a `file:`
+      page. They say that desktop Safari opens those `<object>` embeds at page 1. They name the browsers,
+      versions, and date of the AC1 and AC2 runs (recorded in the Review section) in which such an embed opened
+      at page 2. Read by `grep -n -i -B2 "page 1" README.md CLAUDE.md` with each hit and the lines before it, no
+      line says that desktop Safari opens a native embed at page 1 without limiting it to the `<object>` cases.
+      DESIGN.md Known issues and README.md hold no sentence that says a native embed of a missing PDF shows a
+      blank frame or an error page. CLAUDE.md's file list names `page_test.qmd`.
+- [x] AC7: On a page served by `tests/frame_rule_check.mjs`, each native embed gets the element its PDF's
+      answer calls for. With `page=2`: same-origin `application/pdf` (`<iframe>`), `Application/PDF;
+      charset=binary` (`<iframe>`), `application/pdf` with `Content-Disposition: inline; filename="sample.pdf"`
+      (`<iframe>`), `application/octet-stream` (`<object>`), `application/pdf` with `Content-Disposition:
+      Attachment; filename="sample.pdf"` (`<object>`), HTTP 405 with `Content-Type: application/pdf` to a HEAD
+      request and `application/pdf` to a GET (`<object>`), and `application/pdf` from a second origin that
+      sends `Access-Control-Allow-Origin: *` (`<object>`). With no `page`: same-origin `application/pdf`
+      (`<object>`). Each of these embeds' addresses ends in `#page=2` where `page=2` is set. The page's server
+      logs at least one HEAD request for each same-origin `page=2` embed's address and none for the page-1
+      embed's address, and the second server logs no HEAD request. The script exits 0 with `--browser
+      chromium`, `--browser firefox`, and `--browser safari`. README.md's `page` row says which PDFs get an
+      `<iframe>` and that the others open at page 1 in desktop Safari.
 
 ## Coverage
 
-- AC1 → T1, T2, T3, T5, T7
-- AC2 → T1, T3, T5, T7
-- AC3 → T1, T4, T5, T7
-- AC4 → T2, T4, T7
-- AC5 → T6, T7
-- AC6 → T6
+- AC1 → T1, T2, T3, T5, T7, T11
+- AC2 → T1, T3, T5, T7, T11
+- AC3 → T1, T4, T5, T7, T11
+- AC4 → T2, T4, T7, T11
+- AC5 → T6, T7, T9, T11
+- AC6 → T6, T10
+- AC7 → T8, T9, T10, T11
 
 ## Tasks
 
-- [ ] T1: Viewer. In `hydrateNative()` (`embedpdf-viewer.js:109`), make an `<iframe>` when `opts.page > 1` and
+- [x] T1: Viewer. In `hydrateNative()` (`embedpdf-viewer.js:109`), make an `<iframe>` when `opts.page > 1` and
       `nativeSupported()`, with `src` `${href}#page=${page}`, the width, height, and `aria-label` of the
       `<object>`, and no `title`. Move the no-JS fallback children into a hidden element in the placeholder, so
       the self-contained download links stay in the page. Give the `<iframe>` no border in `embedpdf.css`.
       Update the comments at :3–7, :38, and :153. Bump `version:` to 1.2.7 in `_extension.yml` and in
       `add_html_dependency` in `embedpdf.lua`.
-- [ ] T2: Add `page_test.qmd` (not self-contained): `sample.pdf` with `page=2` (auto), with `renderer=native
+- [x] T2: Add `page_test.qmd` (not self-contained): `sample.pdf` with `page=2` (auto), with `renderer=native
       page=2`, and with `renderer=native`, each 600 x 400. Run `quarto render`. Name the page in CLAUDE.md's
       file list.
-- [ ] T3: `tests/native_check.mjs`: take `<iframe>` native embeds; for an `<iframe>` embed, both references
+- [x] T3: `tests/native_check.mjs`: take `<iframe>` native embeds; for an `<iframe>` embed, both references
       and the control are `<iframe>`s. Run on a page that is not self-contained when `--alone` is not given,
       where each address must be the PDF file with the expected fragment. Fail when an embed with `page` over
       1 is not an `<iframe>`, when one with page 1 is not an `<object>`, when an `<iframe>` has a border or a
       box other than its width x height, or when its placeholder shows other content. Report every failure of
       an embed, not only the first. Update the header.
-- [ ] T4: `tests/render_check.mjs`, `tests/safari_check.mjs`, `tests/ios_check.mjs`: wherever they find a
+- [x] T4: `tests/render_check.mjs`, `tests/safari_check.mjs`, `tests/ios_check.mjs`: wherever they find a
       native embed by its `<object>` (names, `title`, name plants, download-link selector, native-load and
       `--remote cors` address checks), also take its `<iframe>`. render_check and ios_check report each native
       embed's element, and fail on iPhone, iPad, or Android when one is not an `<object>`.
-- [ ] T5: Show each changed check fail on an `<iframe>` embed of `page_test.html`: render_check `nativename`
+- [x] T5: Show each changed check fail on an `<iframe>` embed of `page_test.html`: render_check `nativename`
       and `nativetitle`; safari_check `nativename`; native_check `nopage`, `otherpdf`, and `refcontrol` with
       `--plant-at` aimed at an `<iframe>` embed, in Safari as well; a new native_check plant that puts an
       `<object>` in place of an `<iframe>`, whose Safari run must name both the element and a page-2 mismatch;
       and new native_check plants for a border and a visible fallback.
-- [ ] T6: CLAUDE.md: `page_test.html` lines (render_check desktop, `mac-safari`, `windows-touch`, `iphone`,
+- [x] T6: CLAUDE.md: `page_test.html` lines (render_check desktop, `mac-safari`, `windows-touch`, `iphone`,
       `android`; ios_check iPhone and iPad; safari_check `--target mac`; native_check in three browsers), the
       Safari native_check lines without `--same-pages`, and the native_check paragraph. README `page` row and
       self-contained paragraph; DESIGN.md architecture and Known issues.
-- [ ] T7: Run every AC5 line and `quarto render`; record each result in the Review section.
+- [x] T7: Run every AC5 line and `quarto render`; record each result in the Review section.
+- [x] T8: Viewer (review return 1): before `hydrateNative()`, choose the element by the Scope rule (HEAD with a
+      5 s limit; opaque origins never match). 1.2.7 is unreleased, so the version stays.
+- [x] T9: `tests/frame_rule_check.mjs` (Chromium, Firefox, Safari): AC7's cases plus an HTTP 404 case, each
+      embed at its own address; the octet-stream, Attachment, and 405 addresses end in `.pdf`, one `<iframe>`
+      address does not. Plants in the served viewer (origin check skipped, `ok` ignored, any disposition as
+      attachment, GET for HEAD, case-sensitive compare) and a server-side answer swap must fail; a 3 s HEAD
+      delay must pass. CLAUDE.md lines. Review fix-now items: native_check per-placeholder screenshots,
+      `data:` embeds without `--alone`, box from `data-width`/`data-height`; ios_check fails a native embed
+      with no element; `allowfullscreen` on the `<iframe>`.
+- [x] T10: Docs per AC6 and AC7 (README, DESIGN.md, CLAUDE.md incl. the ripple lines and "Still unverified":
+      `file:` pages, GitHub Pages' HEAD answer); follow-ups into row "Check embeds open at their page option".
+- [x] T11: `quarto render`, then every CLAUDE.md run line.
 
 ## Work log
 
@@ -124,7 +157,104 @@ placeholder, hidden. Every other native embed stays an `<object>`. Version 1.2.7
 - 2026-10-20: lessons harvested: M020 (Safari page-1, Firefox `pdfjs.viewOnLoad` and profile folder, screenshot shift), M011 (puppeteer-core probes from the repo root), M014 (`CHROME_PATH` for Chromium), M010 (safaridriver needs remote automation).
 - 2026-10-20: criteria audit (full mode, fresh Opus reader): 12 findings, all fixed: both references `<iframe>` for an `<iframe>` embed (AC1, AC2, T3); every failure reported and Safari plants (T5); iframe border, box, and hidden fallback checked (AC1, T1, T3, T5); exact flags (AC3, AC4); AC3 bounded to two pages; v1.2.6 clause dropped and Android marked emulated (AC4); AC5 pinned to commit 49f134c; AC6 widened to CLAUDE.md and the file list; missing-PDF difference recorded in AC6, D-007, and Known issues rather than kept as an IP2 break, because IP2's missing-file warning is the shortcode's at render time and the `<object>` link points at the same missing file; D-007 not an AC, since the plan commit lands it.
 - 2026-10-20: new candidate row "Check embeds open at their page option" holds the PDF.js, iOS `renderer=native`, and framing-refused checks left out of this scope.
+- 2026-10-20: implement started on branch m021-native-page-iframe; status in-progress.
+- 2026-10-20: T1 done: `hydrateNative()` makes an `<iframe>` (`src`, width, height, `aria-label`) when `page` > 1 and `nativeSupported()`; fallback children go to a hidden `div.embedpdf-fallback` after it; `embedpdf.css` gives `.embedpdf-native > iframe` border 0; version 1.2.7; shortcode tests 162 passed, 0 failed. Browser checks run at T7.
+- 2026-10-20: T2 done: `page_test.qmd` added and named in CLAUDE.md's file list; `quarto render` completed with no error, docs/ libraries now at 1.2.7.
+- 2026-10-20: T3 done: native_check takes `<iframe>` embeds, compares each embed with a reference and control of the element its page option asks for, runs on a normal page when `--alone` is not given (address must be the resolved data-src), checks element, iframe border, box, and shown fallback, and drops `--same-pages` (no line needs it now); new plants `object`, `border`, `fallback`; `fileaddr` needs `--alone`. page_test.html passes in Chromium 155, Firefox 158, Safari 27.0.1; selfcontained_test.html passes `--alone file` and `http` in all three.
+- 2026-10-20: T5 (native_check part): on page_test.html embed 1 in Safari and Chromium, nopage, object, border, fallback, refcontrol, and otherpdf (`--plant-at 1`) each exit 1 naming that embed; in Safari nopage and object also fail as a page-2 mismatch (0.0952).
+- 2026-10-20: T4 done: render_check, safari_check, and ios_check read a native embed's `<object>` or `<iframe>` (names, title, name plants, link selector with `.embedpdf-fallback`, alone and remote addresses); render_check reports `nativeTags` and fails on iphone, ipad, or android when one is not `<object>`; ios_check fails on any native `<iframe>`; safari_check now takes `--expect-pdfjs 0` when native embeds are expected. page_test.html passes: render_check desktop and iphone/android, safari_check `--target mac`, ios_check iPhone and iPad.
+- 2026-10-20: T5 done: on page_test.html render_check nativename, nativetitle, nativedesc and safari_check nativename, nativetitle each exit 1 naming the `<iframe>` of embed 1; with the docs/ viewer copy changed to give an `<iframe>` on every device (restored after), render_check `--device iphone` and ios_check "embedpdf iPhone" each exit 1 naming a native `<iframe>`.
+- 2026-10-20: T6 done: CLAUDE.md native_check paragraph rewritten for the `<iframe>` rule, 3 page_test native_check lines added, `--same-pages` dropped from the Safari lines, 8 page_test lines for render_check, ios_check, and safari_check, and a "Still unverified" item for the `<iframe>` form; README `page` row and self-contained paragraph; DESIGN.md Viewer, architecture, and Known issues (with the missing-PDF difference). The simple-english hook reports the same 39 CLAUDE.md hits as before this milestone; README hits left are in untouched text.
+- 2026-10-20: T7 done: all 98 `node tests/…` and `pandoc lua tests/…` lines in CLAUDE.md (the 49f134c set, Safari native_check lines without `--same-pages`, plus 11 page_test lines) exited 0 on the first try; percent_page_test PDF render rc 0 with the phrase 5 times; helpers_test 158 passed, 0 failed. Results are logged here, not in the Review section, which review owns; review gathers its own evidence.
+- 2026-10-20: claim audit: 81 claims read, 5 corrected — tests/native_check.mjs (control margin and match figures re-measured from the T7 run, refcontrol sentence moved, percent sizes not box-checked, code too), embedpdf-viewer.js and embedpdf.css comments (the `nativeSupported()` condition), README `page` row (Safari version, built-in viewer condition).
+- 2026-10-20: after the claim-audit fixes (comments, the README row, and native_check's percent-size skip), `quarto render` ran again (docs/ library copies changed in comments only); native_check chromium page_test, render_check example.html desktop, and render_check selfcontained `--alone file` exited 0 again.
+- 2026-10-20: implement complete; status review.
+- 2026-10-20: review pass 1: four lenses ran; the evidence run was stopped at line 39 of 98 (lines 1-38 exit 0) because fix-now edits touch the viewer; a review probe confirmed diff-bug #1 (an `<iframe>` downloads a PDF sent as `application/octet-stream` or as an attachment, where an `<object>` shows it in Firefox 158 and Safari 27.0.1), which falsifies D-007's choice for such servers; stopped for the user's decision on the approach (the probe's Safari run saved att.pdf and oct.pdf, copies of sample.pdf, in ~/Downloads).
+- 2026-10-20: review decision: the user chose "Check headers first": for a native embed with `page` over 1 the viewer reads the PDF's headers (HEAD) where it can, and uses the `<iframe>` only for an `application/pdf` answer shown inline, else an `<object>`; rejected "Keep iframe, document it", "Revert to object", "Stop for now". The widening this needs (a criterion for the header rule) is adopted at the user's selection.
+- 2026-10-20: review return 1: diff-bug #1 — a page>1 native `<iframe>` embed of a PDF sent as `application/octet-stream` or as an attachment downloads the file and shows nothing in Firefox 158 and Safari 27.0.1, where v1.2.6's `<object>` showed it; fix by the header rule above, add a criterion and a check for it, amend Scope and D-007; also land the review's fix-now items (diff-bug #5 #6 #9 #10 #11, prior-review #1 #2 #4, ripple #1 #2 #4-#8 #11) and file the follow-ups into row "Check embeds open at their page option".
+- 2026-10-20: implement resumed for review return 1 (status in-progress).
+- 2026-10-20: re-audit: AC7 (full) — 12 findings on the first draft (one-check-per-case gaps, 405 answer type, header matching without case or parameters, an `inline` case, a page-1 case, request-log checks, plants, opaque `file:` origins, README must name the page-1 cases); all fixed in the second draft.
+- 2026-10-20: re-audit: AC7 (full) — 5 findings on the second draft: distinct addresses and `.pdf` endings (moved to the tasks), AC6's missing-PDF sentence now false (moved to AC6), `file:` pages unchecked (recorded in CLAUDE.md "Still unverified"), no HEAD time limit (5 s added to the Scope rule), 404 case (added to the tasks); AC7 wording unchanged.
+- 2026-10-20: re-audit: AC6 (full) — 5 findings on the first amended wording (dangling AC7 reference, missing-PDF text left in docs, page-1 cases unnamed, no procedure for "no longer say", D-007 contradiction); fixed in the second wording, D-008 to supersede D-007.
+- 2026-10-20: re-audit: AC6 (full) — 7 findings on the second wording (cross-reference to Scope, not-OK answers, `file:` pages with inlined PDFs, desktop qualifier, wrapped lines for grep, "every" unclear, phrase vs claim); a third wording is the second-re-audit stop, posed to the user.
+- 2026-10-20: substantive amendment: Scope In gains the header rule; AC6 reworded (third wording, approved by the user at the second-re-audit stop); AC7 added (adopted at the user's review decision, a widening); tasks T8-T11 added; D-008 supersedes D-007's rule.
+- 2026-10-20: T8 done: `frameAllowed()` decides the element before `hydrateNative()` (inlined → `<iframe>`; same non-opaque origin → HEAD with `AbortSignal.timeout(5000)`, `<iframe>` for OK + `application/pdf` + non-`attachment`, compared without case or parameters; else `<object>`); `allowfullscreen` on the `<iframe>` (diff-bug #9); header comment no longer says renderer=native is always `<object>` (ripple #1); version stays 1.2.7 (unreleased). After `quarto render`, native_check chromium on page_test.html and selfcontained `--alone file` pass.
+- 2026-10-20: T9 done: new `tests/frame_rule_check.mjs` (nine native embeds on a page built from docs/page_test.html's scripts, AC7's cases plus HTTP 404, each at its own address; `--slow-head`; plants noorigin, nook, anydisp, get, casesens, swap) passes in Chromium 155, Firefox 158, and Safari 27.0.1, and with `--slow-head` in Chromium; each plant exits 1 in Chromium naming the embed it targets; the Safari run saved no file in ~/Downloads. Fix-now items: native_check screenshots each embed by a per-placeholder mark (diff-bug #5), accepts a blob: address for an embed with no data-src without `--alone` (diff-bug #6), and takes the expected box from `data-width`/`data-height` in px (diff-bug #10, prior-review #4); ios_check fails a native embed with no element (prior-review #1; shown red with the docs/ viewer copy changed to add no element, restored after). CLAUDE.md gains the four frame_rule_check lines.
+- 2026-10-20: T10 done: README `page` row names the `<iframe>` cases and the `<object>` cases that desktop Safari opens at page 1, and the `<iframe>` name check; DESIGN.md Viewer, architecture, Known issues (header rule, HEAD-vs-GET limit, no missing-PDF blank-frame sentence, version 1.2.7); CLAUDE.md name, native_check, `cors`, renderer gotcha, "Still unverified" (GitHub Pages' HEAD answer, `file:` pages); ROADMAP rows "Publish GitHub releases for 1.0 tags" (1.2.7), "Check native save names and slide embeds" (native embed), "Check embeds open at their page option" (D-008, RevealJS `<iframe>`, fragment doubling). Not changed: ios_check's `<object>` messages (on iPhone and iPad a native embed must be an `<object>`, so they hold), CLAUDE.md's Safari CORS gotcha (a cross-origin embed is always an `<object>` now). `grep "blank frame\|error page"` over README.md and DESIGN.md finds nothing. simple-english hits back to 39 (CLAUDE.md) and 11 (README).
+- 2026-10-20: T11 done: at b860dc6, all 102 `node tests/…` and `pandoc lua tests/…` lines in CLAUDE.md exited 0 on the first try (the 98 of T7 plus the 4 frame_rule_check lines); percent_page_test PDF render rc 0 with the phrase 5 times; helpers_test 158 passed, 0 failed; ~/Downloads gained no file.
+- 2026-10-20: claim audit: 74 claims read, 9 corrected (and 4 stale lines beside them) — CLAUDE.md (frame_rule_check paragraph, inlined PDFs, `file:` item), README `page` row (inlined `data:` PDFs, origin is site and port, failed request), tests/native_check.mjs (inlined PDFs skip the HEAD rule, header D-008, options not attributes), tests/ios_check.mjs (comment claim, D-008), tests/frame_rule_check.mjs (exit codes), embedpdf.css comment. All comment or docs text; after `quarto render` the docs/ diff is the CSS comment alone (8 copies).
+- 2026-10-20: implement complete after review return 1; status review.
+- 2026-10-20: review pass 2 in progress (checkpoint): evidence run of all 102 lines started at 09d2daa; four lenses spawned; ripple fix-now edits landed (PROFILE.md verify list names frame_rule_check, ROADMAP rows "Run the render checks in Firefox" and "Close the native name check gaps" corrected, D-008 cited in render_check and ios_check comments).
+- 2026-10-20: review pass 2 fix-now landed: `frameAllowed` uses `self.origin` and rejects a redirect to another origin; frame_rule_check gains embeds 10-12 (late HEAD, no Content-Type, cross-origin redirect), plants `noredirect` and `notimeout`, and setup exit 2; docs and comments as listed in the Review section. After `quarto render`, frame_rule_check passes in Chromium, Firefox, Safari and with `--slow-head`; each of its 8 plants exits 1 in Chromium naming its embed; ~/Downloads unchanged. The evidence run started at 09d2daa was stopped at line 39 (viewer code changed); a new full run follows.
+- 2026-10-20: step-7 approval: m021-native-page-iframe approved for merge
+- 2026-10-20: the Goal stays as written (never edited in place); after the user's review decision it holds for PDFs that pass the header rule, and the docs name the rest (AC6).
 
 ## Decisions
 
 ## Review
+
+Pass 1 (2026-10-20). Consistency gate: `cairn_validate.py` exit 0, all checks passed; no principle text changed, so `cairn_impact` skipped; generic profile adds no toolchain checks. AC evidence not yet recorded: the evidence run stopped at line 39 of 98 for the finding below.
+
+spawned: diff-bug, blame-history, prior-review, ripple
+
+- diff-bug #1: an `<iframe>` follows the server's Content-Type and Content-Disposition, so a page>1 native embed of a PDF sent as `application/octet-stream` or as an attachment may download instead of show — confirmed by a review probe (Chromium 155, Firefox 158 headless, Safari 27.0.1): with either answer the `<object>` showed `sample.pdf` in Firefox and Safari, and the `<iframe>` showed nothing and each browser saved the file; in Chromium both forms stayed blank and the file was saved. This is the reader-visible difference D-007 names as evidence against the `<iframe>` — open: the approach is the user's decision.
+- diff-bug #2: no test page has an `<iframe>` native embed on RevealJS slides — follow-up, row "Check embeds open at their page option".
+- diff-bug #3: the missing-PDF difference rests on one Chromium probe, no check — follow-up, same row.
+- diff-bug #4: native_check's Firefox `pdfjs.viewOnLoad` pref hides Firefox's stored-page reopen — reject: false as an extension defect; it is Firefox's own viewer behavior, and the pref is M020's planned design.
+- diff-bug #5: native_check's `shotOf(NATIVE, i)` indexes elements while `st.native[i]` indexes placeholders, so a placeholder with no element shifts later screenshots — fix now.
+- diff-bug #6: without `--alone`, a hand-written `data:` embed loses `data-src` and fails the address check falsely — fix now.
+- diff-bug #7: `#page=N` is appended to an href that may already hold a fragment (pre-existing) — follow-up, row "Check embeds open at their page option".
+- diff-bug #8: native_check mirrors the viewer's page parsing — reject: false as a defect; it reads the shortcode's `data-page`, and the values parse as the viewer does.
+- diff-bug #9: the `<iframe>` has no `allowfullscreen` — fix now.
+- diff-bug #10: the box check skips `600px`-style sizes — fix now (with prior-review #4).
+- diff-bug #11: stale `<object>`-only lines in CLAUDE.md, README, ROADMAP row text, ios_check header and messages — fix now (with ripple #1-#2, #4-#8, #11).
+- diff-bug #12: render_check enforces no element on desktop — reject: planned change; native_check's page_test lines enforce it.
+- blame-history #1: missing non-inlined PDF loses the visible download link for page>1 embeds — reject: planned change, recorded in D-007 and DESIGN Known issues.
+- blame-history #2: the `<iframe>` replaces a working `<object>` in Chromium and Firefox too — reject: planned change (D-007 "in every browser").
+- blame-history #3: a site that forbids framing shows a blank frame — follow-up, already in row "Check embeds open at their page option".
+- blame-history #4: `--same-pages` removed — reject: planned change.
+- blame-history #5: `<iframe>` real screen-reader name unverified — follow-up, already in CLAUDE.md "Still unverified".
+- blame-history #6: pdfjsAddress comment accurate, code unaffected — reject: false as a defect.
+- prior-review #1: ios_check passes a native embed with no element — fix now.
+- prior-review #2: viewer header "renderer=native -> always <object>" — fix now (same as ripple #1).
+- prior-review #3: Safari CORS read after an `<iframe>` load is unchecked — follow-up, row "Check embeds open at their page option".
+- prior-review #4: native_check's expected box is read from the `<iframe>`'s own attributes — fix now: read the embed's `data-width` and `data-height`.
+- prior-review #5: render_check's native name plant takes the document's first native embed — reject: pre-existing line, and D-006 drops this class of plant-target gap.
+- ripple #1, #2, #4, #5, #6, #7, #8, #11: viewer header, CLAUDE.md :427 :104 :267 :437 :495, ROADMAP and DESIGN "1.2.6", ROADMAP row "Check native save names and slide embeds" text — fix now.
+- ripple #3: the absorbed candidate row is still listed — reject: planned change; step 9 hygiene graduates it.
+- ripple #9, #10: viewer :179 and DESIGN :199 describe Safari's refusal after an `<object>` load — reject: dated observations of `<object>`, and the lines beside them name the `<iframe>` case.
+
+Pass 2 (2026-10-20, after review return 1). Consistency gate: `cairn_validate.py` exit 0 (one advisory: 11 tasks); no principle text changed. AC6 procedures at 09d2daa: `grep -n -i -B2 "page 1" README.md CLAUDE.md` Safari hits are README:66 (`<object>`) and CLAUDE.md:186-187 (`<object>`), both limited to the `<object>` cases; `grep "blank frame\|error page"` over README.md and cairn/DESIGN.md finds nothing; CLAUDE.md:19 names `page_test.qmd`.
+
+spawned: diff-bug, blame-history, prior-review, ripple
+
+- diff-bug #1: no check tests the 5 s limit — fix now: frame_rule_check embed 10 (HEAD after 7 s → `<object>`) and plant `notimeout`.
+- diff-bug #2: the no-JS download link shows while the HEAD request waits, then the embed replaces it — follow-up, row "Check embeds open at their page option".
+- diff-bug #3: a same-origin PDF redirected to another origin with `Access-Control-Allow-Origin` reads as inline — fix now: `frameAllowed` rejects `res.url` on another origin; frame_rule_check embed 12 (302 to a third origin's attachment → `<object>`) and plant `noredirect`.
+- diff-bug #4: the 5 s limit counts time waiting for a connection — follow-up, same row.
+- diff-bug #5: a page CSP that limits `frame-src` but allows `object-src` — follow-up, same row.
+- diff-bug #6: a sandboxed page's origin is not caught as opaque — fix now: `self.origin`.
+- diff-bug #7: stale `pdfjsAddress` comment — fix now (same as blame-history #2).
+- diff-bug #8: docs say "site" where the code compares origins — fix now: README and DESIGN say origin (scheme, host, port).
+- diff-bug #9: no case for a HEAD with no Content-Type, nor a redirect — fix now: frame_rule_check embeds 11 and 12.
+- diff-bug #10: author CSS for `.embedpdf object` misses the `<iframe>` — fix now: DESIGN Known issues says so.
+- blame-history #1: an Android browser that reports a built-in PDF viewer gets the `<iframe>`, while comments say desktop — fix now (viewer header and DESIGN wording) and follow-up (the unchecked Android case, same row).
+- blame-history #2: `pdfjsAddress` comment says a cross-origin embed may be an `<iframe>` — fix now.
+- blame-history #3: no line now checks that Safari opens an `<object>` at page 1 — reject: false as an extension defect; it is Safari's behavior, a dated observation from M020's runs and this milestone's probes.
+- prior-review #1: ios_check's header says every run fails on a native embed that is not an `<object>`, but an embed that did not hydrate as native is skipped — fix now: header narrowed to embeds that hydrated as native.
+- prior-review #2: frame_rule_check exits 1, not 2, when puppeteer-core or a tab cannot start — fix now.
+- prior-review #3: frame_rule_check's Firefox launch has no `pdfjs.viewOnLoad` pref — reject: false as a defect; the script takes no screenshots, so the viewer's opening page does not reach its result.
+- ripple #1: PROFILE.md's verify list omits frame_rule_check — fix now.
+- ripple #2: ROADMAP row "Run the render checks in Firefox" says only native_check runs in Firefox — fix now.
+- ripple #3: ROADMAP row "Close the native name check gaps" names only `<object>` — fix now.
+- ripple (noted): render_check and ios_check comments cite D-007 for the device rule — fix now: D-008.
+
+Evidence (2026-10-20, branch head b061fe1; `quarto render` rc 0 with no docs/ change; all 102 CLAUDE.md run lines in one run, each exit 0 on the first try):
+
+- AC1: native_check page_test.html, no `--same-pages`: Chromium 155, Firefox 158, Safari 27.0.1 each exit 0 with no failure; embeds 1-2 `<iframe>` `#page=2` matching the page-2 `<iframe>` reference (diff ≤ 0.0001), embed 3 `<object>` with no fragment; page-1 vs page-2 `<iframe>` references differ 0.1371 / 0.0530 / ≥ 0.0952; border, box, and placeholder checks passed (no failure line).
+- AC2: native_check selfcontained_test.html `--alone file` and `--alone http`, no `--same-pages`, in Chromium 155, Firefox 158, Safari 27.0.1: all six exit 0; embeds 1-2 `<object>`, embed 3 (`page=2`) `<iframe>` with a `blob:` address ending `#page=2` (the check fails a non-`blob:` address), matching the page-2 `<iframe>` reference (diff ≤ 0.0035); page-1 vs page-2 `<iframe>` references differ 0.1371 / 0.0530 / 0.0952.
+- AC3: render_check page_test.html `--expect-native 3 --expect-pdfjs 0 --expect-name sample.pdf` exit 0 in Chromium 155 (DOM aria-label, no title, tree name, for embeds 1-2 as `<iframe>`; the nativename/nativetitle/nativedesc plants fail on the `<iframe>`, T5); safari_check `--target mac` same flags exit 0 in Safari 27.0.1; render_check selfcontained_test.html `--alone file` desktop and iphone lines exit 0.
+- AC4: render_check page_test.html `--device iphone` and `--device android` with `--expect-native 2 --expect-pdfjs 1 --expect-pages 2 --expect-name sample.pdf` exit 0, nativeTags ["object","object"]; ios_check "embedpdf iPhone" and "embedpdf iPad" `--expect-native 2 --expect-embeds 1 --expect-name sample.pdf` exit 0, native tags object, object.
+- AC5: the 87 `node tests/…`/`pandoc lua tests/…` lines of CLAUDE.md at 49f134c, with ` --same-pages` cut from the two Safari native_check lines, all appear unchanged in CLAUDE.md at b061fe1 (`comm` of the sorted sets: none missing); the new set adds the 11 page_test.html lines and the 4 frame_rule_check lines (AC7). All 102 exited 0 in this run; `quarto render` rc 0; also percent_page_test PDF render rc 0 with the phrase 5 times, helpers_test 158 passed, 0 failed.
+- AC6: README.md:66 and DESIGN.md Known issues (the item opening "Desktop Safari 27.0.1 opens a native `<object>`") each say that in a desktop browser with a built-in PDF viewer a `page` > 1 native embed is an `<iframe>` in the Scope's cases and an `<object>` otherwise, name the other cases (another origin, not-OK answer such as 404 or 405, another media type, attachment, late answer, a non-inlined PDF on a `file:` page), say desktop Safari opens those at page 1, and name Chromium 155, Firefox 158, desktop Safari 27.0.1, 2026-10-20 (the AC1/AC2 runs above). `grep -n -i -B2 "page 1" README.md CLAUDE.md`: the Safari page-1 statements (README:66, CLAUDE.md:186-187) both name the `<object>`; README:91's hit is "Page 1 of 2". `grep "blank frame\|error page"` over README.md and cairn/DESIGN.md: 0 lines. CLAUDE.md:19 names `page_test.qmd`.
+- AC7: frame_rule_check exit 0 in Chromium 155, Firefox 158, Safari 27.0.1 (and Chromium `--slow-head`); embeds 1-3 (`application/pdf`, `Application/PDF; charset=binary`, `inline`) `<iframe>`; 4-8 (octet-stream, `Attachment`, 405-to-HEAD, second origin with `*`, 404) `<object>`; 9 (no page) `<object>`; 10-12 (late, no type, cross-origin redirect) `<object>`; fragments `#page=2` except embed 9 (none); page server HEAD counts 1 for each same-origin `page=2` embed and 0 for embed 9; second server 0 HEAD. Plants (Chromium, T9 and pass 2): noorigin, nook, noredirect, notimeout, anydisp, get, casesens, swap each exit 1 naming their embed. README.md:66 says which PDFs get an `<iframe>` and that the others open at page 1 in desktop Safari. (The AC7 box was ticked one edit before this line landed, in commit 01bcfa0; this line is the evidence it rests on.)

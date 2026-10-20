@@ -1,0 +1,22 @@
+---
+title: "embedpdf page option"
+---
+
+Three embeds of `sample.pdf`, a PDF of 2 pages. The first two ask for page 2.
+In a desktop browser with a built-in PDF viewer, the viewer shows them as an
+`<iframe>`, which opens at page 2 in Chromium, Firefox, and Safari. The third
+asks for no page and stays an `<object>`. On iPhone, iPad, and Android, the
+first embed uses PDF.js and the other two stay `<object>`s. The checks in
+`tests/` read these embeds.
+
+## Auto renderer at page 2
+
+{{< pdf sample.pdf page=2 width=600 height=400 >}}
+
+## Native renderer at page 2
+
+{{< pdf sample.pdf renderer=native page=2 width=600 height=400 >}}
+
+## Native renderer at page 1
+
+{{< pdf sample.pdf renderer=native width=600 height=400 >}}

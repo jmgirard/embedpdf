@@ -48,8 +48,10 @@ renderers.
   `toolbar`, `border`, `class`, `button`. Defaults come from the `embedpdf`
   metadata key, and per-shortcode values override them.
 - **Viewer** (`embedpdf-viewer.js`, `embedpdf.css`): hydrates each
-  `div.embedpdf` placeholder as a native `<object>` or a PDF.js canvas viewer
-  with a toolbar (zoom, page indicator, download).
+  `div.embedpdf` placeholder as a native `<object>` (an `<iframe>` for a
+  `page` over 1 where the browser has a built-in PDF viewer and the PDF's
+  answer allows it, D-008) or a
+  PDF.js canvas viewer with a toolbar (zoom, page indicator, download).
 - **Other formats**: LaTeX output uses `\includepdf` (pdfpages). Every other
   non-HTML format gets a download link.
 
@@ -128,7 +130,12 @@ inside a group where `%` is a plain character. In the browser,
 `embedpdf-viewer.js` picks a renderer per placeholder: `auto` uses PDF.js on
 iPhone and iPad (an iPhone, iPod, or iPad user agent, or a Mac user agent with
 `maxTouchPoints > 1`). Elsewhere, `auto` uses the native `<object>` if
-`navigator.pdfViewerEnabled` is true, and otherwise PDF.js (corrected M001). PDF.js is
+`navigator.pdfViewerEnabled` is true, and otherwise PDF.js (corrected M001). A
+native embed whose `page` is over 1 is an `<iframe>` there when
+`frameAllowed()` accepts it: an inlined PDF, or a PDF on the page's own
+non-opaque origin whose HEAD answer is OK within 5 s, `application/pdf`, and
+not an attachment. Its no-JS fallback content is then hidden beside it. Every
+other native embed is an `<object>` (M021, D-008). PDF.js is
 imported on demand from those scripts' `src`, so desktop visitors on the
 native path never download it. With `embed-resources: true`, Quarto inlines
 the viewer as a `data:` module, the PDF.js files as the scripts' text, and
@@ -146,7 +153,7 @@ by every viewer on the page, and canvas size is capped at 8,000,000 pixels
 with device pixel ratio clamped to 2, for constrained mobile devices. For
 screen readers, a PDF.js embed is a group named "PDF: " and its file name,
 or "PDF" when its address names none (corrected M010). A native embed's
-`<object>` has the same name, set as its `aria-label`, with no `title` (M012). `embedName()` passes
+`<object>` (or `<iframe>`) has the same name, set as its `aria-label`, with no `title` (M012, M021). `embedName()` passes
 `fileName()` the address in `data-src`, or the download link's when
 `data-src` is a `data:` address (whitespace before it allowed). The name is the last path segment when it
 ends in `.pdf`, else a query value's last segment that ends in `.pdf`, else
@@ -168,15 +175,27 @@ load on the same queue, and a text task runs only when no page render waits
 - Self-contained RevealJS slides are checked in Chromium and in Safari in the
   iOS 27.0 iPhone and iPad simulators, not on a real phone or in desktop
   Safari (corrected M016) — observed 2026-10-19.
-- Desktop Safari 27.0.1 opens a native embed at page 1 whatever its `page`
-  option says, for the PDF file and the in-page copy of a self-contained page
-  alike (ROADMAP row "Make Safari native embeds honor page"). The native
-  embeds of a self-contained HTML page showing `sample.pdf` are checked in
-  Chromium 155 and Firefox 158 (headless) and desktop Safari 27.0.1, over a
-  local file and HTTP (`tests/native_check.mjs`). Not checked: such embeds on
-  self-contained RevealJS slides in any browser, and the file
-  name that a native viewer's save button gives the in-page copy (added
-  M020) — observed 2026-10-19.
+- Desktop Safari 27.0.1 opens a native `<object>` at page 1 whatever its
+  `#page` says. So in a desktop browser with a built-in PDF viewer, a native
+  embed with a `page` over 1 is an `<iframe>` in the cases `frameAllowed()`
+  accepts: an inlined PDF, or a PDF on the page's own origin (scheme, host,
+  and port) whose HEAD answer is OK within 5 s, from that origin,
+  `application/pdf`, and not an attachment (D-008). It is an `<object>`
+  otherwise, and desktop Safari opens it at page 1: a PDF from another origin
+  or redirected to one, an answer that is not OK (such as 404 or 405), another
+  media type, an attachment, a late answer, and a PDF file that is not inlined
+  on a `file:` or sandboxed page. Any other browser that reports a built-in PDF
+  viewer is treated alike, except iPhone and iPad; an Android browser that
+  reports one is not checked. Author CSS aimed at `.embedpdf object` does not
+  reach such an `<iframe>`. Such an `<iframe>` opened at page 2 on `page_test.html` and on
+  the in-page copy of `selfcontained_test.html` (local file and HTTP) in
+  Chromium 155 and Firefox 158 (headless) and desktop Safari 27.0.1
+  (`tests/native_check.mjs`; corrected M021) — observed 2026-10-20. A server
+  that answers a HEAD request as inline `application/pdf` and a GET as an
+  attachment still gets an `<iframe>`, which then downloads the PDF. Not
+  checked: native embeds on self-contained RevealJS slides in any browser,
+  and the file name that a native viewer's save button gives the in-page
+  copy (added M020) — observed 2026-10-19.
 - The PDF.js viewer has no text selection or search (out of scope, see the
   contract boundary).
 - A PDF.js embed's hidden page text is checked in Chromium's accessibility
@@ -187,8 +206,8 @@ load on the same queue, and a text task runs only when no page render waits
   and 27.1 simulators by `tests/ios_check.mjs`, and iOS versions before 27 are
   not checked (corrected M001) — observed 2026-10-18.
 - GitHub releases stop at v0.5.0 and tags stop at v1.0.2, while the
-  extension is at 1.2.6, so the README version badge shows 0.5.0 (corrected
-  2026-10-19) — observed 2026-10-19.
+  extension is at 1.2.7, so the README version badge shows 0.5.0 (corrected
+  M021) — observed 2026-10-20.
 - Safari refuses a read of a PDF from another site that an `<object>` on the
   page loaded. So a PDF.js embed of that PDF reads it with `embedpdf=pdfjs`
   added to its query (corrected M014). A real site's answer to that address

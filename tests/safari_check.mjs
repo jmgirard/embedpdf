@@ -15,8 +15,9 @@
 // (safari:useSimulator), which also needs Remote Automation on in the
 // simulator's Safari settings. The page comes from docs/ (tests/serve_docs.mjs).
 // Each run fails unless the page has --expect-native native embeds (0 when not
-// given), every native embed's <object> has no title, every PDF.js embed's
-// name and every native embed's <object> name is its --expect-name name in
+// given), every native embed's <object> (or <iframe>, for a page option over
+// 1) has no title, every PDF.js embed's
+// name and every native embed's <object> or <iframe> name is its --expect-name name in
 // document order (numbered
 // as in tests/expect_names.mjs), each toolbar control's name is its
 // title, which must be "Zoom out", "Zoom in", or "Download PDF" in that
@@ -32,6 +33,7 @@
 // --plant rawindicator|nonumber plants a defect in the first PDF.js embed, as
 // in render_check (removes aria-hidden from its shown "i / n", or the " (k of
 // n)" from its name); --plant nativename changes the first native <object>'s
+// (or <iframe>'s)
 // aria-label to "PDF: wrong.pdf", and nativetitle gives it a title equal to
 // its aria-label. The run must then fail.
 //
@@ -40,6 +42,7 @@
 // Access-Control-Allow-Origin: *, and points each embed at it
 // (tests/serve_docs.mjs). The run then also fails if an embed shows "This PDF
 // cannot be shown here.", if a PDF.js embed's address or a native <object>'s
+// or <iframe>'s
 // address is not on that server, or if that server answered no GET without an
 // Origin header for a native embed's PDF.
 //
@@ -82,8 +85,9 @@ if (target === "mac" && flags.device) {
   console.error("safari_check: --device is for --target simulator or page-script, not mac");
   process.exit(2);
 }
-if (target !== "page-script" && !(flags["expect-name"] && /^[1-9]\d*$/.test(flags["expect-pdfjs"] || ""))) {
-  console.error("safari_check: --expect-name and --expect-pdfjs (1 or more) are required");
+// a page of native embeds alone (page_test.html) takes --expect-pdfjs 0
+if (target !== "page-script" && !(flags["expect-name"] && /^\d+$/.test(flags["expect-pdfjs"] || "") && Number(flags["expect-pdfjs"]) + Number(flags["expect-native"] || 0) > 0)) {
+  console.error("safari_check: --expect-name and --expect-pdfjs are required, with --expect-native plus --expect-pdfjs 1 or more");
   process.exit(2);
 }
 if (flags["expect-name"] && flags["expect-name"].split("|").some((n) => !n)) {
@@ -290,20 +294,20 @@ try {
   while ((await unhydrated()) && Date.now() - start < 30000) await sleep(250);
   if (await unhydrated()) failures.push("an embed is still not hydrated after 30 s");
   // --remote cors: no embed failed, each PDF.js embed's data-src and each
-  // native <object>'s address is on the remote server, and that server
+  // native <object>'s or <iframe>'s address is on the remote server, and that server
   // answered a GET with no Origin header (a CORS read sends one) for each
   // native embed's PDF
   if (remoteBase) {
     const where = await run(
       `return { failed: document.querySelectorAll(".embedpdf-failed").length,
                 pdfjs: [...document.querySelectorAll(".embedpdf-pdfjs")].map((e) => new URL(e.dataset.src, document.baseURI).href),
-                native: [...document.querySelectorAll(".embedpdf-native object")].map((o) => o.data) };`
+                native: [...document.querySelectorAll(".embedpdf-native > object, .embedpdf-native > iframe")].map((o) => o.tagName === "IFRAME" ? o.src : o.data) };`
     );
     report.remote = where;
     if (where.failed) failures.push(`${where.failed} embeds show "This PDF cannot be shown here."`);
     for (const a of where.pdfjs) if (!a.startsWith(remoteBase)) failures.push(`PDF.js embed address ${a} is not on ${remoteBase}`);
     for (const a of where.native) {
-      if (!a.startsWith(remoteBase)) failures.push(`native <object> address ${a} is not on ${remoteBase}`);
+      if (!a.startsWith(remoteBase)) failures.push(`native embed address ${a} is not on ${remoteBase}`);
       else if (!remoteServer.requests.some((r) => r.path === new URL(a).pathname && r.method === "GET" && r.origin === null)) {
         failures.push(`the remote server answered no request for ${new URL(a).pathname} without an Origin header, so the native viewer did not load it`);
       }
@@ -312,7 +316,7 @@ try {
   if (plant) {
     report.planted = await run(
       `if (arguments[0] === "nativename" || arguments[0] === "nativetitle") {
-         const object = document.querySelector(".embedpdf-native object");
+         const object = document.querySelector(".embedpdf-native > object, .embedpdf-native > iframe");
          if (!object) return null;
          if (arguments[0] === "nativename") object.setAttribute("aria-label", "PDF: wrong.pdf");
          else object.setAttribute("title", object.getAttribute("aria-label") || "PDF");
@@ -348,16 +352,17 @@ try {
   const nativeAt = kinds.flatMap((k, j) => (k === "native" ? [j] : []));
   const pdfjsAt = kinds.flatMap((k, j) => (k === "pdfjs" ? [j] : []));
   if (nativeAt.length !== expectNative) failures.push(`${nativeAt.length} native embeds, not ${expectNative}`);
-  // a native embed's <object> carries its name as aria-label, with no title
-  const objects = await find(".embedpdf-native object");
-  if (objects.length !== nativeAt.length) failures.push(`${objects.length} native <object> elements for ${nativeAt.length} native embeds`);
+  // a native embed's <object> or <iframe> carries its name as aria-label,
+  // with no title
+  const objects = await find(".embedpdf-native > object, .embedpdf-native > iframe");
+  if (objects.length !== nativeAt.length) failures.push(`${objects.length} native <object> or <iframe> elements for ${nativeAt.length} native embeds`);
   report.native = [];
   for (const [i, id] of objects.entries()) {
     const at = `native embed ${i + 1} (embed ${nativeAt[i] + 1})`;
     const r = { name: await label(id), title: await wd("GET", `${s}/element/${id}/attribute/title`) };
     report.native.push(r);
     if (r.name !== want[nativeAt[i]]) failures.push(`${at}: Safari's name is ${JSON.stringify(r.name)}, not ${JSON.stringify(want[nativeAt[i]])}`);
-    if (r.title !== null) failures.push(`${at}: <object> has a title, ${JSON.stringify(r.title)}`);
+    if (r.title !== null) failures.push(`${at}: its element has a title, ${JSON.stringify(r.title)}`);
   }
   const embeds = await find(".embedpdf-pdfjs");
   // an embed that hydrated between these reads would take another's name
