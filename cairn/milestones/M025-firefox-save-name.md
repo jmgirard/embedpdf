@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M025: Firefox saves inlined PDFs under their file name
 
-- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** review   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate; M<xx>, M<yy> or — -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate; RR<NN> whose Binding criteria bind this milestone's ACs (binding-criteria check), or — -->
@@ -112,7 +112,7 @@ Firefox's viewer" row's detail stays the record of the tried forms.
       the user to clear `sample*` files from the save folder before each save,
       or to read the name in the save dialog. Ask for one save for each native
       embed in each case. Write the 6 reported names in the work log.
-- [ ] T4: Run every `node tests/` line in the "Verify before finishing"
+- [x] T4: Run every `node tests/` line in the "Verify before finishing"
       section of CLAUDE.md and the variants its prose requires, and the
       shortcode tests. Run the Safari save lines a few minutes apart (LESSONS
       M023).
@@ -145,6 +145,8 @@ Firefox's viewer" row's detail stays the record of the tried forms.
 - 2026-10-20: T5 done: README self-contained bullet, DESIGN Known issues save-name entry (marked corrected M025), CLAUDE.md save-name paragraph, its four Firefox lines, and the "Still unverified" item (automated Firefox save, slides by hand, other names); save_name_check.mjs header updated in T1.
 - 2026-10-20: T4 run: 138 lines (every `node tests/` line in the CLAUDE.md section after T5, plus the prose variants: `--alone http` copies, mac-safari and windows-touch desktop variants, ipad for the selfcontained iphone lines), CHROME_PATH=Chromium; 137 exit 0. The Safari save line over HTTP (run 200 s after the others) exited 1: embed 1 saved no file, embeds 2 and 3 saved `Unknown.pdf`. A lone re-run saved nothing for all 3; `lsappinfo front` then named loginwindow (screen locked), so Safari showed no control bar.
 - 2026-10-20: claim audit: 50 claims read, 6 corrected — embedpdf-viewer.js (dropped an unmeasured no-copy claim), README.md (name checked for `sample.pdf` with a download link only; hand saves on one page, no slides), CLAUDE.md (`--expect-save` refuses `@blob`), save_name_check.mjs (opening paragraph scoped to Chromium and Safari), cairn/DESIGN.md ("the same with 1.2.9" held until the Safari HTTP line passes). Viewer comment edit re-rendered (`quarto render` clean, version stays 1.2.9).
+- 2026-10-20: T4 done: the user unlocked the screen (a stop at a chip); the Safari save line over HTTP then exited 0 (`Unknown.pdf` x 3). All 138 lines exit 0; shortcode tests 162 passed, 0 failed. DESIGN's "the same with 1.2.9" now holds for Chromium and Safari, file and HTTP.
+- 2026-10-20: implement complete; status review.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local. -->
