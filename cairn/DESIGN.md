@@ -119,7 +119,12 @@ embed not set to `renderer=native`, it also injects `embedpdf-pdfjs`: the two
 PDF.js files as scripts of types `text/x-embedpdf-pdfjs` and
 `text/x-embedpdf-worker`, which the browser neither fetches nor runs
 (corrected M002). It emits a `div.embedpdf` with `data-*` attributes and a
-download-link fallback for readers without JavaScript. In the browser,
+download-link fallback for readers without JavaScript. In the PDF path it
+writes a `%` that does not start a `%XX` escape as `%25` (`url_path()`, since
+M015), in `data-src`, the download links, and the link of other formats. For
+LaTeX, `latex_path()` decodes the `%XX` escapes of printable ASCII other than
+`\ { } # $ & ~ ^ _`. A path that still holds a `%` gets an `\includepdf` line
+inside a group where `%` is a plain character. In the browser,
 `embedpdf-viewer.js` picks a renderer per placeholder: `auto` uses PDF.js on
 iPhone and iPad (an iPhone, iPod, or iPad user agent, or a Mac user agent with
 `maxTouchPoints > 1`). Elsewhere, `auto` uses the native `<object>` if

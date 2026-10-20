@@ -119,8 +119,8 @@ Version 1.2.6.
       line fail, then restore.
 - [x] T4: Run the AC4 PDF render and the `pdftotext` count. See the v1.2.5
       shortcode fail the same render.
-- [ ] T5: Run the AC5 lines.
-- [ ] T6: README.md: the `%` sentence. CLAUDE.md: the new page and
+- [x] T5: Run the AC5 lines.
+- [x] T6: README.md: the `%` sentence. CLAUDE.md: the new page and
       `files/50%off.pdf` in Key files, the AC3 lines, the AC4 command, and a
       "Still unverified" line for GitHub Pages' answer to a `%25` address.
       Update `cairn/DESIGN.md` Architecture where it describes how the path
@@ -144,6 +144,8 @@ Version 1.2.6.
 - 2026-10-19: T2: `url_path()` and `latex_path()` in embedpdf.lua (one `gsub` pass each). The LaTeX group wraps the line only when the path still holds a `%`, so a path with no `%` writes the v1.2.5 line. Version 1.2.6 in both files. Unit tests: 110 passed, 0 failed.
 - 2026-10-19: T3: `percent_page_test.qmd` and `files/50%off.pdf` added. `quarto render` gave no warning. The 5 render_check lines (Chromium 155) and the 2 ios_check lines (iOS 27.0 simulators) exit 0. Native probe (scratch `native_probe.mjs` with `serveDocs`): the `<object>` data is `files/100%25.pdf`, fetch HTTP 200, bytes equal `sample.pdf`. With the v1.2.5 shortcode the desktop line exits 1 ("embedpdf: failed to render files/100%.pdf", HTTP 400), and Quarto warns "Invalid URI" 3 times.
 - 2026-10-19: T4: `quarto render percent_page_test.qmd --to pdf --output-dir <scratch>` (default engine) exits 0. The PDF has 15 pages, and `pdftotext` finds "On the Origin of Coastlines" 5 times. With the v1.2.5 shortcode the same render exits 1 ("compilation failed").
+- 2026-10-19: T5: the 9 `node` lines of CLAUDE.md at 61d6f12 that name `percent_test.html` or `name_test.html`, and the two `example.html` lines (no `--device`, `--device iphone`), exit 0. Extra, outside AC5: `percent_test.html --alone http --device iphone` exits 0.
+- 2026-10-19: T6: README paragraph on `%` in a file name, CLAUDE.md (lua-change PDF render command, 7 `percent_page_test.html` lines, page notes, Key files, "Still unverified" line for GitHub Pages and `%25`), DESIGN.md Architecture sentence. The simple-english hook reports style hits in older CLAUDE.md and README text (em-dashes, semicolons). The added text was fixed, and the older text is left as it is.
 
 ## Decisions
 
