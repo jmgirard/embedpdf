@@ -42,24 +42,27 @@ Version 1.2.6.
 
 ## Acceptance criteria
 
-- [ ] AC1: In HTML output the shortcode writes each `%` of the PDF path that
-      is not followed by two hex digits as `%25`. It writes a `%` that is
-      followed by two hex digits as given, in one pass. This holds in
-      `data-src`, the `button` link, the no-JavaScript link, and the
-      non-HTML link target. `tests/test_shortcode.lua` checks the written
-      address for each of these paths: `files/100%.pdf`, `files/100%25.pdf`,
+- [ ] AC1: In HTML output, and in the link of output formats other than HTML
+      and LaTeX, the shortcode writes each `%` of the PDF path that is not
+      followed by two hex digits as `%25`. It writes a `%` that is followed
+      by two hex digits as given, in one pass. This holds in `data-src`, the
+      `button` link, the no-JavaScript link, and that other-format link.
+      `tests/test_shortcode.lua` checks the written address for each of
+      these paths: `files/100%.pdf`, `files/100%25.pdf`,
       `files/sample%20copy.pdf`, `a%2fb.pdf`, `a%2Fb.pdf`, `a%zz.pdf`,
-      `a%4g.pdf`, `a%`, `%.pdf`, `50%-100%.pdf`, `a%%b.pdf`, `%2525.pdf`,
-      `a%7Bb.pdf`, and `%C3%A9.pdf`. `pandoc lua tests/test_shortcode.lua`
+      `a%4g.pdf`, `a%4`, `a%`, `%.pdf`, `50%-100%.pdf`, `a%%b.pdf`,
+      `%2525.pdf`, `a%7Bb.pdf`, `a%22b.pdf`, `a%2Cb.pdf`, `a%7b%2c.pdf`,
+      `a%5C%7D%23%24%26%7E%5E%5F.pdf`, `a%7Cb.pdf`, `a%1Fb.pdf`,
+      `a%7Fb.pdf`, and `%C3%A9.pdf`. `pandoc lua tests/test_shortcode.lua`
       prints "N passed, 0 failed".
 - [ ] AC2: In LaTeX output the shortcode decodes, in one pass, each `%XX`
       escape whose byte is printable ASCII (0x20 to 0x7E) other than
-      `\ { } # $ & ~ ^ _`. It keeps every other `%` as written. When the
+      `\ { } # $ & ~ ^ _ " ,`. It keeps every other `%` as written. When the
       path then holds a `%`, the line is
       `\begingroup\catcode`\%=12\relax\includepdf[pages=-]{<path>}\endgroup`.
-      Otherwise the line is `\includepdf[pages=-]{<path>}` as in v1.2.5.
-      `tests/test_shortcode.lua` checks the whole line for each AC1 path.
-      The same run prints "N passed, 0 failed".
+      Otherwise the line is `\includepdf[pages=-]{<path>}`, the form v1.2.5
+      wrote. `tests/test_shortcode.lua` checks the whole line for each AC1
+      path. The same run prints "N passed, 0 failed".
 - [ ] AC3: The normal page (not self-contained) `percent_page_test.qmd` has
       five embeds, in this order:
       - `files/100%.pdf` with `renderer=pdfjs`
@@ -149,6 +152,13 @@ Version 1.2.6.
 - 2026-10-19: substantive amendment: AC5 wording. "(11 lines)" counted prose lines, and only 9 `node` lines name those pages. "The first command block" was the `pandoc lua` block. Now it is "the first command block that names `example.html`". The lines run are unchanged.
 - 2026-10-19: re-audit: AC5 (full) — the first block named was the `pandoc lua` block. The `--alone http --device iphone` line for percent_test is implied by the base doc but not listed, and it is kept out of AC5 (run once, exit 0, T5 line).
 - 2026-10-19: re-audit: AC5 (full) — nothing. The facts check against 61d6f12 (9 lines, and one line of each kind in the block).
+- 2026-10-19: claim audit pass (fresh Opus reader): 29 claims read. Wrong: `%22` decodes to `"`, which fails in an `\includepdf` path, against the "safe" comment and README. Doubtful: CLAUDE.md said both percent files serve both pages. Both corrected.
+- 2026-10-19: character probe (scratch `charprobe.sh`, `\includepdf{a<c>b.pdf}` for each decoded printable ASCII character): lualatex and pdflatex fail on `"` and `,`, and xelatex fails on `"`, `)`, and `,`. `"` and `,` joined `LATEX_UNSAFE`. `)` stays decoded, because the default lualatex reads it, and the xelatex case went to row "LaTeX path escapes".
+- 2026-10-19: substantive amendment: AC1 gains the paths `a%22b.pdf`, `a%2Cb.pdf`, then `a%4`, `a%7b%2c.pdf`, `a%5C%7D%23%24%26%7E%5E%5F.pdf`, `a%7Cb.pdf`, `a%1Fb.pdf`, `a%7Fb.pdf`, and says "the link of output formats other than HTML and LaTeX". AC2's kept set gains `"` and `,`, and "as in v1.2.5" became "the form v1.2.5 wrote". What the user gets is unchanged except that `%22` and `%2C` stay as written in PDF output.
+- 2026-10-19: re-audit: AC1 (full) — excluded set probed for 3 of 11 characters; no lowercase hex for a kept character; range edges `%1F`, `%7F`, `|` and `a%4` untested; "non-HTML link" also covers LaTeX. Fixed by the paths and wording above.
+- 2026-10-19: re-audit: AC2 (full) — same probe gaps as AC1; a kept escape names a file not on disk, so the render stops (IP2), now a DESIGN Known issues entry; "as in v1.2.5" fit only the form; only lualatex probed (pdflatex and xelatex probed since).
+- 2026-10-19: re-audit: AC1 (full) — no path mixes a valid escape with a bare `%`, so a per-path rule passed the table. Closed in the test table with `sample%20100%.pdf`, with no change to the AC wording.
+- 2026-10-19: re-audit: AC2 (full) — no path mixes a decoded and a kept escape. Closed in the test table with `a%20%7B.pdf`, with no change to the AC wording. Mutants (scratch): a per-path `url_path` fails 4 checks on `sample%20100%.pdf`, a per-path `latex_path` fails on `a%20%7B.pdf`, and removing `_` from `LATEX_UNSAFE` fails the all-kept path. The per-path `url_path` passes the table at 90b8754 (110 passed). Unit tests: 160 passed, 0 failed.
 
 ## Decisions
 

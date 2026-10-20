@@ -22,7 +22,8 @@ Key files:
   `name_edge_test.qmd` includes. It also holds `broken.pdf` and
   `undecodable-embeds.md` for `selfcontained_failed_test.qmd`, and
   `large.pdf` and `large-2.pdf` for `large_test.qmd`. `shared_test.qmd` shows
-  `large.pdf` too. `100%.pdf` and `50%off.pdf` are for the two percent pages.
+  `large.pdf` too. `100%.pdf` is for `percent_test.qmd` and `percent_page_test.qmd`, and
+  `50%off.pdf` is for `percent_page_test.qmd`.
 
 ## Verify before finishing — you are the test runner (no CI)
 

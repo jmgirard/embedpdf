@@ -54,7 +54,7 @@ resources:
 ---
 ```
 
-You can give a file name that holds a `%` with a bare `%`, as in `files/100%.pdf`. If two hex digits follow the `%`, the shortcode reads the three characters as an escape, as in a web address. A `%` written as `%25`, as in `files/100%25.pdf`, always works. In HTML the shortcode writes a bare `%` as `%25`. In PDF output it turns the escapes of printable ASCII characters back into those characters, so that LaTeX finds the file. It keeps the escapes of `\ { } # $ & ~ ^ _` as written.
+You can give a file name that holds a `%` with a bare `%`, as in `files/100%.pdf`. If two hex digits follow the `%`, the shortcode reads the three characters as an escape, as in a web address. A `%` written as `%25`, as in `files/100%25.pdf`, always works. In HTML and in the download link of other formats, the shortcode writes a bare `%` as `%25`. In PDF output it turns the escapes of printable ASCII characters back into those characters, so that LaTeX finds the file. It keeps the escapes of `\ { } # $ & ~ ^ _ " ,` as written.
 
 ### Options
 

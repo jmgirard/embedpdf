@@ -123,7 +123,7 @@ download-link fallback for readers without JavaScript. In the PDF path it
 writes a `%` that does not start a `%XX` escape as `%25` (`url_path()`, since
 M015), in `data-src`, the download links, and the link of other formats. For
 LaTeX, `latex_path()` decodes the `%XX` escapes of printable ASCII other than
-`\ { } # $ & ~ ^ _`. A path that still holds a `%` gets an `\includepdf` line
+`\ { } # $ & ~ ^ _ " ,`. A path that still holds a `%` gets an `\includepdf` line
 inside a group where `%` is a plain character. In the browser,
 `embedpdf-viewer.js` picks a renderer per placeholder: `auto` uses PDF.js on
 iPhone and iPad (an iPhone, iPod, or iPad user agent, or a Mac user agent with
@@ -186,5 +186,9 @@ load on the same queue, and a text task runs only when no page render waits
   PDF cannot be shown here." with no link. IP2's usable fallback is not met
   there. Before M011 the embed kept a link to a file the page does not ship.
   Its `button` link still names that file (observed 2026-10-19).
+- In PDF output a PDF file that LaTeX cannot find stops the render with a
+  pdfpages error, so IP2's "a missing file gives a warning" is not met there.
+  This also covers a path with an escape that the shortcode keeps as written,
+  such as `%C3%A9` (ROADMAP row "LaTeX path escapes") — observed 2026-10-19.
 - First paint is fragile. v1.0.1 and v1.0.2 both fixed pages that never
   rendered on load, and the timer-based first paint may still miss cases.

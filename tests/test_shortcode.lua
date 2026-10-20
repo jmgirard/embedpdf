@@ -139,7 +139,7 @@ check("other: inline context yields a Link", pdf({ "a.pdf" }, {}, {}, {}, "inlin
 -- ---------------------------------------------------------------------------
 -- HTML and other link targets write a % that is not followed by two hex
 -- digits as %25, in one pass. LaTeX decodes the %XX escapes of printable
--- ASCII other than \ { } # $ & ~ ^ _, and puts a path that still holds a %
+-- ASCII other than \ { } # $ & ~ ^ _ " ,, and puts a path that still holds a %
 -- in a group where % is a plain character.
 local function grouped(p)
   return "\\begingroup\\catcode`\\%=12\\relax\\includepdf[pages=-]{" .. p .. "}\\endgroup"
@@ -153,12 +153,23 @@ for _, case in ipairs({
   { "a%2Fb.pdf",               "a%2Fb.pdf",               plain("a/b.pdf") },
   { "a%zz.pdf",                "a%25zz.pdf",              grouped("a%zz.pdf") },
   { "a%4g.pdf",                "a%254g.pdf",              grouped("a%4g.pdf") },
+  { "a%4",                     "a%254",                   grouped("a%4") },
   { "a%",                      "a%25",                    grouped("a%") },
   { "%.pdf",                   "%25.pdf",                 grouped("%.pdf") },
   { "50%-100%.pdf",            "50%25-100%25.pdf",        grouped("50%-100%.pdf") },
   { "a%%b.pdf",                "a%25%25b.pdf",            grouped("a%%b.pdf") },
   { "%2525.pdf",               "%2525.pdf",               grouped("%25.pdf") },
   { "a%7Bb.pdf",               "a%7Bb.pdf",               grouped("a%7Bb.pdf") },
+  { "a%22b.pdf",               "a%22b.pdf",               grouped("a%22b.pdf") },
+  { "a%2Cb.pdf",               "a%2Cb.pdf",               grouped("a%2Cb.pdf") },
+  { "a%7b%2c.pdf",             "a%7b%2c.pdf",             grouped("a%7b%2c.pdf") },
+  { "a%5C%7D%23%24%26%7E%5E%5F.pdf", "a%5C%7D%23%24%26%7E%5E%5F.pdf", grouped("a%5C%7D%23%24%26%7E%5E%5F.pdf") },
+  { "a%7Cb.pdf",               "a%7Cb.pdf",               plain("a|b.pdf") },
+  { "a%1Fb.pdf",               "a%1Fb.pdf",               grouped("a%1Fb.pdf") },
+  { "a%7Fb.pdf",               "a%7Fb.pdf",               grouped("a%7Fb.pdf") },
+  -- each % on its own: an escape beside a bare %, and beside a kept escape
+  { "sample%20100%.pdf",       "sample%20100%25.pdf",     grouped("sample 100%.pdf") },
+  { "a%20%7B.pdf",             "a%20%7B.pdf",             grouped("a %7B.pdf") },
   { "%C3%A9.pdf",              "%C3%A9.pdf",              grouped("%C3%A9.pdf") },
 }) do
   local path, url, latex = case[1], case[2], case[3]

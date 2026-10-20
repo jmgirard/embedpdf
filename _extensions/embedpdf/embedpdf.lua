@@ -29,9 +29,11 @@ local function url_path(s)
 end
 
 -- the path as a LaTeX file name: decode the %XX escapes of printable ASCII
--- that are safe in a LaTeX file name, and keep every other % as written
+-- other than the characters below, and keep every other % as written
+-- (a " or , in an \includepdf file name fails in lualatex, M015 probe)
 local LATEX_UNSAFE = { ["\\"] = true, ["{"] = true, ["}"] = true, ["#"] = true,
-  ["$"] = true, ["&"] = true, ["~"] = true, ["^"] = true, ["_"] = true }
+  ["$"] = true, ["&"] = true, ["~"] = true, ["^"] = true, ["_"] = true,
+  ['"'] = true, [","] = true }
 local function latex_path(s)
   return (s:gsub("%%(%x%x)", function(hex)
     local byte = tonumber(hex, 16)
