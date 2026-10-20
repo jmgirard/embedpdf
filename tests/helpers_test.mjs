@@ -8,7 +8,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { inkInPixels } from "./ink.mjs";
 import { expectedNames } from "./expect_names.mjs";
-import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, docsFile, REMOTE_MODES, DOCS, SLOW_ABOVE } from "./serve_docs.mjs";
+import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, docsFile, REMOTE_MODES, DOCS, SLOW_ABOVE, NO_EVAL_CSP } from "./serve_docs.mjs";
 
 // the one test PDF over SLOW_ABOVE bytes
 const LARGE = fs.readFileSync(path.join(DOCS, "files", "large.pdf"));
@@ -282,6 +282,35 @@ for (const kind of ["docs", "remote cors"]) {
     check("missing: /example.html is 200", page.status === 200, String(page.status));
   } finally {
     missing.close();
+  }
+}
+
+// --- docs/ server with csp ------------------------------------------------------
+check("csp: NO_EVAL_CSP has a script-src without 'unsafe-eval'", /(^|;)\s*script-src\s/.test(NO_EVAL_CSP) && !NO_EVAL_CSP.includes("'unsafe-eval'"), NO_EVAL_CSP);
+{
+  const plain = await serveDocs();
+  const withCsp = await serveDocs({ csp: NO_EVAL_CSP });
+  const header = async (srv, p, init) => {
+    const r = await fetch(`http://127.0.0.1:${srv.address().port}/${p}`, init);
+    await r.arrayBuffer();
+    return [r.status, r.headers.get("content-security-policy")];
+  };
+  try {
+    for (const [p, init, status] of [
+      ["example.html", undefined, 200],
+      ["sample.pdf", undefined, 200],
+      ["sample.pdf", { headers: { Range: "bytes=0-99" } }, 206],
+      ["sample.pdf", { headers: { Range: "bytes=99999999-" } }, 416],
+    ]) {
+      const what = `/${p}${init ? " " + init.headers.Range : ""}`;
+      const [s1, h1] = await header(withCsp, p, init);
+      check(`csp: ${what} is ${status} with the header`, s1 === status && h1 === NO_EVAL_CSP, `${s1} ${h1}`);
+      const [s2, h2] = await header(plain, p, init);
+      check(`csp: ${what} is ${status} with no header when csp is not set`, s2 === status && h2 === null, `${s2} ${h2}`);
+    }
+  } finally {
+    plain.close();
+    withCsp.close();
   }
 }
 

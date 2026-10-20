@@ -263,7 +263,7 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import puppeteer from "puppeteer-core";
-import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, docsFile, REMOTE_MODES, DOCS, SLOW_ABOVE } from "./serve_docs.mjs";
+import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, docsFile, REMOTE_MODES, DOCS, SLOW_ABOVE, NO_EVAL_CSP } from "./serve_docs.mjs";
 import { inkInPixels } from "./ink.mjs";
 import { expectedNames } from "./expect_names.mjs";
 
@@ -381,6 +381,8 @@ if (flags["cpu-throttle"] !== undefined && !(/^\d+$/.test(flags["cpu-throttle"])
   console.error("render_check: --cpu-throttle needs a whole number above 1 (the factor by which Chromium's CPU is slowed)");
   process.exit(2);
 }
+// --csp: the page's server sends NO_EVAL_CSP, which blocks eval in the page
+const cspHeader = flags["csp"] === true ? NO_EVAL_CSP : null;
 const expectName = flags["expect-name"] ?? null;
 // one name for the --expect-native plus --expect-pdfjs embeds, or
 // "a.pdf|b.pdf": one per native or PDF.js embed, in page order
@@ -425,6 +427,10 @@ if (expectRanges && (alone || missingPdfs || /^https?:/.test(target) || (remote 
 }
 if (alone && alone !== "http" && alone !== "file") {
   console.error("render_check: --alone must be http or file");
+  process.exit(2);
+}
+if (cspHeader && (/^https?:/.test(target) || alone === "file")) {
+  console.error("render_check: --csp needs a page that render_check serves itself (not a URL, not --alone file)");
   process.exit(2);
 }
 if (remote && !REMOTE_MODES.includes(remote)) {
@@ -501,13 +507,14 @@ if (targetFile) {
 const server =
   /^https?:/.test(target) || alone === "file"
     ? null
-    : await serveDocs(
-        aloneDir
+    : await serveDocs({
+        ...(aloneDir
           ? { root: aloneDir }
           : remoteBase
             ? { transformHtml: (html) => pointPdfsAt(html, remoteBase, target) }
-            : { missingPdfs, ...rangeOpts }
-      ).catch(cannotServe("docs"));
+            : { missingPdfs, ...rangeOpts }),
+        csp: cspHeader,
+      }).catch(cannotServe("docs"));
 const url =
   alone === "file"
     ? pathToFileURL(path.join(aloneDir, path.basename(target))).href
@@ -1096,6 +1103,8 @@ try {
   if (!response || !response.ok()) {
     throw new Error(`could not load ${url} (HTTP ${response ? response.status() : "no response"})`);
   }
+  // --csp: the policy the page arrived with
+  const csp = response.headers()["content-security-policy"] ?? null;
   // scroll so lazily-rendered pages come into view; on a RevealJS page, show
   // each slide first, because a hidden slide's pages have no size to render at.
   // --expect-text reads the hidden text before the pages scroll, and the
@@ -1162,9 +1171,11 @@ try {
   if (phrases && !slides) treeReports.push(await treeFailures(page, null));
   if (expectName && !slides) nameReports.push(await nameFailures(page, null, 0));
 
-  const res = await page.evaluate(async (inkSource, plant) => {
-    // the ink rule of tests/ink.mjs, rebuilt from its source text
-    const inkInPixels = new Function("return " + inkSource)();
+  // the ink rule of tests/ink.mjs, made a function in the page from its source
+  // text by the DevTools protocol, so the page itself runs no eval or new
+  // Function (see --csp)
+  const inkRule = await page.evaluateHandle(`(${inkInPixels.toString()})`);
+  const res = await page.evaluate(async (inkInPixels, plant) => {
     // "ok", "no ink", or why the canvas could not be read
     const inkOf = (c) => {
       try {
@@ -1329,7 +1340,8 @@ try {
       embedSrcs,
       inkPlanted,
     };
-  }, inkInPixels.toString(), plant);
+  }, inkRule, plant);
+  await inkRule.dispose();
 
   const text = phrases
     ? {
@@ -1365,7 +1377,7 @@ try {
         failures: nameReports.flatMap((r) => r.failures),
       }
     : undefined;
-  console.log(JSON.stringify({ device: deviceName || "chrome", alone, remote, missingPdfs, cpuThrottle, canvasWaits, ...res, text, names, consoleErrors }, null, 2));
+  console.log(JSON.stringify({ device: deviceName || "chrome", alone, remote, missingPdfs, cpuThrottle, csp, canvasWaits, ...res, text, names, consoleErrors }, null, 2));
   if (names) {
     if (plant && NAME_PLANTS.includes(plant) && !names.planted) {
       // print every name failure first, so a real defect is still named; an
@@ -1415,6 +1427,10 @@ try {
   }
   // each PDF.js embed must have pages, and each page a canvas with ink
   let ok = true;
+  if (cspHeader && csp !== cspHeader) {
+    console.error(`render_check: --csp: the page arrived with Content-Security-Policy ${JSON.stringify(csp)}, expected ${JSON.stringify(cspHeader)}`);
+    ok = false;
+  }
   res.pdfjsPages.forEach((pages, i) => {
     if (pages.length === 0) {
       console.error(`render_check: PDF.js embed ${i + 1} has no pages`);
