@@ -19,7 +19,29 @@ local function str(v)
   return pandoc.utils.stringify(v)
 end
 
-local VERSION = "1.2.5"
+-- the path as a URL: a % that does not start a %XX escape is written as %25,
+-- so a file name such as 100%.pdf reaches the server as a valid address
+local function url_path(s)
+  return (s:gsub("()%%", function(i)
+    if s:sub(i + 1, i + 2):match("^%x%x$") then return "%" end
+    return "%25"
+  end))
+end
+
+-- the path as a LaTeX file name: decode the %XX escapes of printable ASCII
+-- that are safe in a LaTeX file name, and keep every other % as written
+local LATEX_UNSAFE = { ["\\"] = true, ["{"] = true, ["}"] = true, ["#"] = true,
+  ["$"] = true, ["&"] = true, ["~"] = true, ["^"] = true, ["_"] = true }
+local function latex_path(s)
+  return (s:gsub("%%(%x%x)", function(hex)
+    local byte = tonumber(hex, 16)
+    local c = string.char(byte)
+    if byte >= 0x20 and byte <= 0x7E and not LATEX_UNSAFE[c] then return c end
+    return nil
+  end))
+end
+
+local VERSION = "1.2.6"
 local dependency_injected = false
 local pdfjs_injected = false
 
@@ -97,12 +119,18 @@ function pdf(args, kwargs, meta, raw_args, context)
 
   if quarto.doc.is_format("latex") then
     quarto.doc.use_latex_package("pdfpages")
-    return pandoc.RawBlock('latex', '\\includepdf[pages=-]{' .. src .. '}')
+    local file = latex_path(src)
+    local line = '\\includepdf[pages=-]{' .. file .. '}'
+    if file:find('%', 1, true) then
+      -- % starts a LaTeX comment; in this group it is a plain character
+      line = '\\begingroup\\catcode`\\%=12\\relax' .. line .. '\\endgroup'
+    end
+    return pandoc.RawBlock('latex', line)
   end
 
   if not quarto.doc.is_format("html:js") then
     -- epub, docx, gfm, typst, ...: emit a plain link instead of dropping content
-    local link = pandoc.Link(button ~= '' and button or "Download PDF file", src)
+    local link = pandoc.Link(button ~= '' and button or "Download PDF file", url_path(src))
     if context == "block" then
       return pandoc.Para({ link })
     end
@@ -114,7 +142,7 @@ function pdf(args, kwargs, meta, raw_args, context)
   inject_dependency()
   if renderer ~= 'native' then inject_pdfjs() end
 
-  local esc_src = html_escape(src)
+  local esc_src = html_escape(url_path(src))
 
   local button_html = ''
   if button ~= '' then

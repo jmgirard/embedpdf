@@ -106,7 +106,7 @@ Version 1.2.6.
       address in `data-src`, the `button` link, the no-JavaScript link, and
       the non-HTML link, and the whole LaTeX line. Run them against v1.2.5
       and see the new checks fail.
-- [ ] T2: In `embedpdf.lua`, add a URL rule for the path (used for
+- [x] T2: In `embedpdf.lua`, add a URL rule for the path (used for
       `esc_src` at embedpdf.lua:117 and the link at embedpdf.lua:104) and a
       LaTeX rule (embedpdf.lua:99). Bump `VERSION` and `_extension.yml` to
       1.2.6. The unit tests pass.
@@ -141,6 +141,7 @@ Version 1.2.6.
 
 - 2026-10-19: implement started on branch m015-percent-sign-paths.
 - 2026-10-19: T1: 70 percent checks in tests/test_shortcode.lua (14 paths × data-src, no-JS link, button link, other-format link, LaTeX line). Against v1.2.5: 68 passed, 42 failed (the 7 bare-% paths in the 4 link targets, and all 14 LaTeX lines).
+- 2026-10-19: T2: `url_path()` and `latex_path()` in embedpdf.lua (one `gsub` pass each). The LaTeX group wraps the line only when the path still holds a `%`, so a path with no `%` writes the v1.2.5 line. Version 1.2.6 in both files. Unit tests: 110 passed, 0 failed.
 
 ## Decisions
 
