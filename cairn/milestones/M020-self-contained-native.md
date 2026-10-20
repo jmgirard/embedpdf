@@ -149,6 +149,7 @@ true or stale.
 - 2026-10-19: claim audit: 34 claims read, 4 corrected — tests/native_check.mjs (plant figures now in the work log above; the Firefox folder fix names the recorded `open -g -n -a Firefox --args -headless -screenshot` launch, not an untried plain `open -g -a Firefox`), tests/png_diff.mjs (diffShare's second null case, too small for a block, documented and reported as such), CLAUDE.md (same Firefox launch wording; "Still unverified" slides gap is every browser), cairn/ROADMAP.md (Firefox row's launch wording, corrected M020). Each correction re-read by the agent against the same sources; no second pass.
 - 2026-10-19: implement done; status review.
 - 2026-10-19: review checkpoint: fix-now work from three reviewer lenses (native_check setup errors exit 2 and close the browser, per-embed isolation of size/decode/reference errors, a 60 s limit on each safaridriver call; PROFILE verify slot names native_check; DESIGN slides gap is every browser) committed with one Chromium file and one Safari http rerun passing; the diff-bug lens has not reported yet.
+- 2026-10-20: step-7 approval: m020-self-contained-native approved for merge
 
 ## Review
 
