@@ -4,14 +4,14 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M025: Firefox saves inlined PDFs under their file name
 
-- **Status:** planned   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate; M<xx>, M<yy> or — -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate; RR<NN> whose Binding criteria bind this milestone's ACs (binding-criteria check), or — -->
 - **Principles touched:** GP4   <!-- owner: plan · create/amend-via-gate; comma-separated IPn/GPn ids this milestone touches, or — -->
 - **Resolves:** —   <!-- owner: plan · create/amend-via-gate; comma-separated GitHub issues the scope absorbs, each `#N closes` (the PR closes it at merge) or `#N partial` (the remainder gets a candidate row), or — ; skill conduct only — no validate check parses it -->
 - **Surface tier:** user-facing — it changes the file name Firefox gives a saved copy of an inlined PDF   <!-- owner: plan · create/amend-via-gate; user-facing | internal — <one-clause reason>; skill conduct only — no validate check parses it -->
-- **Branch/PR:** —   <!-- owner: implement (branch) / review (PR URL) · create; a companion checkout the milestone also works in is one further entry per checkout, `companion: <abs-path> <branch>` (implement), its PR URL appended by review — /milestone-review merges companions first, in listed order -->
+- **Branch/PR:** m025-firefox-save-name   <!-- owner: implement (branch) / review (PR URL) · create; a companion checkout the milestone also works in is one further entry per checkout, `companion: <abs-path> <branch>` (implement), its PR URL appended by review — /milestone-review merges companions first, in listed order -->
 
 ## Goal
 <!-- owner: plan · create; a wrong goal returns to plan, never edited in place -->
@@ -94,7 +94,7 @@ Firefox's viewer" row's detail stays the record of the tried forms.
      cites; an insertion, removal, or reorder renumbers the labels and the
      Coverage lines together. -->
 
-- [ ] T1: Add `--browser firefox` to `tests/save_name_check.mjs`. For each
+- [x] T1: Add `--browser firefox` to `tests/save_name_check.mjs`. For each
       native embed, the mode finds the frame of its viewer with
       `page.frames()` and reads `PDFViewerApplication._docFilename`. It
       compares that name with `--expect-save`. It saves no file. The header
@@ -102,7 +102,7 @@ Firefox's viewer" row's detail stays the record of the tried forms.
       `wrongname` plant must exit 1 and name the planted embed. Run the four
       lines on the current viewer and see each one fail with `document.pdf`.
       Firefox needs its profile folder first (LESSONS M020).
-- [ ] T2: Change `inlinedPdf` to make a `File` named `opts.filename`, with no
+- [x] T2: Change `inlinedPdf` to make a `File` named `opts.filename`, with no
       copy of the bytes (GP4). Where `File` is not a constructor, it keeps the
       Blob. Bump `version:` to 1.2.9 in `_extension.yml` and in the
       `add_html_dependency` call in `embedpdf.lua`. Run `quarto render`, then
@@ -137,6 +137,9 @@ Firefox's viewer" row's detail stays the record of the tried forms.
 - 2026-10-20: plan gate chose a `--browser firefox` mode of save_name_check.mjs over a new script or a native_check.mjs mode because the check's question (the save name per native embed) and its `--expect-save` entries are the same; falsified by a mode that needs none of the script's page preparation.
 - 2026-10-20: criteria audit (full mode, fresh Opus reader) returned 9 findings, all fixed: AC1 now says it reads a reported name and saves no file; AC1 adds the two `selfcontained_slides_test.html` lines and the Goal names the two pages and `sample.pdf` (other names moved to Out and DESIGN); AC1's fail-before moved to T1; AC2 clears `sample*` files before each save (Firefox would add a suffix); AC2's work-log record moved to T3; AC3 covers the prose variants and the section after T5, Safari's `Unknown.pdf` kept on purpose (M023's finding); AC4's grep, which wrapped lines defeat, replaced by four named passages; AC4 keeps an automated Firefox save as unverified; the CLAUDE.md lines moved to T5.
 - 2026-10-20: no issue-assignment option, since Resolves is empty.
+- 2026-10-20: implement started on branch m025-firefox-save-name; tree clean at the cut.
+- 2026-10-20: T1 done: `--browser firefox` in save_name_check.mjs reads `_docFilename` in the frame whose address (no fragment) is the embed's; Firefox takes only file-name entries and the wrongname and nosave plants. On a deck the check now shows the slide of an `<iframe>` with no address yet and of the embed it checks (the slides line read nothing for embed 3 before). Before T2 all four lines exited 1 with `document.pdf` for each of the 12 embeds.
+- 2026-10-20: T2 done: `inlinedPdf` makes a `File` named `opts.filename` (Blob where `File` is not a constructor); version 1.2.9; `quarto render` clean; shortcode tests 162 passed, 0 failed. All four Firefox lines exit 0 (`sample.pdf` x 12). Plants on the http line: wrongname at 1 and at 3 exit 1 naming the embed (`dummy.pdf`), nosave at 2 exits 1 (no viewer); otherbytes and `@blob` exit 2. Chromium save line (file) still saves `<blob id>.pdf`.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local. -->

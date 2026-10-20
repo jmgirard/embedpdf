@@ -7,7 +7,7 @@ _Last hygiene check: 2026-10-20 (M024 done: deleted "Check Safari names in iOS s
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M025 | Firefox saves inlined PDFs under their file name | planned | — | normal | milestones/M025-firefox-save-name.md |
+| M025 | Firefox saves inlined PDFs under their file name | in-progress | — | normal | milestones/M025-firefox-save-name.md |
 | M024 | Safari names in the iOS simulators | done | — | normal | milestones/archive/M024-ios-safari-names.md |
 | M023 | Save name of inlined PDFs in native viewers | done | — | normal | milestones/archive/M023-native-save-name.md |
 | M022 | Native embeds on self-contained slides checked | done | — | normal | milestones/archive/M022-slides-native-check.md |

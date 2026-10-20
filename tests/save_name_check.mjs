@@ -2,7 +2,7 @@
 // each one's PDF?
 //
 // Usage:
-//   node tests/save_name_check.mjs --browser chromium|safari
+//   node tests/save_name_check.mjs --browser chromium|safari|firefox
 //        --page <page>.html [--alone file|http]
 //        --expect-native <n> --expect-save "<entry>|<entry>|…"
 //        [--plant wrongid|wrongname|otherbytes|nosave] [--plant-at <k>]
@@ -68,10 +68,21 @@
 // SAVE_CHECK_SHOTS=<dir> saves each window screenshot (and one taken after
 // each click, with the button found) there.
 //
-// Firefox is not a --browser. In Firefox 158 on 2026-10-20 its PDF viewer
-// saved no file under puppeteer-core, from its download button, its menu's
-// download item, or Cmd+S, headless or with a window, while a plain
-// download link saved one.
+// --browser firefox runs headless through puppeteer-core, from FIREFOX_PATH
+// (default /Applications/Firefox.app/Contents/MacOS/firefox). It saves no
+// file. In Firefox 158 on 2026-10-20 its PDF viewer saved no file under
+// puppeteer-core, from its download button, its menu's download item, or
+// Cmd+S, headless or with a window, while a plain download link saved one.
+// So for each native embed the check reads the name that the viewer reports,
+// PDFViewerApplication._docFilename, in the viewer's frame (the frame whose
+// address, with no fragment, is the embed's address). It compares that name
+// with the embed's entry, which must be a file name, not @blob. It reads no
+// saved name and no saved bytes. Firefox needs its profile folder first (see
+// tests/native_check.mjs's header).
+//
+// On a RevealJS deck the check shows the slide of each native embed: before
+// it reads the addresses, the slide of an <iframe> that has none yet, and
+// then the slide of the embed it checks.
 //
 // --plant puts one defect into the native embed --plant-at names (1-based in
 // page order, default 1), after the check read its address and bytes. Each
@@ -93,6 +104,8 @@
 //              desktop Safari 27.0.1)
 // The run must then fail and name that embed: wrongid and wrongname as a
 // name that is not the entry, otherbytes as above, nosave as no saved file.
+// --browser firefox takes wrongname (its viewer reports dummy.pdf) and nosave
+// (no viewer reports a name) only.
 //
 // Exits 0 on a pass, 1 on a failed check, 2 on a bad argument, when --plant
 // finds nothing to plant in, when ~/Downloads already holds an expected name
@@ -118,6 +131,8 @@ const SAFARI_TRIES = 4;
 const WD_MS = 60000; // time limit of one safaridriver call
 const VIEWPORT = { width: 1280, height: 900 };
 const PLANTS = ["wrongid", "wrongname", "otherbytes", "nosave"];
+// Firefox reads no saved file, so no plant that fails on bytes or on a blob: id
+const FIREFOX_PLANTS = ["wrongname", "nosave"];
 const VIEWER_URL = "chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html";
 const DOWNLOADS = path.join(os.homedir(), "Downloads");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -143,8 +158,7 @@ for (let i = 0; i < args.length; i++) {
   flags[k.slice(2)] = args[++i];
 }
 const browserName = flags.browser;
-if (browserName === "firefox") bad("--browser firefox is not supported: its PDF viewer saves no file under automation (see the header)");
-if (!["chromium", "safari"].includes(browserName)) bad("--browser must be chromium or safari");
+if (!["chromium", "safari", "firefox"].includes(browserName)) bad("--browser must be chromium, safari, or firefox");
 const page = flags.page;
 if (!page) bad("--page is required");
 const alone = flags.alone ?? null;
@@ -156,8 +170,10 @@ let entries = flags["expect-save"].split("|");
 if (entries.some((e) => e === "")) bad("--expect-save has an empty entry");
 if (entries.length === 1) entries = Array(expectNative).fill(entries[0]);
 if (entries.length !== expectNative) bad(`--expect-save has ${entries.length} entries for ${expectNative} native embeds`);
+if (browserName === "firefox" && entries.includes("@blob")) bad("--browser firefox takes file names only, not @blob");
 const plant = flags.plant ?? null;
-if (plant && !PLANTS.includes(plant)) bad(`--plant must be one of ${PLANTS.join(", ")}`);
+const plants = browserName === "firefox" ? FIREFOX_PLANTS : PLANTS;
+if (plant && !plants.includes(plant)) bad(`--plant must be one of ${plants.join(", ")}`);
 if (flags["plant-at"] && !plant) bad("--plant-at needs --plant");
 if (flags["plant-at"] && !/^[1-9]\d*$/.test(flags["plant-at"])) bad("--plant-at must be 1 or more");
 const plantAt = plant ? Number(flags["plant-at"] ?? 1) : null;
@@ -219,6 +235,13 @@ const READ_EMBEDS = `async (limit) => {
   for (;;) {
     const unhydrated = document.querySelectorAll("div.embedpdf:not(.embedpdf-pdfjs):not(.embedpdf-native):not(.embedpdf-failed)").length;
     const native = read();
+    // on a RevealJS deck, an <iframe> gets its address once it has a box
+    // (hydrateNative), so show the slide of the first one with none
+    const waiting = native.find((n) => n.e && !n.address);
+    if (unhydrated === 0 && waiting && window.Reveal && waiting.e.closest("section")) {
+      const h = Reveal.getIndices(waiting.e.closest("section"));
+      Reveal.slide(h.h, h.v);
+    }
     if ((unhydrated === 0 && native.every((n) => n.address)) || Date.now() > end) {
       native.forEach((n, i) => n.e && n.e.setAttribute("data-save-check", String(i)));
       return native.map((n) => ({ tag: n.tag, address: n.e ? (n.e.tagName === "IFRAME" ? n.e.src : n.e.data) : "" }));
@@ -255,6 +278,11 @@ const PREPARE = `async (k, plant, dummy, keepOthers) => {
     }
     el.replaceWith(copy);
     el = copy;
+  }
+  // on a RevealJS deck, show the embed's slide
+  if (window.Reveal && el.closest("section")) {
+    const h = Reveal.getIndices(el.closest("section"));
+    Reveal.slide(h.h, h.v);
   }
   el.scrollIntoView({ block: "center" });
   return { bytes };
@@ -582,8 +610,73 @@ async function safariDriver() {
   };
 }
 
+// Firefox: its viewer saves no file under puppeteer-core (see the header), so
+// the check reads the name the viewer would save under,
+// PDFViewerApplication._docFilename, in the viewer's frame: the frame whose
+// address, with no fragment, is the embed's address.
+async function firefoxDriver() {
+  const { default: puppeteer } = await import("puppeteer-core");
+  let browser;
+  try {
+    browser = await puppeteer.launch({
+      browser: "firefox",
+      executablePath: process.env.FIREFOX_PATH || "/Applications/Firefox.app/Contents/MacOS/firefox",
+      headless: true,
+      handleSIGINT: false,
+      handleSIGTERM: false,
+      handleSIGHUP: false,
+    });
+  } catch (err) {
+    const hint = /profile folder/.test(err.message) ? " (launch it once through macOS open, as tests/native_check.mjs's header says)" : "";
+    bad(`cannot start firefox${hint}: ${err.message.split("\n")[0]}`);
+  }
+  const version = await browser.version();
+  return {
+    version,
+    async saveEmbed(k) {
+      const tab = await browser.newPage();
+      try {
+        await tab.setViewport(VIEWPORT);
+        await tab.goto(pageUrl, { waitUntil: "load" });
+        const native = await tab.evaluate(`(${READ_EMBEDS})(${HYDRATE_MS})`);
+        const embed = native[k] ?? { tag: "", address: "" };
+        if (native.length !== expectNative) return { count: native.length, ...embed, name: null };
+        await tab.evaluate(`(${PREPARE})(${k}, ${JSON.stringify(k + 1 === plantAt ? plant : null)}, ${JSON.stringify(DUMMY)}, true)`);
+        // the embed's address now (a plant changes it), with no fragment
+        const now = await tab.evaluate(`(() => {
+          const e = document.querySelector('[data-save-check="${k}"]');
+          if (!e || (e.tagName !== "OBJECT" && e.tagName !== "IFRAME")) return "";
+          return (e.tagName === "IFRAME" ? e.src : e.data).split("#")[0];
+        })()`);
+        const end = Date.now() + VIEWER_MS;
+        let viewerSeen = false;
+        while (now && Date.now() < end) {
+          const frame = tab.frames().find((f) => f.url().split("#")[0] === now);
+          if (frame) {
+            const name = await frame
+              .evaluate(() => {
+                const app = window.PDFViewerApplication;
+                if (!app) return { viewer: false };
+                if (!app.pdfDocument) return { viewer: true, name: null };
+                return { viewer: true, name: app._docFilename };
+              })
+              .catch(() => null);
+            if (name && name.viewer) viewerSeen = true;
+            if (name && name.name) return { ...embed, name: name.name, reported: true };
+          }
+          await sleep(300);
+        }
+        return { ...embed, pressed: viewerSeen, name: null, reported: true };
+      } finally {
+        await tab.close().catch(() => {});
+      }
+    },
+    close: () => browser.close(),
+  };
+}
+
 // --- run ---------------------------------------------------------------------
-const drv = browserName === "chromium" ? await chromiumDriver() : await safariDriver();
+const drv = browserName === "chromium" ? await chromiumDriver() : browserName === "safari" ? await safariDriver() : await firefoxDriver();
 let interrupted = false;
 for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"]) {
   process.on(sig, () => {
@@ -607,11 +700,13 @@ try {
     }
     const want = expectedName(k, r.address);
     const planted = k + 1 === plantAt ? ` [planted: ${plant}]` : "";
-    lines.push(`${at}: saved as ${r.name ?? "(nothing)"}, expected ${want ?? "(no blob: address)"}${r.bytesOk === false ? ", other bytes" : ""}${planted}`);
+    const verb = r.reported ? "viewer reports" : "saved as";
+    lines.push(`${at}: ${verb} ${r.name ?? "(nothing)"}, expected ${want ?? "(no blob: address)"}${r.bytesOk === false ? ", other bytes" : ""}${planted}`);
     if (want === null) failures.push(`${at}: its entry is @blob but its address is not a blob: URL (${r.address.slice(0, 60)})`);
     else if (r.problem) failures.push(`${at}: ${r.problem}`);
+    else if (r.name === null && r.reported) failures.push(`${at}: its viewer reported no name${r.pressed === false ? " (no PDF viewer was found for its address)" : ""}`);
     else if (r.name === null) failures.push(`${at}: no file was saved${r.pressed === false ? " (its save control was not found)" : ""}`);
-    else if (r.name !== want) failures.push(`${at}: saved as ${r.name}, not ${want}`);
+    else if (r.name !== want) failures.push(`${at}: ${verb} ${r.name}, not ${want}`);
     else if (r.bytesOk === false) failures.push(`${at}: the saved file does not hold the embed's PDF`);
   }
 } catch (err) {
@@ -628,6 +723,10 @@ if (failures.length) {
   for (const f of failures) console.log(`FAIL ${f}`);
   exitCode = 1;
 } else {
-  console.log(`PASS ${expectNative} native embeds saved under their expected names, with their own bytes`);
+  console.log(
+    browserName === "firefox"
+      ? `PASS the viewers of ${expectNative} native embeds report their expected names (no file saved)`
+      : `PASS ${expectNative} native embeds saved under their expected names, with their own bytes`
+  );
 }
 process.exit(exitCode);
