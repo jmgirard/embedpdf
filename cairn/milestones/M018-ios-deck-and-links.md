@@ -25,11 +25,11 @@
 
 ## Acceptance criteria
 
-- [ ] AC1: `tests/ios_check.mjs --expect-pages` takes one whole number or a `|` list of whole numbers. One number applies to every embed not set to `renderer=native`, as before. A list gives one number per such embed in page order, and embed k must have the k-th number of page containers. A list whose length differs from `--expect-embeds`, or an entry that does not match `^\d+$`, exits 2 with a message. Evidence: on `revealjs_test.html` with `--device "embedpdf iPhone" --expect-embeds 2 --expect-native 1`, `--expect-pages "2|1"` exits 0, and `"1|2"` exits 1 with a page-count failure line for each of the two embeds. `"2|1|1"` and `"2|x"` each exit 2.
-- [ ] AC2: CLAUDE.md "Verify before finishing" holds one `ios_check.mjs` line for `revealjs_test.html` with `--device "embedpdf iPhone"` and one with `--device "embedpdf iPad"`. Each passes `--expect-embeds 2 --expect-native 1 --expect-pages "2|1" --expect-name "dummy.pdf|dummy2.pdf|dummy.pdf"`, and each exits 0 when run. `grep -n "takes one \`--expect-pages\` for all embeds" CLAUDE.md` prints nothing.
-- [ ] AC3: `tests/ios_check.mjs --expect-links <n>` fails the run unless the page holds exactly n download links, each with a `data:` or `blob:` href. It selects the links as `tests/render_check.mjs` does (`.embedpdf-download, .embedpdf object a[download], a.embedpdf-btn`). Evidence: on `selfcontained_test.html --alone yes` with "embedpdf iPhone" and `--expect-links 4`, `--plant nolink` (removes one such link) exits 1 with a line that names the link count. `--plant linkfile` (sets one such link's href to the PDF's file path) exits 1 with a line that names that href. Each plant exits 2 on a page that holds no such link.
-- [ ] AC4: The four `ios_check.mjs` lines in CLAUDE.md for `selfcontained_test.html` and `selfcontained_slides_test.html` (iPhone and iPad) pass `--expect-links 4`, and each exits 0 when run.
-- [ ] AC5: With the final `tests/ios_check.mjs`, each line that `grep -n "node tests/ios_check.mjs.*--expect-pages" CLAUDE.md` prints exits 0 when run. So do the two `example.html` lines at the top of the ios_check list, which pass no `--page`.
+- [x] AC1: `tests/ios_check.mjs --expect-pages` takes one whole number or a `|` list of whole numbers. One number applies to every embed not set to `renderer=native`, as before. A list gives one number per such embed in page order, and embed k must have the k-th number of page containers. A list whose length differs from `--expect-embeds`, or an entry that does not match `^\d+$`, exits 2 with a message. Evidence: on `revealjs_test.html` with `--device "embedpdf iPhone" --expect-embeds 2 --expect-native 1`, `--expect-pages "2|1"` exits 0, and `"1|2"` exits 1 with a page-count failure line for each of the two embeds. `"2|1|1"` and `"2|x"` each exit 2.
+- [x] AC2: CLAUDE.md "Verify before finishing" holds one `ios_check.mjs` line for `revealjs_test.html` with `--device "embedpdf iPhone"` and one with `--device "embedpdf iPad"`. Each passes `--expect-embeds 2 --expect-native 1 --expect-pages "2|1" --expect-name "dummy.pdf|dummy2.pdf|dummy.pdf"`, and each exits 0 when run. `grep -n "takes one \`--expect-pages\` for all embeds" CLAUDE.md` prints nothing.
+- [x] AC3: `tests/ios_check.mjs --expect-links <n>` fails the run unless the page holds exactly n download links, each with a `data:` or `blob:` href. It selects the links as `tests/render_check.mjs` does (`.embedpdf-download, .embedpdf object a[download], a.embedpdf-btn`). Evidence: on `selfcontained_test.html --alone yes` with "embedpdf iPhone" and `--expect-links 4`, `--plant nolink` (removes one such link) exits 1 with a line that names the link count. `--plant linkfile` (sets one such link's href to the PDF's file path) exits 1 with a line that names that href. Each plant exits 2 on a page that holds no such link.
+- [x] AC4: The four `ios_check.mjs` lines in CLAUDE.md for `selfcontained_test.html` and `selfcontained_slides_test.html` (iPhone and iPad) pass `--expect-links 4`, and each exits 0 when run.
+- [x] AC5: With the final `tests/ios_check.mjs`, each line that `grep -n "node tests/ios_check.mjs.*--expect-pages" CLAUDE.md` prints exits 0 when run. So do the two `example.html` lines at the top of the ios_check list, which pass no `--page`.
 
 ## Coverage
 
@@ -69,3 +69,28 @@
 ## Decisions
 
 ## Review
+
+Evidence at commit 30d3515, 2026-10-19, from one script run in the iOS 27.0 simulators.
+
+- AC1: revealjs_test.html, iPhone, `--expect-embeds 2 --expect-native 1`: `"2|1"` exit 0 (18 s). `"1|2"` exit 1 with "embed 2: 2 page containers, expected 1" and "embed 3: 1 page containers, expected 2". `"2|1|1"` exit 2 "--expect-pages gives 3 counts for --expect-embeds 2". `"2|x"` exit 2 "--expect-pages needs a whole number, or a "|" list of whole numbers".
+- AC2: `grep -c` finds both CLAUDE.md lines (161 and 162) with the AC2 flags verbatim. Each exits 0 (18 s iPhone, 14 s iPad). `grep -n "takes one \`--expect-pages\` for all embeds" CLAUDE.md` prints nothing.
+- AC3: selfcontained_test.html `--alone yes`, iPhone, `--expect-links 4`: `--plant nolink` exit 1 "expected 4 download links, found 3". `--plant linkfile` exit 1 "download link href "sample.pdf" is not a data: or blob: address". On native.html (no embedpdf link), `--expect-embeds 0 --expect-links 0`, each plant exits 2 "found nothing to plant in". The diff-bug lens read the selector in `tests/ios_check.mjs` as equal to render_check's at `tests/render_check.mjs:1258`.
+- AC4: `grep -c` finds 4 self-contained ios_check lines with `--expect-links 4` (CLAUDE.md:157 to 160). Each exits 0 (7 s, 6 s, 18 s, 15 s).
+- AC5: all 30 `node tests/ios_check.mjs` lines in CLAUDE.md exit 0. These include the 10 `--expect-pages` lines and the two `example.html` lines (72, 73), so they cover every AC5 line.
+- Consistency gate: `cairn_validate.py` all checks passed. The generic profile names no toolchain checks.
+- spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1: an `--expect-pages` list shorter than the embeds found gives "expected NaN page containers" beside the count failure — fix now.
+- diff-bug #2: `--expect-links` is not refused with `--remote`, `--missing-pdfs`, or `--expect-download`, and on selfcontained_failed_test.html the "Download the PDF" link has no matched class, so `--expect-links 0` passes there; render_check refuses none either — follow-up, row "iOS link check gaps".
+- diff-bug #3: the header says `linkfile` uses the PDF's file name, but the code falls back to "sample.pdf" when a link has no download name — fix now.
+- diff-bug #4: a link plant on a run that stops with an embed not hydrated fails on that stop (exit 1), not with exit 2 — follow-up, row "iOS link check gaps".
+- diff-bug #5: the rewritten exit-summary comment line is 97 characters — fix now (rewrapped with the comment fixes).
+- diff-bug #6: CLAUDE.md does not describe `--expect-links` or the `nolink` and `linkfile` plants — fix now.
+- diff-bug #7: a one-entry `--expect-pages` list counts as one count for every embed — reject, planned change: AC1 defines one number that way.
+- blame-history #1: the link selector is a copy of render_check's string, so an edit to one splits the two checks — follow-up, row "iOS link check gaps".
+- blame-history #2: reflowed comment lines run past 80 columns — fix now (rewrapped).
+- blame-history #3: the `--expect-pages` header entry changes the flag column layout — reject, style.
+- prior-review #1: the revealjs_test.html lines keep the 180 s report timeout while a deck slide can take 50 s — follow-up, already held by row "Deck walk follow-ups", which names that timeout (no edit).
+- prior-review #2: the `--expect-links` code comment says each link holds "the PDF held in the page", but only the href scheme is checked — fix now.
+- prior-review #3: same as diff-bug #3 — fix now.
+- prior-review #4: `--expect-links` counts links in hidden RevealJS slides too — reject, planned change: AC3 counts the page's links as render_check does.
+- ripple #1: candidate row "iOS slide deck gaps" in cairn/ROADMAP.md is now stale — reject, planned change: post-merge hygiene graduates that row.
