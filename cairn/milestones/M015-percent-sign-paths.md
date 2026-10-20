@@ -63,7 +63,7 @@ Version 1.2.6.
       Otherwise the line is `\includepdf[pages=-]{<path>}`, the form v1.2.5
       wrote. `tests/test_shortcode.lua` checks the whole line for each AC1
       path. The same run prints "N passed, 0 failed".
-- [ ] AC3: The normal page (not self-contained) `percent_page_test.qmd` has
+- [x] AC3: The normal page (not self-contained) `percent_page_test.qmd` has
       five embeds, in this order:
       - `files/100%.pdf` with `renderer=pdfjs`
       - `files/100%25.pdf` with `renderer=pdfjs`
@@ -80,11 +80,11 @@ Version 1.2.6.
 
       In Chromium on the served desktop page, a `fetch` of the native
       `<object>`'s address returns HTTP 200 and the bytes of `sample.pdf`.
-- [ ] AC4: `quarto render percent_page_test.qmd --to pdf --output-dir <dir>`,
+- [x] AC4: `quarto render percent_page_test.qmd --to pdf --output-dir <dir>`,
       with a directory outside `docs/` and Quarto's default PDF engine,
       completes with no error. `pdftotext` of that PDF holds the phrase "On
       the Origin of Coastlines" 5 times, one per embed.
-- [ ] AC5: After `quarto render`, each line that starts with `node ` and
+- [x] AC5: After `quarto render`, each line that starts with `node ` and
       names `percent_test.html` or `name_test.html` in CLAUDE.md at commit
       61d6f12 passes (9 lines). In that CLAUDE.md, the first command block
       that names `example.html` holds one `example.html` line with no
