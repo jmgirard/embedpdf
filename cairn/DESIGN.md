@@ -177,8 +177,9 @@ load on the same queue, and a text task runs only when no page render waits
   Pages site (CLAUDE.md "Still unverified"). iOS is checked only in iOS 27.0
   and 27.1 simulators by `tests/ios_check.mjs`, and iOS versions before 27 are
   not checked (corrected M001) — observed 2026-10-18.
-- GitHub releases stop at v0.5.0 while tags reach v1.0.2, so the README
-  version badge shows 0.5.0 — observed 2026-10-18.
+- GitHub releases stop at v0.5.0 and tags stop at v1.0.2, while the
+  extension is at 1.2.6, so the README version badge shows 0.5.0 (corrected
+  2026-10-19) — observed 2026-10-19.
 - Safari refuses a read of a PDF from another site that an `<object>` on the
   page loaded. So a PDF.js embed of that PDF reads it with `embedpdf=pdfjs`
   added to its query (corrected M014). A real site's answer to that address
