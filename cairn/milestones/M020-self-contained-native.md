@@ -40,7 +40,7 @@ true or stale.
 
 ## Acceptance criteria
 
-- [ ] AC1: In Chromium 155 and Firefox 158 (both headless) and desktop Safari
+- [x] AC1: In Chromium 155 and Firefox 158 (both headless) and desktop Safari
       27.0.1, with `docs/selfcontained_test.html` opened as a copy alone over
       `file://` and over HTTP, each of its 3 native embeds shows the in-page
       copy of `sample.pdf` (its `<object>` address is a `blob:` URL) as the
@@ -51,20 +51,20 @@ true or stale.
       in CLAUDE.md (three browsers, each with `--alone file` and `--alone
       http`; the two Safari lines with `--same-pages`) each exit 0 with
       `--expect-native 3`.
-- [ ] AC2: In Chromium 155 and Firefox 158 the `page=2` native embed opens at
+- [x] AC2: In Chromium 155 and Firefox 158 the `page=2` native embed opens at
       page 2: on their four AC1 lines the page-1 and page-2 references differ,
       and the embed matches the page-2 reference. In desktop Safari 27.0.1 the
       `page=2` embed and the page-2 reference both show page 1: on the two
       Safari lines the page-1 and page-2 references match, and the embed
       matches them.
-- [ ] AC3: The added embed leaves the page working where the self-contained
+- [x] AC3: The added embed leaves the page working where the self-contained
       checks already run: each `selfcontained_test.html` line of
       `render_check.mjs` and `ios_check.mjs` in CLAUDE.md exits 0 with its
       counts updated (desktop devices: 3 native, 1 PDF.js; `iphone` and the
       iOS simulators: 2 native, 2 PDF.js), as do the `--device mac-safari`,
       `windows-touch`, and `ipad` runs CLAUDE.md asks for, and each
       render_check line with `--alone file` also with `--alone http`.
-- [ ] AC4: README's self-contained item and a DESIGN.md Known issues entry
+- [x] AC4: README's self-contained item and a DESIGN.md Known issues entry
       state, dated, what the AC1 and AC2 runs showed: the native embeds of a
       self-contained HTML page (not RevealJS slides) showing `sample.pdf` in
       Chromium 155 and Firefox 158 (headless) and desktop Safari 27.0.1, over a
@@ -148,3 +148,12 @@ true or stale.
 - 2026-10-19: T3 figures (share of blocks, `--alone http`, from the plant runs after the `data-page` change): otherpdf 0.0676 Chromium, 0.4291 Firefox, 0.0863 Safari; broken 0.9970 Chromium, 0.4621 Firefox, 0.0397 Safari (and no ink); blank 0.9970 Chromium, 0.4354 Firefox, 0.0397 Safari (and no ink); nopage vs the page-2 reference 0.1371 Chromium, 0.0567 Firefox; fileaddr fails on the address in all three.
 - 2026-10-19: claim audit: 34 claims read, 4 corrected — tests/native_check.mjs (plant figures now in the work log above; the Firefox folder fix names the recorded `open -g -n -a Firefox --args -headless -screenshot` launch, not an untried plain `open -g -a Firefox`), tests/png_diff.mjs (diffShare's second null case, too small for a block, documented and reported as such), CLAUDE.md (same Firefox launch wording; "Still unverified" slides gap is every browser), cairn/ROADMAP.md (Firefox row's launch wording, corrected M020). Each correction re-read by the agent against the same sources; no second pass.
 - 2026-10-19: implement done; status review.
+
+## Review
+
+- AC1 evidence (2026-10-19, fresh runs on branch head 04fcbec): the six CLAUDE.md `native_check.mjs` lines for `selfcontained_test.html` each exit 0 with `--expect-native 3` (Chromium 155.0.8059.39 and Firefox 158.0 headless, Safari 27.0.1; `--alone file` and `--alone http`; Safari with `--same-pages`). Every native embed's address is `blob:`, and each matches its reference of `docs/sample.pdf` on the check's server: at most 0.0035 of blocks differ (Firefox page-2 embed), tolerance 0.01. Discrimination: `--plant otherpdf` exits 1 as a mismatch in each browser (0.0676 Chromium, 0.4291 Firefox, 0.0863 Safari).
+- AC2 evidence (same runs): Chromium and Firefox lines report the page-1 and page-2 references different (0.1371 and 0.0530 of blocks, above 0.01) and the `page=2` embed matching the page-2 reference (0.0000 and 0.0035). Both Safari lines report the page-1 and page-2 references matching (0.0000) and the `page=2` embed matching them (0.0000), so it opens at page 1 for the file address and the in-page copy. Discrimination: `--plant nopage` exits 1 in Chromium and Firefox, failing both the fragment check and the page-2 match.
+- AC3 evidence (2026-10-19, fresh runs): every `selfcontained_test.html` render_check line exits 0 with the updated counts, at `--alone file` and `--alone http`: default and `--device mac-safari` and `windows-touch` with 3 native, 1 PDF.js, 5 links; `--device iphone` and `ipad` with 2 native, 2 PDF.js, 5 links (10 runs). Both ios_check lines (embedpdf iPhone, embedpdf iPad; `--alone yes --expect-embeds 2 --expect-native 2 --expect-links 5`) exit 0.
+- AC4 evidence (read 2026-10-19): README.md:86 states, dated 2026-10-19, that native embeds of `sample.pdf` on a self-contained HTML page were checked in Chromium 155 and Firefox 158 (headless) and desktop Safari 27.0.1, as a local file and over HTTP, not RevealJS slides, each showing the PDF as the browser shows the file; `page=2` at page 2 in Chromium and Firefox and at page 1 in Safari, as for the file; save-button name not checked. README.md:66's `page` row names the Safari 27.0.1 page-1 case. cairn/DESIGN.md Known issues holds one entry, observed 2026-10-19, with both facts (its slides clause corrected to "in any browser" in this review). Matches the AC1 and AC2 runs above.
+
+- Consistency gate (2026-10-19): `cairn_validate.py` exit 0, all checks passed (coverage complete PASS). No DESIGN principle changed (IP1 is worked under), so `cairn_impact` was skipped. The generic profile's consistency-gate slot names no toolchain checks.
