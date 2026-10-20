@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M025: Firefox saves inlined PDFs under their file name
 
-- **Status:** review   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate; M<xx>, M<yy> or — -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate; RR<NN> whose Binding criteria bind this milestone's ACs (binding-criteria check), or — -->
@@ -48,7 +48,7 @@ Firefox's viewer" row's detail stays the record of the tried forms.
      insertion, removal, or reorder renumbers the labels and the Coverage
      lines together. -->
 
-- [ ] AC1: The pages are `selfcontained_test.html` and
+- [x] AC1: The pages are `selfcontained_test.html` and
       `selfcontained_slides_test.html`, each opened alone as a local file and
       over HTTP, in Firefox 158 run headless through puppeteer-core. The
       built-in viewer of each of the 3 native embeds of each page reports
@@ -56,13 +56,13 @@ Firefox's viewer" row's detail stays the record of the tried forms.
       (`PDFViewerApplication._docFilename` in the frame of the viewer). The
       four `tests/save_name_check.mjs --browser firefox` lines read this name.
       They save no file, so AC2 covers the saved name.
-- [ ] AC2: The user opens `selfcontained_test.html` alone in a windowed
+- [x] AC2: The user opens `selfcontained_test.html` alone in a windowed
       Firefox 158 on macOS, as a local file and over HTTP. For each of its 3
       native embeds in each case, the user presses the save control of the
       viewer once. Before each save, the save folder holds no file whose name
       starts with `sample`, or Firefox's save dialog shows the name. Each of
       these 6 saves gives the name `sample.pdf`, as the user reports it.
-- [ ] AC3: After the change, every `node tests/` command line in the fenced
+- [x] AC3: After the change, every `node tests/` command line in the fenced
       blocks of the "Verify before finishing" section of CLAUDE.md, as the
       section stands after T5, exits 0. So does each variant that the prose
       of that section requires: an `--alone file` line run again with
@@ -148,9 +148,40 @@ Firefox's viewer" row's detail stays the record of the tried forms.
 - 2026-10-20: T4 done: the user unlocked the screen (a stop at a chip); the Safari save line over HTTP then exited 0 (`Unknown.pdf` x 3). All 138 lines exit 0; shortcode tests 162 passed, 0 failed. DESIGN's "the same with 1.2.9" now holds for Chromium and Safari, file and HTTP.
 - 2026-10-20: implement complete; status review.
 - 2026-10-20: review started: no PR, main not moved; all 138 check lines re-running for fresh AC3 evidence; four lenses spawned; fix-now edits from their findings checkpointed here before the Review section is written (half-done: evidence and dispositions not yet recorded).
+- 2026-10-20: the user asked the run to stop using Safari (two Safari windows of theirs were open); no Safari check runs again in this milestone.
+- 2026-10-20: review return 1: AC4 fails as written — CLAUDE.md's save-name paragraph does not state the hand-save name and date, and its "Still unverified" item does not state the name Firefox's viewer reports; both passages must state both names with the date.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local. -->
 
 ## Review
 <!-- owner: review · exclusive. -->
+
+- AC1: 2026-10-20 review re-run (script at 74ff6a6, viewer 1.2.9): the four `save_name_check.mjs --browser firefox` lines (`selfcontained_test.html` and `selfcontained_slides_test.html`, `--alone file` and `--alone http`) each exited 0, Firefox 158 headless, every one of the 12 native embeds' viewers reporting `sample.pdf`; no file saved.
+- AC2: the user's report at T3 (2026-10-20, work log): in windowed Firefox 158 on macOS, `selfcontained_test.html` (1.2.9) opened alone as a local file and over HTTP, one save per native embed (3 + 3), `sample*` files cleared or the dialog read before each; all 6 saves gave `sample.pdf`. `docs/selfcontained_test.html` is unchanged since that report (`git diff --stat 9004ca5 HEAD -- docs/selfcontained_test.html` is empty; the later viewer edit was a comment, which the self-contained render drops). Not re-run at review: it needs the user's hands, and the question set granted one stop.
+- AC3: 2026-10-20 review re-run of the 138 lines (every `node tests/` line in the CLAUDE.md section as it stood after T5, plus the prose variants), CHROME_PATH=Chromium: 137 exited 0, the four Chromium and Safari save lines among them except the Safari `--alone http` line, which exited 2 twice ("no safaridriver session": Safari could not start an automation session). The user then asked that the run stop using Safari, so it was not tried again. That line exited 0 earlier on 2026-10-20 (T4, after 03f0dee) with `Unknown.pdf` x 3. Since then only `tests/save_name_check.mjs` changed (`git diff --stat 03f0dee HEAD -- docs _extensions` is empty), and the Safari `--alone file` line passed on the changed script in the re-run. `pandoc lua tests/test_shortcode.lua`: 162 passed, 0 failed.
+- AC4: FAIL at review pass 1. README's self-contained bullet and DESIGN's save-name entry state the reported name and the hand-save name with the date. CLAUDE.md's save-name paragraph (line 252 on) states neither the hand-save name nor a date, and its "Still unverified" item (line 529 on) does not state the reported name. Box left unticked, review return 1.
+- consistency gate: `cairn_validate.py` all checks passed; no principle changed (cairn_impact skipped); `generic` profile names no toolchain checks.
+- spawned: diff-bug, blame-history, prior-review, ripple. Claim audit at implement: 50 claims, 6 corrected (work log).
+- diff-bug #1: DESIGN and ROADMAP still say the extension is at 1.2.8 — fix now, fixed 74ff6a6.
+- diff-bug #2: Firefox frame lookup takes the first frame with the address, so on a page whose embeds share one address it can read another embed's viewer — fix now (others removed, exactly one matching frame required; `page_test.html` Firefox run passed), fixed 74ff6a6.
+- diff-bug #3: Firefox mode fetches and hashes bytes it never uses, which can throw for a cross-origin PDF — fix now (PREPARE `readBytes` false for Firefox), fixed 74ff6a6.
+- diff-bug #4: on a deck, Safari's click could aim at a slide still moving after `Reveal.slide` — reject, false: the Safari driver waits 1500 ms after PREPARE before it reads the box.
+- diff-bug #5: Firefox reads the embed's address once, so a deck `<iframe>` that gets its address late reports "no PDF viewer" — fix now (address re-read on each poll), fixed 74ff6a6.
+- diff-bug #6: VIEWER_MS comment names Chromium only — fix now, fixed 74ff6a6.
+- diff-bug #7: `fileName()` decodes `%2F`, so a `File` name can hold `/`; Firefox's handling not checked — follow-up, row "Close the Firefox save check gaps".
+- diff-bug #8: README's "Other addresses were tried in Chromium and Safari" sentence reads as part of the Firefox result — fix now (moved before the Firefox sentences), fixed 74ff6a6.
+- blame-history #1: Firefox mode compares no bytes, so another PDF under the right name would pass (D-006 gap) — follow-up, row "Close the Firefox save check gaps" (native_check's Firefox lines check the drawn PDF).
+- blame-history #2: the Firefox pass reads the reported name, not the saved name — follow-up, same row.
+- blame-history #3: the reversal of "Firefox is not a --browser" has no D-entry — reject, false: no D-entry ruled Firefox out, and the choice is recorded in this milestone's plan and work log.
+- prior-review #1: Chromium and Safari names after the change are not shown rerun — reject, false: T4 and this review's re-run record both.
+- prior-review #2: Firefox mode reads no bytes, unlike M023's bytes check — follow-up, row "Close the Firefox save check gaps".
+- prior-review #3: README's Firefox claims cannot be verified from the diff — reject, false: the work log records the runs and the hand saves.
+- prior-review #4: the Blob fallback in `inlinedPdf` is dead code — reject, false: it runs where `File` is not a constructor.
+- prior-review #5: the `Reveal.slide` calls run for Chromium and Safari too — reject, false: they run only where `window.Reveal` exists, and no Chromium or Safari save line uses a deck.
+- ripple #1: CLAUDE.md's save paragraph says the check presses the control and reads the saved bytes, wrong for Firefox — fix now (scoped to Chromium and desktop Safari), fixed 74ff6a6.
+- ripple #2: row "Run the render checks in Firefox" says only native_check and frame_rule_check run in Firefox — fix now (adds save_name_check, corrected M025), fixed 74ff6a6.
+- ripple #3: row "Name inlined PDFs in Firefox's viewer" is stale — reject, planned change: post-merge hygiene deletes the row this milestone graduates.
+- ripple #4: row "Publish GitHub releases for 1.0 tags" says 1.2.8 — fix now, fixed 74ff6a6.
+- ripple #5: DESIGN's releases entry says 1.2.8 — fix now, fixed 74ff6a6.
+- ripple #6: the check header's "An entry is a file name, or @blob" lacks the Firefox limit — fix now, fixed 74ff6a6.
