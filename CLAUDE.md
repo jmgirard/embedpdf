@@ -103,8 +103,8 @@ page headings (see the byte-range lines below). In render_check it also checks C
 `revealjs_test.html` uses other PDFs and gets no text check. `--expect-name`
 checks that each PDF.js embed is a group with its expected name: "PDF:
 <file name>", numbered, or "PDF" alone, as below. It also checks that each
-native embed's `<object>` has that name as its `aria-label` and has no
-`title`. In render_check it also checks that each toolbar control's name is
+native embed's `<object>` or `<iframe>` has that name as its `aria-label`
+and has no `title`. In render_check it also checks that each toolbar control's name is
 its tooltip and is not repeated as its description. `--expect-name
 "a.pdf|b.pdf"` gives one name per native or PDF.js embed in page order, as
 on `revealjs_test.html`. The list must name every such embed, and it cannot
@@ -181,8 +181,9 @@ with `renderer=auto` (1 page).
 
 Native embeds and their `page` option: a native embed is an `<object>`. On a
 desktop browser with a built-in PDF viewer, an embed whose `page` is over 1
-is an `<iframe>` instead (D-007). Desktop Safari 27.0.1 opens an `<object>`
-at page 1 whatever its `#page` fragment says, and opens an `<iframe>` at that
+can be an `<iframe>` instead. The PDF's answer to a HEAD request decides it
+(D-008, `frame_rule_check.mjs` below). Desktop Safari 27.0.1 opens an `<object>` at
+page 1 whatever its `#page` fragment says, and opens an `<iframe>` at that
 page. `native_check.mjs` takes a screenshot of each native embed. The
 reference is a screenshot of the element that the embed must be. It shows
 `docs/sample.pdf` from the check's own server at the embed's size. It shows
@@ -281,7 +282,7 @@ HTTP 404). `--expect-failed` counts embeds that show "This PDF cannot be shown
 here." and the "Open the PDF" link. Run each desktop line (no `--device`)
 also with `--device mac-safari` and `--device windows-touch`. ios_check takes
 `blocked` and `cors`, and safari_check takes `cors`. With `cors`, both also
-check each native embed's `<object>`. Its address must be on the second
+check each native embed's `<object>` or `<iframe>`. Its address must be on the second
 server, and that server's log must hold a GET for it with no Origin
 header. A native
 viewer's read sends none, and a CORS read such as PDF.js's sends one.
@@ -440,8 +441,9 @@ errors.
   bare string throws.
 - `renderer=auto` uses PDF.js on iPhone and iPad (an iPad sends a Mac user
   agent, so it is detected by `maxTouchPoints > 1`). Elsewhere, if
-  `navigator.pdfViewerEnabled` is true, it uses the native `<object>`, and
-  otherwise PDF.js.
+  `navigator.pdfViewerEnabled` is true, it uses the native viewer, and
+  otherwise PDF.js. The native viewer is an `<object>`, or an `<iframe>` for
+  some embeds with a `page` over 1 (D-008).
   Safari on iOS 27 reports `pdfViewerEnabled` true. Force a renderer with
   `renderer=native|pdfjs`. Use `pdfjs` to preview the mobile path on a desktop.
 - A self-contained page (`embed-resources: true`) inlines the viewer as a
@@ -473,8 +475,13 @@ errors.
   self-contained RevealJS slides, in any browser. Also the file
   name that a native viewer's save button gives the copy of the PDF.
 - A native `<iframe>` embed (`page` over 1) in Chromium or Firefox with a
-  window. Also such an embed of a PDF from a site that forbids framing, and
-  a real screen reader reading its name.
+  window. Also such an embed of a PDF whose own site forbids framing, and a
+  real screen reader reading its name.
+- GitHub Pages' answer to the viewer's HEAD request for a native embed with
+  a `page` over 1. `frame_rule_check.mjs` checks only the local test servers.
+- A native embed with a `page` over 1 on a page that is not self-contained
+  and is opened as a `file:` page. A `file:` origin is opaque, so the viewer
+  gives it an `<object>`. No check opens such a page.
 - GitHub Pages' answer to an address with `%25`, which the shortcode writes
   for a bare `%` in a PDF path since v1.2.6. It is checked only on the local
   test server.
@@ -508,7 +515,7 @@ errors.
   mac` checks the group name, toolbar controls, and indicator, but not the
   page text.
 - A real screen reader reading a native embed's name, the `aria-label` on its
-  `<object>`. It is checked in Chromium's accessibility tree, in desktop
+  `<object>` or `<iframe>`. It is checked in Chromium's accessibility tree, in desktop
   Safari 27.0.1 by `safari_check.mjs --target mac`, and in Safari's page DOM
   in the iOS simulators.
 - Safari's computed names in the iOS simulators. On 2026-10-19 with iOS 27.0,
