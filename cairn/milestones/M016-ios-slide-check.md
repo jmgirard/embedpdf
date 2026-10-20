@@ -123,3 +123,37 @@ Evidence run 2026-10-19 at 2dfe7ab (branch level with main at 1b6918e), after a 
 - AC3: the six lines, taken from `git show 2397d39:CLAUDE.md` by pattern (6 matched), exit 0: example.html with `--expect-text` on iPhone and iPad, selfcontained_test.html `--alone yes` on iPhone and iPad, selfcontained_failed_test.html on iPhone, large_test.html on iPhone (14 pages, all inked).
 - AC4: `grep -c -F` finds each AC1 line once in CLAUDE.md's self-contained block; the "Still unverified" list holds no "RevealJS" or "slide" line; `tests/ios_check.mjs` header documents `--plant noslide` (line 172) and the RevealJS deck handling (lines 179-194).
 - Consistency gate: `cairn_validate.py` exit 0, all checks passed; profile consistency-gate slot names no toolchain checks; no principle changed, so no impact report.
+- spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1: on a deck, ink is stored per slide but pages are counted at the report, so an embed that hydrated after its slide passes with `ink = []` — fix now (Node fails when the ink count differs from the page count), fixed a5deeaa.
+- diff-bug #2: `--plant noslide` claims a plant even when its slide was current anyway — fix now (planted only when another slide is current at its ink measure), fixed a5deeaa.
+- diff-bug #3: in the scrolled view a page scroll can make a nearby slide current before the ink measure — fix now (the probe shows the slide again before measuring), fixed a5deeaa.
+- diff-bug #4: `--plant blank` on a last page with no canvas turned a real failure into exit 2 — fix now (a missing canvas counts as planted), fixed a5deeaa.
+- diff-bug #5: sections inside a slide's content were walked as slides — fix now (a slide is a section with no outer section, or one in a stack), fixed a5deeaa.
+- diff-bug #6: `noslide`'s slide is picked once, after the hydration wait — follow-up, row "Deck walk follow-ups".
+- diff-bug #7: Reveal calls are unguarded, so a throw gives only "no report within" — follow-up, row "Deck walk follow-ups".
+- diff-bug #8: failure messages printed "slide 0" for a current slide not in the deck or none recorded — fix now (named in words), fixed a5deeaa.
+- diff-bug #9: an earlier embed that hydrates after the walk can take a second ink plant — follow-up, row "Deck walk follow-ups".
+- diff-bug #10: `--screenshot` on a deck leaves the last slide current — follow-up, row "Deck walk follow-ups".
+- diff-bug #11: header said the scroll fallback runs in the scrolled view only — fix now (header reworded), fixed a5deeaa.
+- diff-bug #12: PROBE comment described only pages without slides — fix now, fixed a5deeaa.
+- diff-bug #13: header did not say the slide checks skip `--remote blocked`, `--missing-pdfs`, `--expect-download` — fix now, fixed a5deeaa.
+- diff-bug #14: CLAUDE.md read as if render_check takes `--plant noslide` — fix now ("ios_check's"), fixed a5deeaa.
+- diff-bug #15: AC4 evidence line out of date after the review fixes — fix now (AC4 re-recorded below after the rerun).
+- diff-bug #16: `scrollView` is read once, at the report — follow-up, row "Deck walk follow-ups".
+- diff-bug (found against 2dfe7ab, already fixed in 0ff4919): uncounted slides skipped, `inkPlanted` unread, stale `--expect-text` wording, undocumented deck timeout — fix now, fixed 0ff4919.
+- blame-history #1: an embed in a vertical stack is attributed to the stack — reject, false: RevealJS 5's `getSlides()` selects `.slides section:not(.stack)` (read in docs/revealjs_test_files/libs/revealjs/dist/reveal.js), and the walk now excludes stacks itself.
+- blame-history #2: CLAUDE.md "Still unverified" lost the desktop Safari gap for slides — fix now (bullet "Any RevealJS slide deck in desktop Safari"), fixed 0ff4919; real devices stay under the existing real iPhone/iPad bullet.
+- blame-history #3: `--expect-text` header still said the text is read before the probe scrolls — fix now, fixed 0ff4919.
+- blame-history #4: the per-slide text read has no wait of its own — reject, false: the one text wait before the walk already requires every PDF.js page's text block filled, the viewer fills them at load whatever slide is shown, and an unfilled block fails by name.
+- blame-history #5: embeds in no slide are never scrolled on a deck — fix now (such a PDF.js embed fails), fixed 0ff4919.
+- blame-history #6: `blank`/`missing` have no "found nothing to plant in" exit — fix now, fixed 0ff4919.
+- blame-history #7: the one-line plant list at the header's top omits `noslide` — reject, style: plants with their own flag dependency have their own entry, as `noranges` does.
+- blame-history #8: the ink map is keyed by element, so a replaced node would miss — reject, false: the viewer hydrates the `div.embedpdf` in place (its classes change on the same node) and re-renders swap canvases only.
+- prior-review #1: the deck walk can pass the 180 s report timeout ("Text check follow-ups") — fix now in part (header documents it), rest follow-up, row "Deck walk follow-ups".
+- prior-review #2: `blank`/`missing` have no exit 2 ("Ink check follow-ups") — fix now, fixed 0ff4919.
+- prior-review #3-#6: "First-paint robustness", "Name plant slide target", "Embed name follow-ups", M011 and M014 paths not made worse — noted.
+- ripple #1: README.md:86 said self-contained slides were checked only in Chromium — fix now, fixed 0ff4919.
+- ripple #2: same as blame-history #2 — fixed 0ff4919.
+- ripple #3: ROADMAP row "Self-contained slides on iOS" still open — reject, planned change: post-merge hygiene graduates it.
+- ripple #4: header said the walk runs after the `--expect-text` wait only — fix now, fixed 0ff4919.
+- ripple #5: header did not say a deck run can pass the default timeout — fix now, fixed 0ff4919.
