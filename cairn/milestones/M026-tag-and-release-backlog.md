@@ -179,3 +179,11 @@ Pass 1 (2026-10-20), branch at 5d25ed7, main not moved since the cut.
 - AC3: `releases/latest` gave `v1.2.9`.
 - AC4: `gh api ... releases --paginate` listed exactly the five v0.x releases and the 16; the five keep names equal to their tags and the five published_at values of the criterion, and their body SHA-256 prefixes equal T1's.
 - AC5: failed. Tails (16/16), the option names of v1.0.0 and v1.0.1, the `embedpdf` metadata key, and "Breaking change" in v1.0.1 hold. The commit-subject clause fails for four bodies: v1.0.1 omits "polish README and example" (808b403), v1.0.2 omits "Use a realistic sample PDF in the example" (9887d47), v1.0.3 omits "with an iOS simulator check" (8f1c68d), and v1.2.8 omits "check native embeds on self-contained slides" (9c43bf9).
+
+Pass 2 (2026-10-20), branch at a54fcc3 after review return 1, main not moved.
+
+- AC1: re-run, 16/16 releases with their tag name, not draft, not prerelease.
+- AC2: re-run, 21 tag names and 16 `^{}` lines, unchanged from pass 1.
+- AC3: re-run, `releases/latest` gave `v1.2.9`.
+- AC4: re-run, 21 releases; the five v0.x names, published_at values, and body SHA-256 prefixes equal T1's.
+- Gate: `cairn_validate.py` all checks passed; the generic profile names no toolchain checks; no principle text changed, so `cairn_impact` is skipped.
