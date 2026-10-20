@@ -170,7 +170,8 @@
 //                          embed's address; with no PDF.js embed it exits 2
 //                          (nothing to plant in)
 //   --plant noslide        on a RevealJS deck, the probe does not show the
-//                          last slide that holds a PDF.js embed, so the
+//                          last slide that holds a PDF.js embed or scroll
+//                          its pages, so the
 //                          check must fail for that slide's embeds; on a
 //                          page with no slides, or a deck with no PDF.js
 //                          embed, it exits 2 (nothing to plant in)
@@ -569,11 +570,15 @@ const PROBE = `<script>
   // per embed: its ink, and the slide shown at its text read and ink measure
   const ink = new Map(), textSlide = new Map(), inkSlide = new Map();
   let slidePlanted = "";
+  // without --expect-text nothing has waited for the embeds to hydrate yet
+  if (deck && !stuck) for (const t0 = Date.now(); unhydrated() && Date.now() - t0 < 30000; ) await sleep(100);
   const skip = plant === "noslide" && deck
     ? Math.max(-1, ...embeds().filter((el) => kind(el) === "pdfjs").map(slideOf))
     : -1;
   if (skip >= 0) slidePlanted = plant;
-  const firstPdfjs = embeds().find((el) => kind(el) === "pdfjs");
+  // read when it is used: without --expect-text the embeds may not be
+  // hydrated yet here
+  const firstPdfjs = () => embeds().find((el) => kind(el) === "pdfjs");
 
   if (!stuck && deck) {
     for (let k = 0; k < deck.length; k++) {
@@ -593,9 +598,14 @@ const PROBE = `<script>
         await sleep(1500);
       }
       for (const el of mine) { text[embeds().indexOf(el)] = readText(el); textSlide.set(el, shownSlide()); }
-      const ready = () => mine.every((el) => kind(el) !== "pdfjs" ||
-        [...el.querySelectorAll(".embedpdf-page")].every((p) => p.querySelector("canvas")));
-      for (const t0 = Date.now(); Date.now() - t0 < 30000; ) {
+      const ready = () => mine.every((el) => {
+        if (kind(el) === "native" || kind(el) === "failed") return true;
+        const pages = [...el.querySelectorAll(".embedpdf-page")];
+        return kind(el) === "pdfjs" && pages.length > 0 && pages.every((p) => p.querySelector("canvas"));
+      });
+      // --plant noslide: no scroll either, since in the scrolled view a scroll
+      // to the slide's pages would make it the current slide
+      for (const t0 = Date.now(); k !== skip && Date.now() - t0 < 30000; ) {
         for (const el of mine) {
           for (const p of el.querySelectorAll(".embedpdf-page")) {
             p.scrollIntoView({ block: "nearest" });
@@ -607,7 +617,7 @@ const PROBE = `<script>
       }
       await sleep(1000);
       for (const el of mine) {
-        if (el === firstPdfjs) plantInk(el);
+        if (el === firstPdfjs()) plantInk(el);
         ink.set(el, inkOf(el));
         inkSlide.set(el, shownSlide());
       }
@@ -622,7 +632,7 @@ const PROBE = `<script>
     await sleep(1000);
   }
   // an embed not measured on a slide (no deck, or not on any slide)
-  if (firstPdfjs && !ink.has(firstPdfjs)) plantInk(firstPdfjs);
+  if (firstPdfjs() && !ink.has(firstPdfjs())) plantInk(firstPdfjs());
 
   let namePlanted = "";
   if (plant === "nativename" || plant === "nativetitle") {
