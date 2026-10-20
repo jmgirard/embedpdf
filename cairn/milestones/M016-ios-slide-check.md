@@ -1,13 +1,13 @@
 # M016: Slides check on iOS
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1
 - **Resolves:** —
 - **Surface tier:** internal — it changes a test script and its documentation, not the extension
-- **Branch/PR:** —
+- **Branch/PR:** m016-ios-slide-check
 
 ## Goal
 
@@ -72,7 +72,7 @@ the viewer, so no version bump.
 
 ## Tasks
 
-- [ ] T1: In the probe of `tests/ios_check.mjs` (`PROBE`, from line 387),
+- [x] T1: In the probe of `tests/ios_check.mjs` (`PROBE`, from line 387),
       detect `window.Reveal`. On a slide deck, after the text wait, for each
       slide: `Reveal.slide(h, v)` from `Reveal.getIndices`, wait, read the
       hidden text of that slide's embeds, and scroll its pages; repeat the
@@ -80,7 +80,7 @@ the viewer, so no version bump.
       index at the ink and text reads, and fail an embed whose slide differs.
       Add `--plant noslide` (exit 2 on a page with no slides, as the other
       plants do). Update the header comment.
-- [ ] T2: `quarto render`, then run both AC1 lines and read the report's
+- [x] T2: `quarto render`, then run both AC1 lines and read the report's
       slide fields.
 - [ ] T3: Run the AC2 plant lines and see each fail for its own embed.
 - [ ] T4: Run the six AC3 lines.
@@ -101,6 +101,9 @@ the viewer, so no version bump.
 - 2026-10-19: plan gate chose a per-slide walk inside the probe over driving slides from Node through the report server, because the probe already runs every check in the page; falsified by a Safari slide change that the probe cannot wait on from inside the page.
 - 2026-10-19: test scope: AC2's three plants and the no-slides exit; AC3's six lines stand for the non-slide path. revealjs_test.html on iOS left out (new candidate row "iOS slide deck gaps").
 - 2026-10-19: no changelog entry (profile changelog slot: none) and no version bump (viewer unchanged).
+- 2026-10-19: implement: branch m016-ios-slide-check cut from main at 1b6918e; status in-progress.
+- 2026-10-19: T1: probe walks the deck when `window.Reveal` exists (waits for `Reveal.isReady()`), reads text and measures ink per slide, records `slide`/`textSlide`/`inkSlide` and `scrollView` in the report; `blank`/`missing` now plant just before the first PDF.js embed's ink measure; `--plant noslide` added; no edit to `embedpdf.css` or the viewer.
+- 2026-10-19: T2: first iPhone run failed "embed 3: text read while slide 3 was shown, not its slide 4": RevealJS used its scrolled view there (`Reveal.isScrollView()` true), and `Reveal.slide()` to the last slide did not make it current; the probe now waits for the slide to be current and, after 3 s, scrolls its embeds into view. Then both AC1 lines exit 0 (iPhone 17 iOS 27.0, scrolled view; iPad Air 11-inch M4 iOS 27.0, slide view), each PDF.js embed with slide = textSlide = inkSlide.
 
 ## Decisions
 

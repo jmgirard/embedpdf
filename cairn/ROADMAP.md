@@ -7,7 +7,7 @@ _Last hygiene check: 2026-10-19 (M015 done: graduated "Bare percent path", added
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M016 | Slides check on iOS | planned | — | normal | milestones/M016-ios-slide-check.md |
+| M016 | Slides check on iOS | in-progress | — | normal | milestones/M016-ios-slide-check.md |
 | M015 | Percent sign in PDF paths | done | — | normal | milestones/archive/M015-percent-sign-paths.md |
 | M014 | Safari shared remote PDF | done | — | normal | milestones/archive/M014-safari-shared-remote-pdf.md |
 | M013 | Large PDF range check | done | — | normal | milestones/archive/M013-large-pdf-range-check.md |
