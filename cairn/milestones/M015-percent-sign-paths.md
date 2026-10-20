@@ -117,7 +117,7 @@ Version 1.2.6.
       Render the page with the v1.2.5 shortcode
       (`git show main:_extensions/embedpdf/embedpdf.lua`), see the desktop
       line fail, then restore.
-- [ ] T4: Run the AC4 PDF render and the `pdftotext` count. See the v1.2.5
+- [x] T4: Run the AC4 PDF render and the `pdftotext` count. See the v1.2.5
       shortcode fail the same render.
 - [ ] T5: Run the AC5 lines.
 - [ ] T6: README.md: the `%` sentence. CLAUDE.md: the new page and
@@ -143,6 +143,7 @@ Version 1.2.6.
 - 2026-10-19: T1: 70 percent checks in tests/test_shortcode.lua (14 paths × data-src, no-JS link, button link, other-format link, LaTeX line). Against v1.2.5: 68 passed, 42 failed (the 7 bare-% paths in the 4 link targets, and all 14 LaTeX lines).
 - 2026-10-19: T2: `url_path()` and `latex_path()` in embedpdf.lua (one `gsub` pass each). The LaTeX group wraps the line only when the path still holds a `%`, so a path with no `%` writes the v1.2.5 line. Version 1.2.6 in both files. Unit tests: 110 passed, 0 failed.
 - 2026-10-19: T3: `percent_page_test.qmd` and `files/50%off.pdf` added. `quarto render` gave no warning. The 5 render_check lines (Chromium 155) and the 2 ios_check lines (iOS 27.0 simulators) exit 0. Native probe (scratch `native_probe.mjs` with `serveDocs`): the `<object>` data is `files/100%25.pdf`, fetch HTTP 200, bytes equal `sample.pdf`. With the v1.2.5 shortcode the desktop line exits 1 ("embedpdf: failed to render files/100%.pdf", HTTP 400), and Quarto warns "Invalid URI" 3 times.
+- 2026-10-19: T4: `quarto render percent_page_test.qmd --to pdf --output-dir <scratch>` (default engine) exits 0. The PDF has 15 pages, and `pdftotext` finds "On the Origin of Coastlines" 5 times. With the v1.2.5 shortcode the same render exits 1 ("compilation failed").
 
 ## Decisions
 
