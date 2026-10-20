@@ -148,6 +148,7 @@ true or stale.
 - 2026-10-19: T3 figures (share of blocks, `--alone http`, from the plant runs after the `data-page` change): otherpdf 0.0676 Chromium, 0.4291 Firefox, 0.0863 Safari; broken 0.9970 Chromium, 0.4621 Firefox, 0.0397 Safari (and no ink); blank 0.9970 Chromium, 0.4354 Firefox, 0.0397 Safari (and no ink); nopage vs the page-2 reference 0.1371 Chromium, 0.0567 Firefox; fileaddr fails on the address in all three.
 - 2026-10-19: claim audit: 34 claims read, 4 corrected — tests/native_check.mjs (plant figures now in the work log above; the Firefox folder fix names the recorded `open -g -n -a Firefox --args -headless -screenshot` launch, not an untried plain `open -g -a Firefox`), tests/png_diff.mjs (diffShare's second null case, too small for a block, documented and reported as such), CLAUDE.md (same Firefox launch wording; "Still unverified" slides gap is every browser), cairn/ROADMAP.md (Firefox row's launch wording, corrected M020). Each correction re-read by the agent against the same sources; no second pass.
 - 2026-10-19: implement done; status review.
+- 2026-10-19: review checkpoint: fix-now work from three reviewer lenses (native_check setup errors exit 2 and close the browser, per-embed isolation of size/decode/reference errors, a 60 s limit on each safaridriver call; PROFILE verify slot names native_check; DESIGN slides gap is every browser) committed with one Chromium file and one Safari http rerun passing; the diff-bug lens has not reported yet.
 
 ## Review
 

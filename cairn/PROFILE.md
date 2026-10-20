@@ -23,8 +23,9 @@ finishing". Run them from the repo root:
   It must print `N passed, 0 failed`.
 - After a change to `embedpdf-viewer.js` or `embedpdf.css`, run `quarto
   render`. Then run every `node tests/render_check.mjs`,
-  `node tests/ios_check.mjs`, `node tests/name_rule_test.mjs`, and
-  `node tests/safari_check.mjs` line in CLAUDE.md "Verify before finishing",
+  `node tests/ios_check.mjs`, `node tests/name_rule_test.mjs`,
+  `node tests/safari_check.mjs`, and `node tests/native_check.mjs` line in
+  CLAUDE.md "Verify before finishing",
   the self-contained lines included. Each one must exit 0. `render_check.mjs` drives Chrome (set
   `CHROME_PATH` for Chromium) and serves `docs/` itself. It needs `npm install
   puppeteer-core` once. `ios_check.mjs` drives Safari in the "embedpdf iPhone"

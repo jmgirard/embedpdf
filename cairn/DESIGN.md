@@ -174,7 +174,7 @@ load on the same queue, and a text task runs only when no page render waits
   embeds of a self-contained HTML page showing `sample.pdf` are checked in
   Chromium 155 and Firefox 158 (headless) and desktop Safari 27.0.1, over a
   local file and HTTP (`tests/native_check.mjs`). Not checked: such embeds on
-  self-contained RevealJS slides in desktop Safari and Firefox, and the file
+  self-contained RevealJS slides in any browser, and the file
   name that a native viewer's save button gives the in-page copy (added
   M020) — observed 2026-10-19.
 - The PDF.js viewer has no text selection or search (out of scope, see the

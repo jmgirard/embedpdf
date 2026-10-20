@@ -84,6 +84,7 @@ const PIXEL_DIFF = 40; // an average channel difference above this makes a block
 const BLOCK = 4; // block side in device pixels
 const SHIFT = 2; // device pixels a reference may be shifted each way
 const STABLE_MS = 20000;
+const WD_MS = 60000; // time limit of one safaridriver call
 const VIEWPORT = { width: 1200, height: 900 };
 const PLANTS = ["otherpdf", "broken", "blank", "fileaddr", "nopage"];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -190,10 +191,17 @@ async function puppeteerDriver(kind) {
     const hint = /profile folder/.test(err.message) ? " (launch it once through macOS open, as this script's header says)" : "";
     bad(`cannot start ${kind}${hint}: ${err.message.split("\n")[0]}`);
   }
-  const tab = await browser.newPage();
-  await tab.setViewport(VIEWPORT);
+  let tab, version;
+  try {
+    tab = await browser.newPage();
+    await tab.setViewport(VIEWPORT);
+    version = await browser.version();
+  } catch (err) {
+    await browser.close().catch(() => {});
+    bad(`cannot start ${kind}: ${err.message.split("\n")[0]}`);
+  }
   return {
-    version: await browser.version(),
+    version,
     open: (url) => tab.goto(url, { waitUntil: "load" }),
     run: (fnSource, ...a) => tab.evaluate(`(${fnSource})(...${JSON.stringify(a)})`),
     async shotOf(css, index) {
@@ -216,7 +224,13 @@ async function safariDriver() {
   driver.on("error", (err) => bad(`cannot start safaridriver: ${err.message}`));
   const base = `http://127.0.0.1:${port}`;
   async function wd(method, p, body) {
-    const res = await fetch(base + p, { method, headers: { "Content-Type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
+    // a hung safaridriver ends the call after WD_MS instead of the run never ending
+    const res = await fetch(base + p, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: AbortSignal.timeout(WD_MS),
+    });
     const json = await res.json();
     if (json.value && json.value.error) throw new Error(`${method} ${p}: ${json.value.error}: ${json.value.message}`);
     return json.value;
@@ -353,25 +367,25 @@ try {
     const has = data.includes("#") ? data.slice(data.indexOf("#")) : "";
     if (has !== frag) failures.push(`${at}: its address's fragment is "${has}", but its page option asks for "${frag}"`);
     if (!/^blob:/.test(data)) failures.push(`${at}: its address is not a blob: URL (${data.slice(0, 60)})`);
-    let shot;
+    let shot, size, img;
     try {
       shot = await stableShot(drv, "div.embedpdf-native object", i);
+      // the size once the screenshot settled (a box can grow as its viewer loads)
+      size = await drv.run(
+        `(i) => {
+          const r = document.querySelectorAll("div.embedpdf-native object")[i].getBoundingClientRect();
+          const frac = (v) => Math.round((v - Math.floor(v)) * 1000) / 1000;
+          return { w: r.width, h: r.height, x: 8 + frac(r.left + scrollX), y: 8 + frac(r.top + scrollY) };
+        }`,
+        i
+      );
+      img = decodePng(shot.png);
     } catch (err) {
       // a box of size 0, for example: this embed fails, the others are still checked
       failures.push(`${at}: no screenshot (${err.message.split("\n")[0]})`);
       report.embeds.push({ at, address: data.slice(0, 40), frag });
       continue;
     }
-    // the size once the screenshot settled (a box can grow as its viewer loads)
-    const size = await drv.run(
-      `(i) => {
-        const r = document.querySelectorAll("div.embedpdf-native object")[i].getBoundingClientRect();
-        const frac = (v) => Math.round((v - Math.floor(v)) * 1000) / 1000;
-        return { w: r.width, h: r.height, x: 8 + frac(r.left + scrollX), y: 8 + frac(r.top + scrollY) };
-      }`,
-      i
-    );
-    const img = decodePng(shot.png);
     saveShot(`embed-${i + 1}`, shot.png);
     const entry = { at, address: data.slice(0, 40), frag, size, stable: shot.stable, ink: inkInPixels(img.data) };
     if (!shot.stable) failures.push(`${at}: its screenshot did not settle in ${STABLE_MS / 1000} s`);
@@ -414,7 +428,13 @@ try {
     const m = /#page=(\d+)/.exec(entry.frag);
     if (!m || Number(m[1]) < 2) continue;
     pageEmbeds++;
-    const d = diffShare(await refImage("", entry.size), await refImage(entry.frag, entry.size));
+    let d;
+    try {
+      d = diffShare(await refImage("", entry.size), await refImage(entry.frag, entry.size));
+    } catch (err) {
+      failures.push(`${entry.at}: no page-1 or ${entry.frag} reference screenshot (${err.message.split("\n")[0]})`);
+      continue;
+    }
     const diff = d === null ? "size differs" : `${d.share.toFixed(4)} at shift ${d.dx},${d.dy}`;
     const same = d !== null && d.share <= TOLERANCE;
     report.pageReferences.push({ at: entry.at, frag: entry.frag, diff, same });
