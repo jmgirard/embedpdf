@@ -41,10 +41,19 @@ function loadPdfjs() {
 // An inlined (data:) PDF as a Blob and its blob: URL. The browser decodes the
 // data: URL itself (fetch), so the viewer makes no copy of the PDF in
 // JavaScript. The native <object> or <iframe> and the download links get the blob: URL, so
-// a large PDF is not copied into more attribute values.
-async function inlinedPdf(src) {
+// a large PDF is not copied into more attribute values. The Blob is a File
+// named by the embed's download name, which Firefox 158's own PDF viewer
+// takes as the name to save it under (it took "document.pdf" for a plain
+// Blob); Chromium 155 and desktop Safari 27.0.1 save it under the same name
+// either way (2026-10-20).
+async function inlinedPdf(src, filename) {
   const blob = await (await fetch(src)).blob();
-  const pdf = blob.type === "application/pdf" ? blob : new Blob([blob], { type: "application/pdf" });
+  const pdf =
+    typeof File === "function"
+      ? new File([blob], filename, { type: "application/pdf" })
+      : blob.type === "application/pdf"
+        ? blob
+        : new Blob([blob], { type: "application/pdf" });
   return { blob: pdf, url: URL.createObjectURL(pdf) };
 }
 
@@ -603,7 +612,7 @@ async function hydrate(el, name) {
     if (el.getAttribute("role") === "img") el.removeAttribute("role");
     let pdf;
     try {
-      pdf = await inlinedPdf(opts.src);
+      pdf = await inlinedPdf(opts.src, opts.filename);
     } catch (err) {
       // the data: address did not decode, so neither renderer has a PDF, and
       // the download links name a file the page does not ship

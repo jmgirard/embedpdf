@@ -211,15 +211,23 @@ load on the same queue, and a text task runs only when no page render waits
   alone (local file and HTTP), each `<object>` embed and the `page=2`
   `<iframe>` embed saved `sample.pdf` as `<id of its blob: URL>.pdf` in
   headless Chromium 155 and as `Unknown.pdf` in desktop Safari 27.0.1
-  (`tests/save_name_check.mjs`; corrected M023) — observed 2026-10-20.
-  Firefox 158's save control saved no file under puppeteer-core, so its
-  saved name is not checked. Its viewer reported `document.pdf`. M023 tried a
-  `blob:` of a `File` named `sample.pdf` and a `data:` address in Chromium
-  and Safari, a `#sample.pdf` fragment in Chromium, and a
-  `#page=2&filename=sample.pdf` fragment in Safari. None saved `sample.pdf`.
-  In Firefox the `File` and a `#filename=sample.pdf` fragment made the viewer
-  report `sample.pdf`. The `button`
-  link of such an embed has the PDF's file name as its `download` name.
+  (`tests/save_name_check.mjs`; corrected M023; the same with 1.2.9, M025)
+  — observed 2026-10-20. M023 tried a `blob:` of a `File` named
+  `sample.pdf` and a `data:` address in Chromium and Safari, a
+  `#sample.pdf` fragment in Chromium, and a `#page=2&filename=sample.pdf`
+  fragment in Safari. None saved `sample.pdf`. Since 1.2.9 the inlined PDF
+  is a `File` named by the embed's download name. Firefox 158's viewer then
+  reports `sample.pdf` (it reported `document.pdf` before) for each native
+  embed of `selfcontained_test.html` and `selfcontained_slides_test.html`,
+  opened alone as a local file and over HTTP (`save_name_check.mjs
+  --browser firefox`, headless). Its save control saved no file under
+  puppeteer-core. A save by hand in a Firefox 158 window gave `sample.pdf`
+  for each native embed of `selfcontained_test.html`, as a local file and
+  over HTTP (corrected M025) — observed 2026-10-20. Not checked in Firefox:
+  slides saved by hand, and a name other than `sample.pdf` (a space, a `%`,
+  or the `document.pdf` that an embed with no download link gets). The
+  `button` link of such an embed has the PDF's file name as its `download`
+  name.
 - The PDF.js viewer has no text selection or search (out of scope, see the
   contract boundary).
 - A PDF.js embed's hidden page text is checked in Chromium's accessibility
@@ -230,8 +238,8 @@ load on the same queue, and a text task runs only when no page render waits
   and 27.1 simulators by `tests/ios_check.mjs`, and iOS versions before 27 are
   not checked (corrected M001) — observed 2026-10-18.
 - GitHub releases stop at v0.5.0 and tags stop at v1.0.2, while the
-  extension is at 1.2.8, so the README version badge shows 0.5.0 (corrected
-  M021; corrected M022) — observed 2026-10-20.
+  extension is at 1.2.9, so the README version badge shows 0.5.0 (corrected
+  M021; corrected M022; corrected M025) — observed 2026-10-20.
 - Safari refuses a read of a PDF from another site that an `<object>` on the
   page loaded. So a PDF.js embed of that PDF reads it with `embedpdf=pdfjs`
   added to its query (corrected M014). A real site's answer to that address
