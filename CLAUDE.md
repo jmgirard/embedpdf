@@ -269,6 +269,19 @@ node tests/ios_check.mjs --device "embedpdf iPhone" --page shared_test.html --re
 node tests/ios_check.mjs --device "embedpdf iPad" --page shared_test.html --remote cors --expect-ranges --expect-native 1 --expect-embeds 1 --expect-pages 14
 ```
 
+A slow machine: after render_check scrolls the pages, it waits until every
+PDF.js page has a canvas. It does not wait a fixed time. If no page is
+missing a canvas, the wait ends. It also ends after 10 s in which no page
+newly got a canvas, or after 120 s in all. On a RevealJS page this wait runs
+on each slide.
+`--cpu-throttle <n>` slows Chromium's CPU n times. The line below must exit 0.
+With `--plant norender` added, it must exit 1 and name "no canvas" for every
+page. The run takes about 2 minutes:
+
+```
+node tests/render_check.mjs large_test.html --device iphone --expect-native 0 --expect-pdfjs 2 --expect-pages 14 --expect-name "large.pdf|large-2.pdf" --cpu-throttle 70
+```
+
 `render_check.mjs` serves `docs/` itself with `tests/serve_docs.mjs`. If every
 page of every PDF.js embed has a canvas with ink and the counts match, it exits
 0. Both scripts use the ink rule in `tests/ink.mjs`. If Google Chrome is not
