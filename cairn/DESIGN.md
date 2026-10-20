@@ -206,9 +206,9 @@ load on the same queue, and a text task runs only when no page render waits
   browsers, a slide hidden at load within RevealJS's view distance, a tab or
   other part of a page hidden at load, and slides of a deck that is not
   self-contained.
-- A native viewer's save control names the in-page copy of an inlined PDF by
-  its `blob:` address, not by the PDF's file name. In headless Chromium 155,
-  saving the first native embed of `selfcontained_test.html` opened alone
+- In headless Chromium 155, the native viewer's save control named the
+  in-page copy of an inlined PDF by its `blob:` address, not by the PDF's
+  file name. Saving the first native embed of `selfcontained_test.html` opened alone
   gave `03acb7cf-e9fe-49b4-b425-fa1a410248fe.pdf`, the random id of that
   embed's `blob:` URL, where the file is `sample.pdf` (M022 probe) — observed
   2026-10-20. Not checked in Firefox or desktop Safari.

@@ -7,7 +7,7 @@ _Last hygiene check: 2026-10-20 (M021 done: graduated "Make Safari native embeds
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M022 | Native embeds on self-contained slides checked | in-progress | — | normal | milestones/M022-slides-native-check.md |
+| M022 | Native embeds on self-contained slides checked | review | — | normal | milestones/M022-slides-native-check.md |
 | M021 | Native embeds open at their page in Safari | done | — | normal | milestones/archive/M021-native-page-iframe.md |
 | M020 | Self-contained native display check | done | — | normal | milestones/archive/M020-self-contained-native.md |
 | M019 | Large PDF text check | done | — | normal | milestones/archive/M019-large-pdf-text.md |

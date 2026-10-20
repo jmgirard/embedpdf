@@ -1,6 +1,6 @@
 # M022: Native embeds on self-contained slides checked
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -86,6 +86,8 @@ A check shows that each native embed on the self-contained RevealJS slides shows
 - 2026-10-20: T6 done: CLAUDE.md gains the six slide lines, the deck walk, and `noslide`; its two "Still unverified" bullets now name what stays unchecked. DESIGN Known issues: slides line corrected, the hidden-load result and the unchecked routes added. README line 86 no longer says slides were not checked, names the save-name result, and the `page` row says what 1.2.8 changes. The AC7 grep's added lines read against the repo; `example.qmd`, `native.qmd`, `revealjs_test.qmd` hold no such claim. The simple-english lint hook flags CLAUDE.md (39) and README.md (11) hits that predate this milestone; the new lines add none.
 - 2026-10-20: T7 done: all 125 lines (the 119 fenced check lines of CLAUDE.md at 6a70301 with AC1's counts, the prose re-runs, and the six AC2 lines; scratch `lines.py` builds the list) exit 0 with viewer 1.2.8, 1,243 s in all.
 - 2026-10-20: claim audit (Opus reader) read 38 claims, 4 false and 1 loose, all corrected: README `page` row (slide not displayed at load, view distance), README line 86 (walk is slides 1, 2, 4; save name scoped to one Chromium probe), CLAUDE.md "Still unverified" (the walk), two native_check comments; DESIGN Known issues gets the same walk wording. Re-read pending (checkpoint).
+- 2026-10-20: claim audit: 38 claims read, 5 corrected — README.md, CLAUDE.md, tests/native_check.mjs; the re-read found all corrections hold and one more over-broad DESIGN Known issues line (save name), now scoped to headless Chromium 155.
+- 2026-10-20: status → review.
 
 ## Decisions
 
