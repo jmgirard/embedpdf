@@ -139,9 +139,10 @@
 //                          each with a data: or blob: href
 //   --plant nolink|linkfile
 //                          with --expect-links: remove the page's first such
-//                          link, or set its href to the PDF's file name (its
-//                          download name); the check must then fail. Each
-//                          exits 2 when the page holds no such link
+//                          link, or set its href to its download name
+//                          ("sample.pdf" when it has none); the check must
+//                          then fail. Each exits 2 when the page holds no
+//                          such link
 //   --alone yes|no         yes: serve a copy of the page from an empty
 //                          temporary directory instead of docs/ (default no)
 //   --remote blocked|cors  serve the PDFs from a second server on another port
@@ -229,8 +230,8 @@
 // ink after.
 //
 // Exits 0 only when every embed not set to renderer=native used PDF.js, has
-// exactly its --expect-pages page containers, and every page canvas has ink, and
-// the number of such embeds equals --expect-embeds. With --expect-download,
+// exactly its --expect-pages page containers, and every page canvas has ink,
+// and the number of such embeds equals --expect-embeds. With --expect-download,
 // every embed must show the inlined failure state that flag describes instead
 // of using PDF.js with ink (the --expect-embeds count still applies); without
 // it, any embed (renderer=native too) with an inlined PDF in the load-failure
@@ -241,8 +242,8 @@
 // file." link. With --remote blocked its data-src must be on the remote
 // server, and the console must show the fetch of that URL failing ("Load
 // failed"); with --missing-pdfs, see that flag. With --expect-text,
-// --expect-name, and --expect-links, those checks must pass too, and so must the --expect-ranges
-// check when it is given; with --expect-text, an embed
+// --expect-name, and --expect-links, those checks must pass too, and so must
+// the --expect-ranges check when it is given; with --expect-text, an embed
 // still not hydrated when the text wait ends is the one failure.
 
 import fs from "node:fs";
@@ -1043,6 +1044,9 @@ try {
     } else if (expectDownloads) {
       // judged below, with every embed on the page
     } else if (e.renderer !== "pdfjs") failures.push(`embed ${e.index}: renderer ${e.renderer}, expected pdfjs`);
+    // a list longer or shorter than the embeds found already failed the
+    // embed count above; an embed past the list's end has no count to match
+    else if (i >= expectPagesList.length && expectPagesList.length > 1) failures.push(`embed ${e.index}: no --expect-pages entry for it`);
     else if (e.pages !== expectPagesOf(i)) failures.push(`embed ${e.index}: ${e.pages} page containers, expected ${expectPagesOf(i)}`);
     // on a deck the ink is measured on the slide, and the pages counted at the
     // report, so an embed that hydrated after its slide has fewer ink entries
@@ -1100,8 +1104,8 @@ try {
   // decode, and it holds no link. A path: it decoded, and the embed holds one
   // "Download the PDF" link to a blob: URL, with the path's file name as its
   // download name and no target. (Safari is not asked to save the file.)
-  // --expect-links: exactly that many download links, each to the PDF held
-  // in the page (a data: or blob: address), as in render_check
+  // --expect-links: exactly that many download links, each with a data: or
+  // blob: href, as in render_check (which PDF a link holds is not checked)
   if (expectLinks !== null && !report.stuck) {
     if (report.links.length !== expectLinks) failures.push(`expected ${expectLinks} download links, found ${report.links.length}`);
     for (const h of report.links) {

@@ -137,7 +137,10 @@ than 10 s.
 
 Self-contained pages (`embed-resources: true`): `--alone http|file` (render_check)
 and `--alone yes` (ios_check) load a copy of the page with no other file beside it.
-Run each `--alone file` line again with `--alone http`. Run the
+Run each `--alone file` line again with `--alone http`. In both scripts,
+`--expect-links <n>` fails the run unless the page holds n download links,
+each with a `data:` or `blob:` address. ios_check's `--plant nolink` removes
+one such link, and `--plant linkfile` points one at a file name. Run the
 `selfcontained_test.html` lines also with `--device mac-safari` and
 `--device windows-touch` (the desktop counts) and `--device ipad` (the iphone
 counts). `revealjs_test.html` is a normal slide deck:
