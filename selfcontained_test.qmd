@@ -20,3 +20,7 @@ no other file beside it.
 ## PDF.js renderer
 
 {{< pdf sample.pdf renderer=pdfjs button="Download the PDF" >}}
+
+## Native renderer at page 2
+
+{{< pdf sample.pdf renderer=native page=2 width=600 height=400 >}}

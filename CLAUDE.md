@@ -148,8 +148,8 @@ one such link, and `--plant linkfile` points one at a file name. Run the
 counts). `revealjs_test.html` is a normal slide deck:
 
 ```
-node tests/render_check.mjs selfcontained_test.html --alone file --expect-native 2 --expect-pdfjs 1 --expect-pages 2 --expect-links 4 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
-node tests/render_check.mjs selfcontained_test.html --alone file --device iphone --expect-native 1 --expect-pdfjs 2 --expect-pages 2 --expect-links 4 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/render_check.mjs selfcontained_test.html --alone file --expect-native 3 --expect-pdfjs 1 --expect-pages 2 --expect-links 5 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/render_check.mjs selfcontained_test.html --alone file --device iphone --expect-native 2 --expect-pdfjs 2 --expect-pages 2 --expect-links 5 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/render_check.mjs selfcontained_slides_test.html --alone file --expect-native 2 --expect-pdfjs 1 --expect-pages 2 --expect-links 4 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/render_check.mjs selfcontained_slides_test.html --alone file --device iphone --expect-native 1 --expect-pdfjs 2 --expect-pages 2 --expect-links 4 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/render_check.mjs revealjs_test.html --expect-native 2 --expect-pdfjs 1 --expect-name "dummy.pdf|dummy2.pdf|dummy.pdf"
@@ -159,8 +159,8 @@ node tests/render_check.mjs percent_test.html --alone http --expect-native 0 --e
 node tests/render_check.mjs percent_test.html --alone file --device iphone --expect-native 0 --expect-pdfjs 2 --expect-pages 2 --expect-name "100%.pdf"
 node tests/ios_check.mjs --device "embedpdf iPhone" --page percent_test.html --alone yes --expect-embeds 2 --expect-name "100%.pdf"
 node tests/ios_check.mjs --device "embedpdf iPad" --page percent_test.html --alone yes --expect-embeds 2 --expect-name "100%.pdf"
-node tests/ios_check.mjs --device "embedpdf iPhone" --page selfcontained_test.html --alone yes --expect-embeds 2 --expect-native 1 --expect-links 4 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
-node tests/ios_check.mjs --device "embedpdf iPad" --page selfcontained_test.html --alone yes --expect-embeds 2 --expect-native 1 --expect-links 4 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/ios_check.mjs --device "embedpdf iPhone" --page selfcontained_test.html --alone yes --expect-embeds 2 --expect-native 2 --expect-links 5 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/ios_check.mjs --device "embedpdf iPad" --page selfcontained_test.html --alone yes --expect-embeds 2 --expect-native 2 --expect-links 5 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/ios_check.mjs --device "embedpdf iPhone" --page selfcontained_slides_test.html --alone yes --expect-embeds 2 --expect-native 1 --expect-links 4 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/ios_check.mjs --device "embedpdf iPad" --page selfcontained_slides_test.html --alone yes --expect-embeds 2 --expect-native 1 --expect-links 4 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/ios_check.mjs --device "embedpdf iPhone" --page revealjs_test.html --expect-embeds 2 --expect-native 1 --expect-pages "2|1" --expect-name "dummy.pdf|dummy2.pdf|dummy.pdf"
@@ -176,6 +176,33 @@ takes one count for every embed not set to `renderer=native`. It also takes a
 `|` list with one count per such embed, in page order. On
 `revealjs_test.html` these are `dummy2.pdf` (2 pages) and then `dummy.pdf`
 with `renderer=auto` (1 page).
+
+The native embeds of a self-contained page: `native_check.mjs` opens
+`selfcontained_test.html` alone and takes a screenshot of each native
+`<object>`. The reference is a screenshot of an `<object>` of
+`docs/sample.pdf` on the check's own server, at the embed's size. It shows
+the page that the embed's `page` option names. Each reference must differ
+from a control, an `<object>` of a file the viewer cannot draw. So a
+reference caught before the PDF was drawn fails. The check also fails unless
+each `<object>` address is a `blob:` URL with that `#page` fragment. The
+fourth embed has `page=2`. In Chromium and Firefox the page-1 and page-2
+references must differ. Desktop Safari 27.0.1 opens a native embed at page 1
+whatever the fragment says. So the Safari lines take `--same-pages`, and
+there the two references must match. Chromium and Firefox run headless. The
+header states the plants (`otherpdf`, `broken`, `blank`, `fileaddr`,
+`nopage`, placed by `--plant-at <k>`, and `refcontrol`). Firefox started from Claude Code fails
+with "Could not find profile folder" until its folder exists. On 2026-10-19
+one launch through macOS `open` made it (the command is in the script's
+header). If Firefox is not in `/Applications`, set `FIREFOX_PATH`:
+
+```
+node tests/native_check.mjs --browser chromium --page selfcontained_test.html --alone file --expect-native 3 --reference sample.pdf
+node tests/native_check.mjs --browser chromium --page selfcontained_test.html --alone http --expect-native 3 --reference sample.pdf
+node tests/native_check.mjs --browser firefox --page selfcontained_test.html --alone file --expect-native 3 --reference sample.pdf
+node tests/native_check.mjs --browser firefox --page selfcontained_test.html --alone http --expect-native 3 --reference sample.pdf
+node tests/native_check.mjs --browser safari --page selfcontained_test.html --alone file --expect-native 3 --reference sample.pdf --same-pages
+node tests/native_check.mjs --browser safari --page selfcontained_test.html --alone http --expect-native 3 --reference sample.pdf --same-pages
+```
 
 A self-contained page whose embeds cannot show their PDF:
 `selfcontained_failed_test.html` holds `files/broken.pdf`, a text file that
@@ -339,9 +366,10 @@ xcrun simctl create "embedpdf iPhone" "iPhone 17" com.apple.CoreSimulator.SimRun
 xcrun simctl create "embedpdf iPad" "iPad Air 11-inch (M4)" com.apple.CoreSimulator.SimRuntime.iOS-27-0
 ```
 
-**After any change to `tests/ink.mjs`, `tests/serve_docs.mjs`, or
-`tests/expect_names.mjs`**, run the
-helper tests (Node only, no browser), then the browser checks above:
+**After any change to a check helper** (`tests/ink.mjs`,
+`tests/serve_docs.mjs`, `tests/expect_names.mjs`, or `tests/png_diff.mjs`),
+run the helper tests (Node only, no browser). Then run the browser checks
+above:
 
 ```
 node tests/helpers_test.mjs              # must print "N passed, 0 failed"
@@ -391,6 +419,10 @@ errors.
   first, and each text read gives up after 10 s.
 
 ## Still unverified
+- A native embed of a self-contained page in Chromium or Firefox with a
+  window. `native_check.mjs` runs them headless. Also such an embed on
+  self-contained RevealJS slides, in any browser. Also the file
+  name that a native viewer's save button gives the copy of the PDF.
 - GitHub Pages' answer to an address with `%25`, which the shortcode writes
   for a bare `%` in a PDF path since v1.2.6. It is checked only on the local
   test server.
