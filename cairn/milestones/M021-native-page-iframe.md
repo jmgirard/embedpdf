@@ -184,6 +184,7 @@ than `attachment` (both compared without case or parameters); any other answer, 
 - 2026-10-20: T11 done: at b860dc6, all 102 `node tests/…` and `pandoc lua tests/…` lines in CLAUDE.md exited 0 on the first try (the 98 of T7 plus the 4 frame_rule_check lines); percent_page_test PDF render rc 0 with the phrase 5 times; helpers_test 158 passed, 0 failed; ~/Downloads gained no file.
 - 2026-10-20: claim audit: 74 claims read, 9 corrected (and 4 stale lines beside them) — CLAUDE.md (frame_rule_check paragraph, inlined PDFs, `file:` item), README `page` row (inlined `data:` PDFs, origin is site and port, failed request), tests/native_check.mjs (inlined PDFs skip the HEAD rule, header D-008, options not attributes), tests/ios_check.mjs (comment claim, D-008), tests/frame_rule_check.mjs (exit codes), embedpdf.css comment. All comment or docs text; after `quarto render` the docs/ diff is the CSS comment alone (8 copies).
 - 2026-10-20: implement complete after review return 1; status review.
+- 2026-10-20: review pass 2 in progress (checkpoint): evidence run of all 102 lines started at 09d2daa; four lenses spawned; ripple fix-now edits landed (PROFILE.md verify list names frame_rule_check, ROADMAP rows "Run the render checks in Firefox" and "Close the native name check gaps" corrected, D-008 cited in render_check and ios_check comments).
 - 2026-10-20: the Goal stays as written (never edited in place); after the user's review decision it holds for PDFs that pass the header rule, and the docs name the rest (AC6).
 
 ## Decisions

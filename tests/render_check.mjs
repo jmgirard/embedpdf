@@ -1602,7 +1602,7 @@ try {
     ok = false;
   }
   // on iPhone, iPad, and Android a native embed (renderer=native) stays an
-  // <object>, whose fallback content shows where the PDF cannot (D-007)
+  // <object>, whose fallback content shows where the PDF cannot (D-008)
   if (["iphone", "ipad", "android"].includes(deviceName)) {
     res.nativeTags.forEach((tag, i) => {
       if (tag !== "object") {

@@ -22,7 +22,7 @@
 //   --expect-native <n>    embeds set to renderer=native (default 0); checked
 //                          when given, and always with --expect-name. Every
 //                          run fails when a native embed is not an <object>
-//                          (an <iframe> is for desktop browsers, D-007).
+//                          (an <iframe> is for desktop browsers, D-008).
 //   --expect-pages <n> | "<n1>|<n2>|…"
 //                          pages per PDF.js embed (default 2: sample.pdf):
 //                          one count for every embed not set to
