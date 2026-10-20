@@ -7,7 +7,7 @@ _Last hygiene check: 2026-10-19 (M019 done: graduated "Large PDF text check", pr
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M020 | Self-contained native display check | in-progress | — | normal | milestones/M020-self-contained-native.md |
+| M020 | Self-contained native display check | review | — | normal | milestones/M020-self-contained-native.md |
 | M019 | Large PDF text check | done | — | normal | milestones/archive/M019-large-pdf-text.md |
 | M018 | iOS deck and link checks | done | — | normal | milestones/archive/M018-ios-deck-and-links.md |
 | M017 | Check timing and ink report | done | — | normal | milestones/archive/M017-check-timing.md |

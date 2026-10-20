@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M020: Self-contained native display check
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -147,3 +147,4 @@ true or stale.
 - 2026-10-19: T5: README's `page` row names the desktop Safari 27.0.1 case; README's self-contained item states the 2026-10-19 native checks (Chromium 155 and Firefox 158 headless, desktop Safari 27.0.1, local file and HTTP, `sample.pdf`, not RevealJS slides, save-button name not checked); DESIGN.md Known issues gains one entry for both facts; CLAUDE.md "Still unverified" gains the headless, slides, and save-name gaps. README and CLAUDE.md add no simple-english lint hits beyond the older ones, except the quoted Firefox error ("Could not find profile folder").
 - 2026-10-19: T3 figures (share of blocks, `--alone http`, from the plant runs after the `data-page` change): otherpdf 0.0676 Chromium, 0.4291 Firefox, 0.0863 Safari; broken 0.9970 Chromium, 0.4621 Firefox, 0.0397 Safari (and no ink); blank 0.9970 Chromium, 0.4354 Firefox, 0.0397 Safari (and no ink); nopage vs the page-2 reference 0.1371 Chromium, 0.0567 Firefox; fileaddr fails on the address in all three.
 - 2026-10-19: claim audit: 34 claims read, 4 corrected — tests/native_check.mjs (plant figures now in the work log above; the Firefox folder fix names the recorded `open -g -n -a Firefox --args -headless -screenshot` launch, not an untried plain `open -g -a Firefox`), tests/png_diff.mjs (diffShare's second null case, too small for a block, documented and reported as such), CLAUDE.md (same Firefox launch wording; "Still unverified" slides gap is every browser), cairn/ROADMAP.md (Firefox row's launch wording, corrected M020). Each correction re-read by the agent against the same sources; no second pass.
+- 2026-10-19: implement done; status review.
