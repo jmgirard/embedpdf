@@ -183,6 +183,11 @@ for _, case in ipairs({
   reset("latex")
   check("percent " .. path .. ": latex line", pdf({ path }, {}, {}, {}, "block").text == latex)
 end
+-- the same rule for a path given by file=, and before HTML escaping
+reset("html:js")
+check("percent: file= path", has(pdf({}, { file = "files/100%.pdf" }, {}, {}, "block").text, 'data-src="files/100%25.pdf"'))
+reset("html:js")
+check("percent: & and % in one path", has(pdf({ "a&b%.pdf" }, {}, {}, {}, "block").text, 'data-src="a&amp;b%25.pdf"'))
 
 -- ---------------------------------------------------------------------------
 -- Missing source

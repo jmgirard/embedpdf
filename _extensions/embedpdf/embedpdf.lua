@@ -30,7 +30,7 @@ end
 
 -- the path as a LaTeX file name: decode the %XX escapes of printable ASCII
 -- other than the characters below, and keep every other % as written
--- (a " or , in an \includepdf file name fails in lualatex, M015 probe)
+-- (a " or , in an \includepdf file name fails in lualatex and pdflatex, M015 probe)
 local LATEX_UNSAFE = { ["\\"] = true, ["{"] = true, ["}"] = true, ["#"] = true,
   ["$"] = true, ["&"] = true, ["~"] = true, ["^"] = true, ["_"] = true,
   ['"'] = true, [","] = true }
