@@ -14,7 +14,12 @@
 //                       emulate that device's user agent, platform, touch
 //                       points, viewport, and navigator.pdfViewerEnabled
 //                       (values in DEVICES below); default: plain Chrome
-//   --expect-native <n> fail unless exactly n embeds use the native viewer
+//   --expect-native <n> fail unless exactly n embeds use the native viewer.
+//                       The report gives each native embed's element
+//                       (nativeTags: an <object>, or an <iframe> for a page
+//                       option over 1). With --device iphone, ipad, or
+//                       android, every run fails unless each one is an
+//                       <object>.
 //   --expect-pdfjs <n>  fail unless exactly n embeds use PDF.js
 //   --expect-pages <n>  fail unless each PDF.js embed has exactly n
 //                       .embedpdf-page elements (each page's canvas is
@@ -31,10 +36,12 @@
 //                       --missing-pdfs and the matching --expect-failed.
 //   --expect-links <n>  fail unless exactly n download links
 //                       (.embedpdf-download, .embedpdf object a[download],
-//                       a.embedpdf-btn) exist, each with a data: or blob: href
+//                       .embedpdf .embedpdf-fallback a[download] (the hidden
+//                       fallback beside an <iframe>), a.embedpdf-btn) exist,
+//                       each with a data: or blob: href
 //   --alone http|file   copy the page alone into an empty temporary directory,
 //                       then serve it over HTTP or open it as a file:// URL.
-//                       Also fail unless each native <object> has a data: or
+//                       Also fail unless each native <object> or <iframe> has a data: or
 //                       blob: URL whose bytes start with %PDF.
 //   --remote blocked|cors|missing
 //                       serve the PDFs from a second server on another port
@@ -160,7 +167,7 @@
 //                       ("PDF: <file name>", numbered or "PDF" as below) in
 //                       the DOM, and Chrome's accessibility tree gives it
 //                       role group and that name, and unless each native
-//                       embed's <object> has that aria-label, no title, and
+//                       embed's <object> or <iframe> has that aria-label, no title, and
 //                       that tree name with no description equal to it.
 //                       One name applies to as many embeds as --expect-native
 //                       and --expect-pdfjs give together, so it needs
@@ -193,7 +200,7 @@
 //   --plant wrongname|nativename|nativetitle|nativedesc|dupdesc|duplink|norole|notoolbar|nonumber|rawindicator|staleindicator|showindicator|tallframe|hideshown|staleshown
 //                       with --expect-name, plant a defect in the first
 //                       PDF.js embed (nativename, nativetitle, nativedesc: in the
-//                       first native embed's <object>, nothing to plant in
+//                       first native embed's <object> or <iframe>, nothing to plant in
 //                       when the page has none); the run must then fail:
 //                       wrongname and nativename change its aria-label to
 //                       "PDF: wrong.pdf", nativetitle gives it a title equal
@@ -852,10 +859,10 @@ async function treeFailures(page, slide) {
 
 // --expect-name, after the pages scroll: each PDF.js embed under a root is a
 // group with its expected name (expectLabels), and each native embed's
-// <object> has it, in the DOM and in Chrome's accessibility tree. The check
+// <object> or <iframe> has it, in the DOM and in Chrome's accessibility tree. The check
 // waits at most 10 s for every embed under the root to be hydrated. A name
 // plant goes into the page's first PDF.js embed (nativename, nativetitle, nativedesc:
-// its first native <object>), when it is under the root. `before` is the
+// its first native <object> or <iframe>), when it is under the root. `before` is the
 // number of native and PDF.js embeds on earlier slides, so that embed i of
 // the page takes name i of a "|" list.
 async function nameFailures(page, slide, before) {
@@ -873,7 +880,7 @@ async function nameFailures(page, slide, before) {
       const first = document.querySelector(nativePlant ? ".embedpdf-native" : ".embedpdf-pdfjs");
       if (!namePlants.includes(plant) || !first || !root.contains(first)) return { planted: null, stuck };
       if (nativePlant) {
-        const object = first.querySelector("object");
+        const object = first.querySelector(":scope > object, :scope > iframe");
         if (!object) return { planted: null, stuck };
         if (plant === "nativename") object.setAttribute("aria-label", "PDF: wrong.pdf");
         else if (plant === "nativetitle") object.setAttribute("title", object.getAttribute("aria-label") || "PDF");
@@ -973,21 +980,22 @@ async function nameFailures(page, slide, before) {
       continue;
     }
     if (native) {
-      // the <object> carries the name as aria-label alone: a title equal to
-      // it would be read again as a description
-      const object = await embed.$("object");
+      // the <object> or <iframe> carries the name as aria-label alone: a
+      // title equal to it would be read again as a description
+      const object = await embed.$(":scope > object, :scope > iframe");
       if (!object) {
-        out.push(`${at}: no <object>`);
+        out.push(`${at}: no <object> or <iframe>`);
         continue;
       }
-      const attrs = await object.evaluate((o) => ({ label: o.getAttribute("aria-label"), title: o.getAttribute("title") }));
-      if (attrs.label !== name) out.push(`${at}: <object> aria-label is "${attrs.label}", not "${name}"`);
-      if (attrs.title !== null) out.push(`${at}: <object> has a title, "${attrs.title}"`);
+      const attrs = await object.evaluate((o) => ({ tag: o.tagName.toLowerCase(), label: o.getAttribute("aria-label"), title: o.getAttribute("title") }));
+      const el = `<${attrs.tag}>`;
+      if (attrs.label !== name) out.push(`${at}: ${el} aria-label is "${attrs.label}", not "${name}"`);
+      if (attrs.title !== null) out.push(`${at}: ${el} has a title, "${attrs.title}"`);
       const node = await page.accessibility.snapshot({ root: object, interestingOnly: false });
-      if (!node) out.push(`${at}: <object> not in the accessibility tree`);
+      if (!node) out.push(`${at}: ${el} not in the accessibility tree`);
       else {
-        if (node.name !== name) out.push(`${at}: <object> tree name is "${node.name}", not "${name}"`);
-        if (node.description && node.description === node.name) out.push(`${at}: <object> description repeats the name "${node.name}"`);
+        if (node.name !== name) out.push(`${at}: ${el} tree name is "${node.name}", not "${name}"`);
+        if (node.description && node.description === node.name) out.push(`${at}: ${el} description repeats the name "${node.name}"`);
       }
       continue;
     }
@@ -1255,7 +1263,11 @@ try {
     );
     const native = document.querySelectorAll(".embedpdf-native").length;
     const pdfjs = pdfjsPages.length;
-    const links = [...document.querySelectorAll(".embedpdf-download, .embedpdf object a[download], a.embedpdf-btn")].map(
+    const nativeTags = [...document.querySelectorAll(".embedpdf-native")].map((d) => {
+      const e = d.querySelector(":scope > object, :scope > iframe");
+      return e ? e.tagName.toLowerCase() : "none";
+    });
+    const links = [...document.querySelectorAll(".embedpdf-download, .embedpdf object a[download], .embedpdf .embedpdf-fallback a[download], a.embedpdf-btn")].map(
       (a) => (a.getAttribute("href") || "").split(":")[0]
     );
     // each embed's PDF and each button link as an absolute URL (--remote
@@ -1352,10 +1364,11 @@ try {
     // the native objects' bytes, fetched last: every DOM read above is one
     // snapshot, taken before the first await
     const objects = [];
-    for (const o of document.querySelectorAll(".embedpdf-native object")) {
-      const entry = { scheme: String(o.data).split(":")[0], pdf: false };
+    for (const o of document.querySelectorAll(".embedpdf-native > object, .embedpdf-native > iframe")) {
+      const address = o.tagName === "IFRAME" ? o.src : o.data;
+      const entry = { tag: o.tagName.toLowerCase(), scheme: String(address).split(":")[0], pdf: false };
       try {
-        const buf = new Uint8Array(await (await fetch(o.data)).arrayBuffer());
+        const buf = new Uint8Array(await (await fetch(address)).arrayBuffer());
         entry.pdf = String.fromCharCode(...buf.slice(0, 4)) === "%PDF";
       } catch (err) {
         entry.error = String(err);
@@ -1371,6 +1384,7 @@ try {
       canvases,
       pdfjsPages,
       objects,
+      nativeTags,
       links,
       failed,
       inlinedFailed,
@@ -1587,6 +1601,16 @@ try {
     console.error(`render_check: expected ${expectNative} native embeds, found ${res.native}`);
     ok = false;
   }
+  // on iPhone, iPad, and Android a native embed (renderer=native) stays an
+  // <object>, whose fallback content shows where the PDF cannot (D-007)
+  if (["iphone", "ipad", "android"].includes(deviceName)) {
+    res.nativeTags.forEach((tag, i) => {
+      if (tag !== "object") {
+        console.error(`render_check: native embed ${i + 1} is <${tag}>, not <object>, on ${deviceName}`);
+        ok = false;
+      }
+    });
+  }
   if (expectPdfjs !== null && res.pdfjs !== Number(expectPdfjs)) {
     console.error(`render_check: expected ${expectPdfjs} PDF.js embeds, found ${res.pdfjs}`);
     ok = false;
@@ -1606,7 +1630,7 @@ try {
   if (alone) {
     res.objects.forEach((o, i) => {
       if (!["data", "blob"].includes(o.scheme) || !o.pdf) {
-        console.error(`render_check: native object ${i + 1} (${o.scheme}:) did not load a PDF${o.error ? ": " + o.error : ""}`);
+        console.error(`render_check: native <${o.tag}> ${i + 1} (${o.scheme}:) did not load a PDF${o.error ? ": " + o.error : ""}`);
         ok = false;
       }
     });

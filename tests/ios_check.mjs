@@ -20,7 +20,9 @@
 //   --page <path>          page under docs/ to open (default example.html)
 //   --expect-embeds <n>    embeds not set to renderer=native (default 10)
 //   --expect-native <n>    embeds set to renderer=native (default 0); checked
-//                          when given, and always with --expect-name
+//                          when given, and always with --expect-name. Every
+//                          run fails when a native embed is not an <object>
+//                          (an <iframe> is for desktop browsers, D-007).
 //   --expect-pages <n> | "<n1>|<n2>|…"
 //                          pages per PDF.js embed (default 2: sample.pdf):
 //                          one count for every embed not set to
@@ -135,6 +137,7 @@
 //                          check must then fail
 //   --expect-links <n>     fail unless the page holds exactly n download links
 //                          (.embedpdf-download, .embedpdf object a[download],
+//                          .embedpdf .embedpdf-fallback a[download],
 //                          a.embedpdf-btn, as render_check selects them),
 //                          each with a data: or blob: href
 //   --plant nolink|linkfile
@@ -719,7 +722,7 @@ const PROBE = `<script>
   let namePlanted = "";
   if (plant === "nativename" || plant === "nativetitle") {
     const first = embeds().find((el) => kind(el) === "native");
-    const object = first && first.querySelector("object");
+    const object = first && first.querySelector(":scope > object, :scope > iframe");
     if (object && plant === "nativename") { object.setAttribute("aria-label", "PDF: wrong.pdf"); namePlanted = plant; }
     if (object && plant === "nativetitle") { object.setAttribute("title", object.getAttribute("aria-label") || "PDF"); namePlanted = plant; }
   }
@@ -785,7 +788,7 @@ const PROBE = `<script>
 
   // the page's download links, selected as render_check selects them
   // (--expect-links); a link plant edits the first one
-  const linkSel = ".embedpdf-download, .embedpdf object a[download], a.embedpdf-btn";
+  const linkSel = ".embedpdf-download, .embedpdf object a[download], .embedpdf .embedpdf-fallback a[download], a.embedpdf-btn";
   let linkPlanted = "";
   const firstLink = document.querySelector(linkSel);
   if (firstLink && plant === "nolink") { firstLink.remove(); linkPlanted = plant; }
@@ -841,10 +844,10 @@ const PROBE = `<script>
         inkSlide: inkSlide.has(el) ? inkSlide.get(el) : null,
         role: el.getAttribute("role"),
         label: el.getAttribute("aria-label"),
-        // a native embed's name is on its <object>
+        // a native embed's name is on its <object> (or <iframe>, D-007)
         object: (() => {
-          const o = el.querySelector("object");
-          return o ? { label: o.getAttribute("aria-label"), title: o.getAttribute("title"), data: o.data } : null;
+          const o = el.querySelector(":scope > object, :scope > iframe");
+          return o ? { tag: o.tagName.toLowerCase(), label: o.getAttribute("aria-label"), title: o.getAttribute("title"), data: o.tagName === "IFRAME" ? o.src : o.data } : null;
         })(),
         toolbarOff: el.dataset.toolbar === "false",
         indicator: (() => {
@@ -993,6 +996,11 @@ try {
   const natives = report.embeds.filter((e) => e.requested === "native");
   if (!report.stuck && ("expect-native" in parsed || expectLabels) && natives.length !== expectNative) {
     failures.push(`expected ${expectNative} embeds set to renderer=native, found ${natives.length}`);
+  }
+  // on iPhone and iPad a native embed stays an <object>, whose fallback
+  // content shows where the PDF cannot; an <iframe> is for desktop (D-007)
+  for (const e of natives) {
+    if (e.object && e.object.tag !== "object") failures.push(`embed ${e.index}: native embed is <${e.object.tag}>, not <object>`);
   }
   if (expectLabels && !report.stuck && expectLabels.length !== report.embeds.length) {
     failures.push(`--expect-name gives ${expectLabels.length} names for ${report.embeds.length} embeds`);

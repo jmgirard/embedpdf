@@ -94,11 +94,11 @@ placeholder, hidden. Every other native embed stays an `<object>`. Version 1.2.7
       1 is not an `<iframe>`, when one with page 1 is not an `<object>`, when an `<iframe>` has a border or a
       box other than its width x height, or when its placeholder shows other content. Report every failure of
       an embed, not only the first. Update the header.
-- [ ] T4: `tests/render_check.mjs`, `tests/safari_check.mjs`, `tests/ios_check.mjs`: wherever they find a
+- [x] T4: `tests/render_check.mjs`, `tests/safari_check.mjs`, `tests/ios_check.mjs`: wherever they find a
       native embed by its `<object>` (names, `title`, name plants, download-link selector, native-load and
       `--remote cors` address checks), also take its `<iframe>`. render_check and ios_check report each native
       embed's element, and fail on iPhone, iPad, or Android when one is not an `<object>`.
-- [ ] T5: Show each changed check fail on an `<iframe>` embed of `page_test.html`: render_check `nativename`
+- [x] T5: Show each changed check fail on an `<iframe>` embed of `page_test.html`: render_check `nativename`
       and `nativetitle`; safari_check `nativename`; native_check `nopage`, `otherpdf`, and `refcontrol` with
       `--plant-at` aimed at an `<iframe>` embed, in Safari as well; a new native_check plant that puts an
       `<object>` in place of an `<iframe>`, whose Safari run must name both the element and a page-2 mismatch;
@@ -129,6 +129,8 @@ placeholder, hidden. Every other native embed stays an `<object>`. Version 1.2.7
 - 2026-10-20: T2 done: `page_test.qmd` added and named in CLAUDE.md's file list; `quarto render` completed with no error, docs/ libraries now at 1.2.7.
 - 2026-10-20: T3 done: native_check takes `<iframe>` embeds, compares each embed with a reference and control of the element its page option asks for, runs on a normal page when `--alone` is not given (address must be the resolved data-src), checks element, iframe border, box, and shown fallback, and drops `--same-pages` (no line needs it now); new plants `object`, `border`, `fallback`; `fileaddr` needs `--alone`. page_test.html passes in Chromium 155, Firefox 158, Safari 27.0.1; selfcontained_test.html passes `--alone file` and `http` in all three.
 - 2026-10-20: T5 (native_check part): on page_test.html embed 1 in Safari and Chromium, nopage, object, border, fallback, refcontrol, and otherpdf (`--plant-at 1`) each exit 1 naming that embed; in Safari nopage and object also fail as a page-2 mismatch (0.0952).
+- 2026-10-20: T4 done: render_check, safari_check, and ios_check read a native embed's `<object>` or `<iframe>` (names, title, name plants, link selector with `.embedpdf-fallback`, alone and remote addresses); render_check reports `nativeTags` and fails on iphone, ipad, or android when one is not `<object>`; ios_check fails on any native `<iframe>`; safari_check now takes `--expect-pdfjs 0` when native embeds are expected. page_test.html passes: render_check desktop and iphone/android, safari_check `--target mac`, ios_check iPhone and iPad.
+- 2026-10-20: T5 done: on page_test.html render_check nativename, nativetitle, nativedesc and safari_check nativename, nativetitle each exit 1 naming the `<iframe>` of embed 1; with the docs/ viewer copy changed to give an `<iframe>` on every device (restored after), render_check `--device iphone` and ios_check "embedpdf iPhone" each exit 1 naming a native `<iframe>`.
 
 ## Decisions
 
