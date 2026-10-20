@@ -1,13 +1,16 @@
 // Unit tests for the helpers the browser checks share: the ink rule
-// (tests/ink.mjs), the expected embed names (tests/expect_names.mjs), and in tests/serve_docs.mjs the docs/ server, the remote
+// (tests/ink.mjs), the expected embed names (tests/expect_names.mjs), the PNG
+// reader and image comparison (tests/png_diff.mjs), and in tests/serve_docs.mjs the docs/ server, the remote
 // server, pointPdfsAt, embedSrcsOffRemote, and docsFile. No browser.
 //
 // Usage:  node tests/helpers_test.mjs      # must print "N passed, 0 failed"
 
 import fs from "node:fs";
 import path from "node:path";
+import zlib from "node:zlib";
 import { inkInPixels } from "./ink.mjs";
 import { expectedNames } from "./expect_names.mjs";
+import { decodePng, diffShare } from "./png_diff.mjs";
 import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, docsFile, REMOTE_MODES, DOCS, SLOW_ABOVE, NO_EVAL_CSP } from "./serve_docs.mjs";
 
 // the one test PDF over SLOW_ABOVE bytes
@@ -56,6 +59,139 @@ check("names: repeats in a list are numbered in list order", same(en(["a.pdf", "
 check("names: - is the bare PDF", same(en(["a.pdf", "-"], 2), ["PDF: a.pdf", "PDF"]), JSON.stringify(en(["a.pdf", "-"], 2)));
 check("names: two - are numbered", same(en(["-"], 2), ["PDF (1 of 2)", "PDF (2 of 2)"]), JSON.stringify(en(["-"], 2)));
 
+// --- decodePng ----------------------------------------------------------------
+// a PNG of `rows` (arrays of channel bytes), color type 2 (RGB) or 6 (RGBA),
+// each row written with filter filters[y % filters.length]
+function crc32(buf) {
+  let c = ~0;
+  for (const v of buf) {
+    c ^= v;
+    for (let k = 0; k < 8; k++) c = (c >>> 1) ^ (0xedb88320 & -(c & 1));
+  }
+  return ~c >>> 0;
+}
+function pngChunk(type, data) {
+  const len = Buffer.alloc(4);
+  len.writeUInt32BE(data.length);
+  const td = Buffer.concat([Buffer.from(type, "latin1"), data]);
+  const crc = Buffer.alloc(4);
+  crc.writeUInt32BE(crc32(td));
+  return Buffer.concat([len, td, crc]);
+}
+function encodePng(width, rows, { colorType = 6, filters = [0], bitDepth = 8, interlace = 0 } = {}) {
+  const bpp = colorType === 6 ? 4 : 3;
+  const parts = [];
+  let prev = Buffer.alloc(width * bpp);
+  rows.forEach((row, y) => {
+    const cur = Buffer.from(row);
+    const f = filters[y % filters.length];
+    const out = Buffer.alloc(cur.length);
+    for (let x = 0; x < cur.length; x++) {
+      const a = x >= bpp ? cur[x - bpp] : 0;
+      const b = prev[x];
+      const c = x >= bpp ? prev[x - bpp] : 0;
+      let pred = 0;
+      if (f === 1) pred = a;
+      else if (f === 2) pred = b;
+      else if (f === 3) pred = (a + b) >> 1;
+      else if (f === 4) {
+        const p = a + b - c;
+        const pa = Math.abs(p - a), pb = Math.abs(p - b), pc = Math.abs(p - c);
+        pred = pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
+      }
+      out[x] = (cur[x] - pred) & 0xff;
+    }
+    parts.push(Buffer.from([f]), out);
+    prev = cur;
+  });
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(width, 0);
+  ihdr.writeUInt32BE(rows.length, 4);
+  ihdr[8] = bitDepth;
+  ihdr[9] = colorType;
+  ihdr[12] = interlace;
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    pngChunk("IHDR", ihdr),
+    pngChunk("IDAT", zlib.deflateSync(Buffer.concat(parts))),
+    pngChunk("IEND", Buffer.alloc(0)),
+  ]);
+}
+// 5 x 6 pixels of varied colors, so every filter predicts something other than 0
+const PNG_W = 5;
+const pngPixel = (x, y) => [(x * 53 + y * 17) & 0xff, (x * 29 + y * 101) & 0xff, (x * 7 + y * 211) & 0xff, (x * 61 + y * 3 + 40) & 0xff];
+const pngRows = (bpp) => Array.from({ length: 6 }, (_, y) => Array.from({ length: PNG_W }, (_, x) => pngPixel(x, y).slice(0, bpp)).flat());
+const pngExpect = (bpp) => Buffer.from(Array.from({ length: 6 * PNG_W }, (_, i) => {
+  const p = pngPixel(i % PNG_W, Math.floor(i / PNG_W));
+  return bpp === 4 ? p : [...p.slice(0, 3), 255];
+}).flat());
+for (const f of [0, 1, 2, 3, 4]) {
+  const got = decodePng(encodePng(PNG_W, pngRows(4), { filters: [f] }));
+  check(`png: RGBA with filter ${f} decodes`, got.width === PNG_W && got.height === 6 && got.data.equals(pngExpect(4)));
+}
+{
+  const got = decodePng(encodePng(PNG_W, pngRows(3), { colorType: 2, filters: [4, 3, 2, 1, 0] }));
+  check("png: RGB with mixed filters decodes with alpha 255", got.data.equals(pngExpect(3)));
+}
+{
+  // IDAT split in two chunks, as an encoder may write it
+  const one = encodePng(PNG_W, pngRows(4), { filters: [2] });
+  const idatStart = one.indexOf("IDAT", 0, "latin1") - 4;
+  const len = one.readUInt32BE(idatStart);
+  const data = one.subarray(idatStart + 8, idatStart + 8 + len);
+  const half = Math.floor(len / 2);
+  const split = Buffer.concat([one.subarray(0, idatStart), pngChunk("IDAT", data.subarray(0, half)), pngChunk("IDAT", data.subarray(half)), one.subarray(idatStart + 12 + len)]);
+  check("png: IDAT split across chunks decodes", decodePng(split).data.equals(pngExpect(4)));
+}
+const pngThrows = (buf, re) => {
+  try {
+    decodePng(buf);
+    return false;
+  } catch (err) {
+    return re.test(err.message);
+  }
+};
+check("png: 16-bit is refused", pngThrows(encodePng(PNG_W, pngRows(4), { bitDepth: 16 }), /bit depth 16/));
+check("png: interlaced is refused", pngThrows(encodePng(PNG_W, pngRows(4), { interlace: 1 }), /interlace 1/));
+check("png: palette (color type 3) is refused", pngThrows(encodePng(PNG_W, pngRows(3), { colorType: 3 }), /color type 3/));
+check("png: a non-PNG is refused", pngThrows(Buffer.from("GIF89a and more bytes"), /not a PNG/));
+
+// --- diffShare ----------------------------------------------------------------
+// a w x h white image with black squares [x, y, side]
+function img(w, h, squares = []) {
+  const data = Buffer.alloc(w * h * 4, 255);
+  for (const [sx, sy, side, value = 0] of squares) {
+    for (let y = sy; y < sy + side; y++) for (let x = sx; x < sx + side; x++) data.fill(value, (y * w + x) * 4, (y * w + x) * 4 + 3);
+  }
+  return { width: w, height: h, data };
+}
+{
+  const base = img(40, 40, [[12, 12, 8]]);
+  const d0 = diffShare(base, img(40, 40, [[12, 12, 8]]));
+  check("diff: identical images differ in no block, at shift 0,0", d0.share === 0 && d0.dx === 0 && d0.dy === 0, JSON.stringify(d0));
+  const d1 = diffShare(base, img(40, 40, [[13, 11, 8]]));
+  check("diff: a 1-pixel move is absorbed at its shift", d1.share === 0 && d1.dx === 1 && d1.dy === -1, JSON.stringify(d1));
+  const d2 = diffShare(base, img(40, 40, [[14, 10, 8]]));
+  check("diff: a 2-pixel move is absorbed (shift 2)", d2.share === 0 && d2.dx === 2 && d2.dy === -2, JSON.stringify(d2));
+  const d3 = diffShare(base, img(40, 40, [[15, 12, 8]]));
+  check("diff: a 3-pixel move is not absorbed", d3.share > 0, JSON.stringify(d3));
+  const dm = diffShare(base, img(40, 40, [[24, 24, 8]]));
+  check("diff: a square elsewhere differs", dm.share > 0.05, JSON.stringify(dm));
+  check("diff: images of other sizes give null", diffShare(base, img(40, 41)) === null);
+  check("diff: shift 0 does not absorb a 1-pixel move", diffShare(base, img(40, 40, [[13, 12, 8]]), { shift: 0 }).share > 0);
+}
+{
+  // one pixel changed by 255 averages to 16 over a 4 x 4 block: below 40
+  const dp = diffShare(img(40, 40), img(40, 40, [[22, 22, 1]]), { shift: 0 });
+  check("diff: one dark pixel in a block is averaged away", dp.share === 0, JSON.stringify(dp));
+  // a whole block 60 darker averages to 60: above 40
+  const db = diffShare(img(40, 40), img(40, 40, [[20, 20, 4, 195]]), { shift: 0 });
+  check("diff: a whole block 60 darker differs", db.share > 0, JSON.stringify(db));
+  // the same pixel with block 1 is a difference
+  const d1 = diffShare(img(40, 40), img(40, 40, [[22, 22, 1]]), { shift: 0, block: 1 });
+  check("diff: block 1 compares single pixels", d1.share > 0, JSON.stringify(d1));
+}
+
 // --- pointPdfsAt ------------------------------------------------------------
 const R = "http://127.0.0.1:9000/";
 const div = (src, pre = "") => `<div ${pre}class="embedpdf" data-src="${src}" data-renderer="auto">`;
@@ -96,7 +232,7 @@ check("docsFile: a missing file is null", docsFile("nope.html") === null, String
 // --- embedSrcsOffRemote -------------------------------------------------------
 const read = (f) => fs.readFileSync(path.join(DOCS, f), "utf8");
 const offSelf = embedSrcsOffRemote(read("selfcontained_test.html"), R, "selfcontained_test.html");
-check("off: self-contained page has 3 inlined embeds", offSelf.length === 3, JSON.stringify(offSelf));
+check("off: self-contained page has 4 inlined embeds", offSelf.length === 4, JSON.stringify(offSelf));
 check("off: values are cut to 40 characters", offSelf.every((v) => v.startsWith("data:application/pdf") && v.length === 41 && v.endsWith("…")), JSON.stringify(offSelf));
 const offExample = embedSrcsOffRemote(read("example.html"), R, "example.html");
 check("off: example.html has none left", offExample.length === 0, JSON.stringify(offExample));

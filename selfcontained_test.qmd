@@ -23,4 +23,4 @@ no other file beside it.
 
 ## Native renderer at page 2
 
-{{< pdf sample.pdf renderer=native page=2 >}}
+{{< pdf sample.pdf renderer=native page=2 width=600 height=400 >}}

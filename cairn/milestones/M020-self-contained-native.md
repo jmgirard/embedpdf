@@ -89,7 +89,7 @@ true or stale.
       with the `--device mac-safari`, `windows-touch`, and `ipad` variants
       CLAUDE.md asks for, and each `--alone file` line again with `--alone
       http`.
-- [ ] T2: Write `tests/native_check.mjs`: `--browser chromium|firefox|safari`
+- [x] T2: Write `tests/native_check.mjs`: `--browser chromium|firefox|safari`
       (`CHROME_PATH`; `FIREFOX_PATH`, default
       `/Applications/Firefox.app/Contents/MacOS/firefox`), `--page`, `--alone
       file|http`, `--expect-native <n>`, `--reference <PDF under docs/>`,
@@ -105,7 +105,7 @@ true or stale.
       screenshot with no ink. Fail unless the page-1 and page-2 references
       differ, or with `--same-pages` unless they match. Exit 0 on a pass, 1 on
       a failed check, 2 on a bad argument or a browser that cannot start.
-- [ ] T3: Plants, each documented in the header, with `--plant-at <k>` naming
+- [x] T3: Plants, each documented in the header, with `--plant-at <k>` naming
       the native embed (default 1): `otherpdf` (a `blob:` of
       `files/large.pdf`, an inked PDF that is not `sample.pdf`), `broken` (a
       `blob:` of `files/broken.pdf`, so the viewer shows its own error),
@@ -140,3 +140,6 @@ true or stale.
 - 2026-10-19: criteria audit (full mode, fresh Opus reader) returned 8 findings, all fixed: AC1 now bounds its match by the header's tolerance, names the reference as `docs/sample.pdf` on the check's HTTP server, drops the check-behavior sentence, and names `--same-pages` on the Safari lines; T3's `otherpdf` uses the inked `files/large.pdf` and must fail as a mismatch, a `broken` plant covers a viewer error page, and `--plant-at` reaches every native embed; AC2's Safari clause states what the page shows, not how the check exits; AC3 names the device variants and the new counts; AC4 narrows to a self-contained HTML page with `sample.pdf`, says headless, and keeps the save-button name unchecked.
 - 2026-10-19: T1: added the `renderer=native page=2` embed to `selfcontained_test.qmd`, rendered; CLAUDE.md self-contained lines now expect 3 native/1 PDF.js (desktop), 2 native/2 PDF.js (iphone, iOS), and 5 links (the new embed's fallback link). All 10 render_check runs (file and http × desktop, mac-safari, windows-touch, iphone, ipad) and both ios_check runs exit 0.
 - 2026-10-19: the simple-english lint hook flags 38 hits across all of CLAUDE.md; this milestone's CLAUDE.md edits change command lines and add one paragraph, so the older prose is left as written.
+- 2026-10-19: T2: wrote `tests/native_check.mjs`; the PNG reader and comparison live in a new `tests/png_diff.mjs`, tested in `tests/helpers_test.mjs` (every filter type, RGB and RGBA, split IDAT, refused formats, shift and block cases; 154 passed, 0 failed). Choices: the reference `<object>` copies the embed's size and fractional position; screenshots compare by 4 x 4 block averages at the best shift of up to 2 pixels, because desktop Safari drew the same page 1 pixel apart and Firefox at scale 1 drew text edges a fraction of a pixel apart (2-4% of single pixels); the expected fragment comes from the embed's `data-page`, not its address, so a lost fragment fails; Firefox runs with `pdfjs.viewOnLoad` 1, because by default it reopened a PDF at the page last shown; `NATIVE_CHECK_SHOTS` saves screenshots.
+- 2026-10-19: minor amendment to T1: the `page=2` embed got `width=600 height=400`; at the default 300 x 150 Firefox's toolbar and outline panel filled most of the box, and its page-1 and page-2 references differed in only 3% of pixels. helpers_test's count of the page's inlined embeds went from 3 to 4.
+- 2026-10-19: T3: every plant run in Chromium 155, Firefox 158, and desktop Safari 27.0.1 (`--alone http`), and in Chromium at `--plant-at 1`, `2`, `3` (`--alone file`): each exits 1 naming the planted embed; otherpdf and broken fail as a mismatch in every browser; nopage at embeds 1 and 2 exits 2 (no page option there). Deviation: nopage fails in desktop Safari too, on the address's missing fragment, since the expected fragment now comes from `data-page`.
