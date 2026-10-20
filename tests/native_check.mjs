@@ -11,7 +11,11 @@
 // desktop Safari 27.0.1 opens an <object> at page 1 whatever #page= says.
 // Without --alone, the check opens the page from docs/ on its own HTTP server,
 // and each native embed's address must be its data-src, resolved against the
-// page, with the fragment below. With --alone, the page must be self-contained
+// page, with the fragment below (a blob: URL for a hand-written inlined embed,
+// which has no data-src left). The viewer makes an <iframe> only when the
+// page's server answers a HEAD request for the PDF with application/pdf shown
+// inline (frameAllowed), so such a page must send its PDFs that way, as
+// tests/serve_docs.mjs does. With --alone, the page must be self-contained
 // (embed-resources: true): it holds its PDF as a data: address, and the viewer
 // gives each native embed a blob: URL of it (inlinedPdf). The check then opens
 // a copy of the page alone in an empty temporary directory, over file://
@@ -22,8 +26,9 @@
 // unless, for each one: its address's fragment is #page=<k> where the embed's
 // data-page (the page option) is k > 1, and empty otherwise; it is an <iframe>
 // where k > 1 and an <object> otherwise; an <iframe> has a computed border
-// width of 0 and the box its pixel width and height attributes give (300 x 150
-// when they are missing; a percent size is not checked); and no other element of its placeholder has a rendered
+// width of 0 and the box that the embed's width and height options give in
+// pixels (300 x 150 when they are missing; a percent size is not checked); and
+// no other element of its placeholder has a rendered
 // box (an <iframe> shows no child content, so the viewer hides the no-JS
 // fallback beside it). Every failure of an embed is reported, not only the
 // first.
@@ -123,8 +128,6 @@ const VIEWPORT = { width: 1200, height: 900 };
 const PLANTS = ["otherpdf", "broken", "blank", "fileaddr", "nopage", "object", "border", "fallback", "refcontrol"];
 // plants aimed at an embed whose page option is over 1 (an <iframe>)
 const PAGE_PLANTS = ["nopage", "object", "border", "fallback"];
-// each native embed's element: the placeholder's <object> or <iframe> child
-const NATIVE = "div.embedpdf-native > object, div.embedpdf-native > iframe";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function bad(msg) {
@@ -378,8 +381,11 @@ try {
   const state = () =>
     drv.run(`() => ({
       unhydrated: document.querySelectorAll("div.embedpdf:not(.embedpdf-pdfjs):not(.embedpdf-native):not(.embedpdf-failed)").length,
-      native: [...document.querySelectorAll("div.embedpdf-native")].map((d) => {
+      native: [...document.querySelectorAll("div.embedpdf-native")].map((d, i) => {
         const e = d.querySelector(":scope > object, :scope > iframe");
+        // the screenshot finds embed i by this mark, so a placeholder with no
+        // element does not move later screenshots onto other embeds
+        if (e) e.setAttribute("data-native-check", String(i));
         const out = {
           tag: e ? e.tagName.toLowerCase() : "",
           address: e ? (e.tagName === "IFRAME" ? e.src : e.data) : "",
@@ -392,7 +398,8 @@ try {
           const r = e.getBoundingClientRect();
           out.border = ["Top", "Right", "Bottom", "Left"].map((s) => parseFloat(cs["border" + s + "Width"]) || 0);
           out.box = [r.width, r.height];
-          out.attrs = [e.getAttribute("width"), e.getAttribute("height")];
+          // the size the author asked for (the shortcode's width and height)
+          out.size = [d.dataset.width ?? null, d.dataset.height ?? null];
         }
         return out;
       }),
@@ -483,28 +490,33 @@ try {
     const has = data.includes("#") ? data.slice(data.indexOf("#")) : "";
     if (has !== frag) failures.push(`${at}: its address's fragment is "${has}", but its page option asks for "${frag}"`);
     if (alone && !/^blob:/.test(data)) failures.push(`${at}: its address is not a blob: URL (${data.slice(0, 60)})`);
-    if (!alone && data.split("#")[0] !== e.src) failures.push(`${at}: its address ${data.slice(0, 80)} is not its data-src ${e.src.slice(0, 80)}`);
+    // without --alone: the embed's data-src, resolved against the page; a
+    // hand-written inlined (data:) embed has no data-src left and a blob: URL
+    if (!alone && e.src && data.split("#")[0] !== e.src) failures.push(`${at}: its address ${data.slice(0, 80)} is not its data-src ${e.src.slice(0, 80)}`);
+    if (!alone && !e.src && !/^blob:/.test(data)) failures.push(`${at}: it has no data-src and its address is not a blob: URL (${data.slice(0, 60)})`);
     if (e.tag === "iframe") {
       if (e.border.some((b) => b !== 0)) failures.push(`${at}: its <iframe> has a border (${e.border.join(" ")} px)`);
-      // pixel sizes only: a percent width depends on the page's layout
-      const want = [Number(e.attrs[0] ?? 300), Number(e.attrs[1] ?? 150)];
+      // the width and height options in pixels ("600" or "600px"; 300 x 150
+      // when missing); a percent size depends on the page's layout, unchecked
+      const px = (v, dflt) => (v === null ? dflt : /^\d+(\.\d+)?(px)?$/.test(v) ? parseFloat(v) : NaN);
+      const want = [px(e.size[0], 300), px(e.size[1], 150)];
       if (want.every(Number.isFinite) && (e.box[0] !== want[0] || e.box[1] !== want[1])) {
-        failures.push(`${at}: its <iframe> box is ${e.box.join(" x ")}, not ${want.join(" x ")}`);
+        failures.push(`${at}: its <iframe> box is ${e.box.join(" x ")}, not the ${want.join(" x ")} its width and height ask for`);
       }
     }
     if (e.shown > 0) failures.push(`${at}: ${e.shown} other element(s) of its placeholder show`);
     let shot, size, img;
     try {
-      shot = await stableShot(drv, NATIVE, i);
+      const mark = `[data-native-check="${i}"]`;
+      shot = await stableShot(drv, mark, 0);
       // the size once the screenshot settled (a box can grow as its viewer loads)
       size = await drv.run(
-        `(css, i) => {
-          const r = document.querySelectorAll(css)[i].getBoundingClientRect();
+        `(css) => {
+          const r = document.querySelector(css).getBoundingClientRect();
           const frac = (v) => Math.round((v - Math.floor(v)) * 1000) / 1000;
           return { w: r.width, h: r.height, x: 8 + frac(r.left + scrollX), y: 8 + frac(r.top + scrollY) };
         }`,
-        NATIVE,
-        i
+        mark
       );
       img = decodePng(shot.png);
     } catch (err) {

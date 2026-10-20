@@ -237,6 +237,22 @@ node tests/ios_check.mjs --device "embedpdf iPad" --page page_test.html --expect
 node tests/safari_check.mjs --target mac --page page_test.html --expect-native 3 --expect-pdfjs 0 --expect-name sample.pdf
 ```
 
+Which element a native embed with `page` over 1 gets: the viewer reads the
+PDF's answer to a HEAD request first (D-008). `frame_rule_check.mjs` serves
+a page with nine native embeds, each answered in its own way. It fails unless
+each embed gets the element that its header lists, and unless the request
+logs are as the header says. `--slow-head` delays each HEAD answer by 3 s, and
+the run must still pass. The header states the plants. Run the plants in
+Chromium, because in Safari an `<iframe>` of a PDF sent as a download saves a
+copy in `~/Downloads`:
+
+```
+node tests/frame_rule_check.mjs --browser chromium
+node tests/frame_rule_check.mjs --browser firefox
+node tests/frame_rule_check.mjs --browser safari
+node tests/frame_rule_check.mjs --browser chromium --slow-head
+```
+
 A self-contained page whose embeds cannot show their PDF:
 `selfcontained_failed_test.html` holds `files/broken.pdf`, a text file that
 PDF.js cannot load. It also holds two hand-written embeds

@@ -1000,7 +1000,9 @@ try {
   // on iPhone and iPad a native embed stays an <object>, whose fallback
   // content shows where the PDF cannot; an <iframe> is for desktop (D-007)
   for (const e of natives) {
-    if (e.object && e.object.tag !== "object") failures.push(`embed ${e.index}: native embed is <${e.object.tag}>, not <object>`);
+    if (e.renderer !== "native") continue; // named by the checks below
+    if (!e.object) failures.push(`embed ${e.index}: native embed has no <object>`);
+    else if (e.object.tag !== "object") failures.push(`embed ${e.index}: native embed is <${e.object.tag}>, not <object>`);
   }
   if (expectLabels && !report.stuck && expectLabels.length !== report.embeds.length) {
     failures.push(`--expect-name gives ${expectLabels.length} names for ${report.embeds.length} embeds`);

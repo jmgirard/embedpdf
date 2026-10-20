@@ -131,7 +131,7 @@ than `attachment` (both compared without case or parameters); any other answer, 
 - [x] T7: Run every AC5 line and `quarto render`; record each result in the Review section.
 - [x] T8: Viewer (review return 1): before `hydrateNative()`, choose the element by the Scope rule (HEAD with a
       5 s limit; opaque origins never match). 1.2.7 is unreleased, so the version stays.
-- [ ] T9: `tests/frame_rule_check.mjs` (Chromium, Firefox, Safari): AC7's cases plus an HTTP 404 case, each
+- [x] T9: `tests/frame_rule_check.mjs` (Chromium, Firefox, Safari): AC7's cases plus an HTTP 404 case, each
       embed at its own address; the octet-stream, Attachment, and 405 addresses end in `.pdf`, one `<iframe>`
       address does not. Plants in the served viewer (origin check skipped, `ok` ignored, any disposition as
       attachment, GET for HEAD, case-sensitive compare) and a server-side answer swap must fail; a 3 s HEAD
@@ -179,6 +179,7 @@ than `attachment` (both compared without case or parameters); any other answer, 
 - 2026-10-20: re-audit: AC6 (full) — 7 findings on the second wording (cross-reference to Scope, not-OK answers, `file:` pages with inlined PDFs, desktop qualifier, wrapped lines for grep, "every" unclear, phrase vs claim); a third wording is the second-re-audit stop, posed to the user.
 - 2026-10-20: substantive amendment: Scope In gains the header rule; AC6 reworded (third wording, approved by the user at the second-re-audit stop); AC7 added (adopted at the user's review decision, a widening); tasks T8-T11 added; D-008 supersedes D-007's rule.
 - 2026-10-20: T8 done: `frameAllowed()` decides the element before `hydrateNative()` (inlined → `<iframe>`; same non-opaque origin → HEAD with `AbortSignal.timeout(5000)`, `<iframe>` for OK + `application/pdf` + non-`attachment`, compared without case or parameters; else `<object>`); `allowfullscreen` on the `<iframe>` (diff-bug #9); header comment no longer says renderer=native is always `<object>` (ripple #1); version stays 1.2.7 (unreleased). After `quarto render`, native_check chromium on page_test.html and selfcontained `--alone file` pass.
+- 2026-10-20: T9 done: new `tests/frame_rule_check.mjs` (nine native embeds on a page built from docs/page_test.html's scripts, AC7's cases plus HTTP 404, each at its own address; `--slow-head`; plants noorigin, nook, anydisp, get, casesens, swap) passes in Chromium 155, Firefox 158, and Safari 27.0.1, and with `--slow-head` in Chromium; each plant exits 1 in Chromium naming the embed it targets; the Safari run saved no file in ~/Downloads. Fix-now items: native_check screenshots each embed by a per-placeholder mark (diff-bug #5), accepts a blob: address for an embed with no data-src without `--alone` (diff-bug #6), and takes the expected box from `data-width`/`data-height` in px (diff-bug #10, prior-review #4); ios_check fails a native embed with no element (prior-review #1; shown red with the docs/ viewer copy changed to add no element, restored after). CLAUDE.md gains the four frame_rule_check lines.
 - 2026-10-20: the Goal stays as written (never edited in place); after the user's review decision it holds for PDFs that pass the header rule, and the docs name the rest (AC6).
 
 ## Decisions
