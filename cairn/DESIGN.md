@@ -206,17 +206,19 @@ load on the same queue, and a text task runs only when no page render waits
   browsers, a slide hidden at load within RevealJS's view distance, a tab or
   other part of a page hidden at load, and slides of a deck that is not
   self-contained.
-- A native viewer's own save control does not save the in-page copy of an
-  inlined PDF under the PDF's file name. On `selfcontained_test.html` opened
+- Chromium's and desktop Safari's own PDF viewers do not save the in-page
+  copy of an inlined PDF under the PDF's file name. On `selfcontained_test.html` opened
   alone (local file and HTTP), each `<object>` embed and the `page=2`
   `<iframe>` embed saved `sample.pdf` as `<id of its blob: URL>.pdf` in
   headless Chromium 155 and as `Unknown.pdf` in desktop Safari 27.0.1
   (`tests/save_name_check.mjs`; corrected M023) — observed 2026-10-20.
   Firefox 158's save control saved no file under puppeteer-core, so its
   saved name is not checked. Its viewer reported `document.pdf`. M023 tried a
-  `blob:` of a `File` named `sample.pdf`, a `#filename=sample.pdf` fragment,
-  and a `data:` address. None made Chromium or Safari save `sample.pdf`. In
-  Firefox the first two made the viewer report `sample.pdf`. The `button`
+  `blob:` of a `File` named `sample.pdf` and a `data:` address in Chromium
+  and Safari, a `#sample.pdf` fragment in Chromium, and a
+  `#page=2&filename=sample.pdf` fragment in Safari. None saved `sample.pdf`.
+  In Firefox the `File` and a `#filename=sample.pdf` fragment made the viewer
+  report `sample.pdf`. The `button`
   link of such an embed has the PDF's file name as its `download` name.
 - The PDF.js viewer has no text selection or search (out of scope, see the
   contract boundary).

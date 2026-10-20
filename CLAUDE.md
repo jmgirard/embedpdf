@@ -237,15 +237,18 @@ node tests/native_check.mjs --browser safari --page selfcontained_slides_test.ht
 
 The name under which a native viewer's own save control saves the PDF:
 `save_name_check.mjs` presses that control for each native embed and reads
-the saved file's name. `--expect-save` gives one name per native embed, or
-one for all. `@blob` stands for the id of the embed's `blob:` URL plus
-`.pdf`. In Chromium the check reads the name from CDP download events. In
-desktop Safari it finds the PDF's control bar in a window screenshot and
-clicks its download button. It then reads and deletes the new file in
-`~/Downloads`.
-Keep the Safari window in front and the screen unlocked while it runs.
-Firefox's viewer saved no file under automation, so Firefox is not checked
-(the script's header). The header states the plants:
+the saved file's name and bytes. The bytes must be the embed's own PDF.
+`--expect-save` gives one name per native embed, or one for all. `@blob`
+stands for the id of the embed's `blob:` URL plus `.pdf`. In Chromium the
+check reads the name from CDP download events. In desktop Safari it finds
+the PDF's control bar in a window screenshot and clicks its download
+button. It then reads the one new PDF in `~/Downloads` and deletes it, and
+it deletes no other file. Safari needs safaridriver turned on (as above).
+Keep the Safari window in front and the screen unlocked while it runs. Leave
+a few minutes between Safari runs. Safari stopped saving for a few minutes
+after a burst of saves. A locked screen exits 2. Firefox's
+viewer saved no file under automation, so Firefox is not checked (the
+script's header). The header states the plants:
 
 ```
 node tests/save_name_check.mjs --browser chromium --page selfcontained_test.html --alone file --expect-native 3 --expect-save @blob
@@ -544,8 +547,8 @@ errors.
 - A PDF missing from the page's own site (HTTP 404) on a real phone. It is
   checked only in Chromium and in the iOS 27.0 simulators.
 - A self-contained embed that cannot show its PDF gives a "Download the PDF"
-  link. Only Chromium saves the file in a check. No check saves it in Safari
-  (desktop or iOS) or Firefox. In the iOS 27.0 simulators only the link's text,
+  link. Only Chromium saves the file in a check. No check saves the link's
+  file in Safari (desktop or iOS) or Firefox. In the iOS 27.0 simulators only the link's text,
   `blob:` address, download name, and missing target are checked.
 - A real screen reader (VoiceOver, TalkBack) reading a PDF.js embed's hidden
   page text, its group name ("PDF: <file name>", numbered or "PDF"), its toolbar controls'
