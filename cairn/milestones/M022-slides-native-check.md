@@ -89,6 +89,7 @@ A check shows that each native embed on the self-contained RevealJS slides shows
 - 2026-10-20: claim audit: 38 claims read, 5 corrected — README.md, CLAUDE.md, tests/native_check.mjs; the re-read found all corrections hold and one more over-broad DESIGN Known issues line (save name), now scoped to headless Chromium 155.
 - 2026-10-20: status → review.
 - 2026-10-20: review: Scope In's "more than its view distance" is off by one (Reveal hides a slide at distance ≥ its view distance); plan-owned wording left as is, README corrected (diff-bug #3).
+- 2026-10-20: step-7 approval: m022-slides-native-check approved for merge
 
 ## Decisions
 
