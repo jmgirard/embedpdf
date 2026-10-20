@@ -81,11 +81,11 @@ Version 1.2.6.
       with a directory outside `docs/` and Quarto's default PDF engine,
       completes with no error. `pdftotext` of that PDF holds the phrase "On
       the Origin of Coastlines" 5 times, one per embed.
-- [ ] AC5: After `quarto render`, each command line that names
-      `percent_test.html` or `name_test.html` in CLAUDE.md at commit 61d6f12
-      passes (11 lines). The two `example.html` lines of the first command
-      block in that CLAUDE.md with no `--device` and with `--device iphone`
-      pass too.
+- [ ] AC5: After `quarto render`, each line that starts with `node ` and
+      names `percent_test.html` or `name_test.html` in CLAUDE.md at commit
+      61d6f12 passes (9 lines). In that CLAUDE.md, the first command block
+      that names `example.html` holds one `example.html` line with no
+      `--device` and one with `--device iphone`. Those two lines pass too.
 - [ ] AC6: `_extensions/embedpdf/_extension.yml` holds `version: 1.2.6`, and
       `_extensions/embedpdf/embedpdf.lua` holds `VERSION = "1.2.6"`.
       README.md says that a `%` in a PDF file name can be given bare unless
@@ -146,6 +146,9 @@ Version 1.2.6.
 - 2026-10-19: T4: `quarto render percent_page_test.qmd --to pdf --output-dir <scratch>` (default engine) exits 0. The PDF has 15 pages, and `pdftotext` finds "On the Origin of Coastlines" 5 times. With the v1.2.5 shortcode the same render exits 1 ("compilation failed").
 - 2026-10-19: T5: the 9 `node` lines of CLAUDE.md at 61d6f12 that name `percent_test.html` or `name_test.html`, and the two `example.html` lines (no `--device`, `--device iphone`), exit 0. Extra, outside AC5: `percent_test.html --alone http --device iphone` exits 0.
 - 2026-10-19: T6: README paragraph on `%` in a file name, CLAUDE.md (lua-change PDF render command, 7 `percent_page_test.html` lines, page notes, Key files, "Still unverified" line for GitHub Pages and `%25`), DESIGN.md Architecture sentence. The simple-english hook reports style hits in older CLAUDE.md and README text (em-dashes, semicolons). The added text was fixed, and the older text is left as it is.
+- 2026-10-19: substantive amendment: AC5 wording. "(11 lines)" counted prose lines, and only 9 `node` lines name those pages. "The first command block" was the `pandoc lua` block. Now it is "the first command block that names `example.html`". The lines run are unchanged.
+- 2026-10-19: re-audit: AC5 (full) — the first block named was the `pandoc lua` block. The `--alone http --device iphone` line for percent_test is implied by the base doc but not listed, and it is kept out of AC5 (run once, exit 0, T5 line).
+- 2026-10-19: re-audit: AC5 (full) — nothing. The facts check against 61d6f12 (9 lines, and one line of each kind in the block).
 
 ## Decisions
 
