@@ -136,7 +136,39 @@ placeholder, hidden. Every other native embed stays an `<object>`. Version 1.2.7
 - 2026-10-20: claim audit: 81 claims read, 5 corrected — tests/native_check.mjs (control margin and match figures re-measured from the T7 run, refcontrol sentence moved, percent sizes not box-checked, code too), embedpdf-viewer.js and embedpdf.css comments (the `nativeSupported()` condition), README `page` row (Safari version, built-in viewer condition).
 - 2026-10-20: after the claim-audit fixes (comments, the README row, and native_check's percent-size skip), `quarto render` ran again (docs/ library copies changed in comments only); native_check chromium page_test, render_check example.html desktop, and render_check selfcontained `--alone file` exited 0 again.
 - 2026-10-20: implement complete; status review.
+- 2026-10-20: review pass 1: four lenses ran; the evidence run was stopped at line 39 of 98 (lines 1-38 exit 0) because fix-now edits touch the viewer; a review probe confirmed diff-bug #1 (an `<iframe>` downloads a PDF sent as `application/octet-stream` or as an attachment, where an `<object>` shows it in Firefox 158 and Safari 27.0.1), which falsifies D-007's choice for such servers; stopped for the user's decision on the approach (the probe's Safari run saved att.pdf and oct.pdf, copies of sample.pdf, in ~/Downloads).
 
 ## Decisions
 
 ## Review
+
+Pass 1 (2026-10-20). Consistency gate: `cairn_validate.py` exit 0, all checks passed; no principle text changed, so `cairn_impact` skipped; generic profile adds no toolchain checks. AC evidence not yet recorded: the evidence run stopped at line 39 of 98 for the finding below.
+
+spawned: diff-bug, blame-history, prior-review, ripple
+
+- diff-bug #1: an `<iframe>` follows the server's Content-Type and Content-Disposition, so a page>1 native embed of a PDF sent as `application/octet-stream` or as an attachment may download instead of show — confirmed by a review probe (Chromium 155, Firefox 158 headless, Safari 27.0.1): with either answer the `<object>` showed `sample.pdf` in Firefox and Safari, and the `<iframe>` showed nothing and each browser saved the file; in Chromium both forms stayed blank and the file was saved. This is the reader-visible difference D-007 names as evidence against the `<iframe>` — open: the approach is the user's decision.
+- diff-bug #2: no test page has an `<iframe>` native embed on RevealJS slides — follow-up, row "Check embeds open at their page option".
+- diff-bug #3: the missing-PDF difference rests on one Chromium probe, no check — follow-up, same row.
+- diff-bug #4: native_check's Firefox `pdfjs.viewOnLoad` pref hides Firefox's stored-page reopen — reject: false as an extension defect; it is Firefox's own viewer behavior, and the pref is M020's planned design.
+- diff-bug #5: native_check's `shotOf(NATIVE, i)` indexes elements while `st.native[i]` indexes placeholders, so a placeholder with no element shifts later screenshots — fix now.
+- diff-bug #6: without `--alone`, a hand-written `data:` embed loses `data-src` and fails the address check falsely — fix now.
+- diff-bug #7: `#page=N` is appended to an href that may already hold a fragment (pre-existing) — follow-up, row "Check embeds open at their page option".
+- diff-bug #8: native_check mirrors the viewer's page parsing — reject: false as a defect; it reads the shortcode's `data-page`, and the values parse as the viewer does.
+- diff-bug #9: the `<iframe>` has no `allowfullscreen` — fix now.
+- diff-bug #10: the box check skips `600px`-style sizes — fix now (with prior-review #4).
+- diff-bug #11: stale `<object>`-only lines in CLAUDE.md, README, ROADMAP row text, ios_check header and messages — fix now (with ripple #1-#2, #4-#8, #11).
+- diff-bug #12: render_check enforces no element on desktop — reject: planned change; native_check's page_test lines enforce it.
+- blame-history #1: missing non-inlined PDF loses the visible download link for page>1 embeds — reject: planned change, recorded in D-007 and DESIGN Known issues.
+- blame-history #2: the `<iframe>` replaces a working `<object>` in Chromium and Firefox too — reject: planned change (D-007 "in every browser").
+- blame-history #3: a site that forbids framing shows a blank frame — follow-up, already in row "Check embeds open at their page option".
+- blame-history #4: `--same-pages` removed — reject: planned change.
+- blame-history #5: `<iframe>` real screen-reader name unverified — follow-up, already in CLAUDE.md "Still unverified".
+- blame-history #6: pdfjsAddress comment accurate, code unaffected — reject: false as a defect.
+- prior-review #1: ios_check passes a native embed with no element — fix now.
+- prior-review #2: viewer header "renderer=native -> always <object>" — fix now (same as ripple #1).
+- prior-review #3: Safari CORS read after an `<iframe>` load is unchecked — follow-up, row "Check embeds open at their page option".
+- prior-review #4: native_check's expected box is read from the `<iframe>`'s own attributes — fix now: read the embed's `data-width` and `data-height`.
+- prior-review #5: render_check's native name plant takes the document's first native embed — reject: pre-existing line, and D-006 drops this class of plant-target gap.
+- ripple #1, #2, #4, #5, #6, #7, #8, #11: viewer header, CLAUDE.md :427 :104 :267 :437 :495, ROADMAP and DESIGN "1.2.6", ROADMAP row "Check native save names and slide embeds" text — fix now.
+- ripple #3: the absorbed candidate row is still listed — reject: planned change; step 9 hygiene graduates it.
+- ripple #9, #10: viewer :179 and DESIGN :199 describe Safari's refusal after an `<object>` load — reject: dated observations of `<object>`, and the lines beside them name the `<iframe>` case.
