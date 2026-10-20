@@ -88,7 +88,7 @@ placeholder, hidden. Every other native embed stays an `<object>`. Version 1.2.7
 - [x] T2: Add `page_test.qmd` (not self-contained): `sample.pdf` with `page=2` (auto), with `renderer=native
       page=2`, and with `renderer=native`, each 600 x 400. Run `quarto render`. Name the page in CLAUDE.md's
       file list.
-- [ ] T3: `tests/native_check.mjs`: take `<iframe>` native embeds; for an `<iframe>` embed, both references
+- [x] T3: `tests/native_check.mjs`: take `<iframe>` native embeds; for an `<iframe>` embed, both references
       and the control are `<iframe>`s. Run on a page that is not self-contained when `--alone` is not given,
       where each address must be the PDF file with the expected fragment. Fail when an embed with `page` over
       1 is not an `<iframe>`, when one with page 1 is not an `<object>`, when an `<iframe>` has a border or a
@@ -127,6 +127,8 @@ placeholder, hidden. Every other native embed stays an `<object>`. Version 1.2.7
 - 2026-10-20: implement started on branch m021-native-page-iframe; status in-progress.
 - 2026-10-20: T1 done: `hydrateNative()` makes an `<iframe>` (`src`, width, height, `aria-label`) when `page` > 1 and `nativeSupported()`; fallback children go to a hidden `div.embedpdf-fallback` after it; `embedpdf.css` gives `.embedpdf-native > iframe` border 0; version 1.2.7; shortcode tests 162 passed, 0 failed. Browser checks run at T7.
 - 2026-10-20: T2 done: `page_test.qmd` added and named in CLAUDE.md's file list; `quarto render` completed with no error, docs/ libraries now at 1.2.7.
+- 2026-10-20: T3 done: native_check takes `<iframe>` embeds, compares each embed with a reference and control of the element its page option asks for, runs on a normal page when `--alone` is not given (address must be the resolved data-src), checks element, iframe border, box, and shown fallback, and drops `--same-pages` (no line needs it now); new plants `object`, `border`, `fallback`; `fileaddr` needs `--alone`. page_test.html passes in Chromium 155, Firefox 158, Safari 27.0.1; selfcontained_test.html passes `--alone file` and `http` in all three.
+- 2026-10-20: T5 (native_check part): on page_test.html embed 1 in Safari and Chromium, nopage, object, border, fallback, refcontrol, and otherpdf (`--plant-at 1`) each exit 1 naming that embed; in Safari nopage and object also fail as a page-2 mismatch (0.0952).
 
 ## Decisions
 
