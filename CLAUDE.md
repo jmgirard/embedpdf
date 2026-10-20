@@ -181,14 +181,16 @@ The native embeds of a self-contained page: `native_check.mjs` opens
 `selfcontained_test.html` alone and takes a screenshot of each native
 `<object>`. The reference is a screenshot of an `<object>` of
 `docs/sample.pdf` on the check's own server, at the embed's size. It shows
-the page that the embed's `page` option names. The check also fails unless
+the page that the embed's `page` option names. Each reference must differ
+from a control, an `<object>` of a file the viewer cannot draw. So a
+reference caught before the PDF was drawn fails. The check also fails unless
 each `<object>` address is a `blob:` URL with that `#page` fragment. The
 fourth embed has `page=2`. In Chromium and Firefox the page-1 and page-2
 references must differ. Desktop Safari 27.0.1 opens a native embed at page 1
 whatever the fragment says. So the Safari lines take `--same-pages`, and
 there the two references must match. Chromium and Firefox run headless. The
 header states the plants (`otherpdf`, `broken`, `blank`, `fileaddr`,
-`nopage`, placed by `--plant-at <k>`). Firefox started from Claude Code fails
+`nopage`, placed by `--plant-at <k>`, and `refcontrol`). Firefox started from Claude Code fails
 with "Could not find profile folder" until its folder exists. On 2026-10-19
 one launch through macOS `open` made it (the command is in the script's
 header). If Firefox is not in `/Applications`, set `FIREFOX_PATH`:

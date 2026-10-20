@@ -158,3 +158,27 @@ true or stale.
 - AC4 evidence (read 2026-10-19): README.md:86 states, dated 2026-10-19, that native embeds of `sample.pdf` on a self-contained HTML page were checked in Chromium 155 and Firefox 158 (headless) and desktop Safari 27.0.1, as a local file and over HTTP, not RevealJS slides, each showing the PDF as the browser shows the file; `page=2` at page 2 in Chromium and Firefox and at page 1 in Safari, as for the file; save-button name not checked. README.md:66's `page` row names the Safari 27.0.1 page-1 case. cairn/DESIGN.md Known issues holds one entry, observed 2026-10-19, with both facts (its slides clause corrected to "in any browser" in this review). Matches the AC1 and AC2 runs above.
 
 - Consistency gate (2026-10-19): `cairn_validate.py` exit 0, all checks passed (coverage complete PASS). No DESIGN principle changed (IP1 is worked under), so `cairn_impact` was skipped. The generic profile's consistency-gate slot names no toolchain checks.
+- spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1: a reference screenshot caught at the empty viewer (two equal frames 500 ms apart) could match a broken embed in Chromium or Firefox, a false pass — fix now: each reference must differ from a control (`files/broken.pdf` served as a PDF) by more than the tolerance, screenshots must stay the same for 1.5 s, and a new `refcontrol` plant fails in all three browsers.
+- diff-bug #2: at the default 300 x 150 in Safari most blocks are white, so a defect under 1% of blocks passes (plants at 0.0397) — follow-up: candidate row "Weigh native check by inked blocks".
+- diff-bug #3: `div.embedpdf-native object` also matches an `<object>` nested in fallback content, so lists could go out of step — fix now: `div.embedpdf-native > object` everywhere.
+- diff-bug #4: a throw after launch exited 1, not 2, and safaridriver calls had no time limit — fix now (already in ad81e0d).
+- diff-bug #5: the `--same-pages` argument error dropped real failures (exit 2 with no report) — fix now: it is a failure line when other failures exist.
+- diff-bug #6: Safari may still be white for two frames, a flaky "no ink" — fix now (the 1.5 s settle span of #1).
+- diff-bug #7: Ctrl-C left the temp dir, safaridriver, and its session — fix now: SIGINT and SIGTERM close the browser and servers, then exit 130.
+- diff-bug #8: reference screenshot names left out the position and a missing `NATIVE_CHECK_SHOTS` folder threw — fix now: names carry size and position, the folder is made.
+- diff-bug #9: no test of diffShare's too-small null — fix now: two helper tests.
+- diff-bug #10: a truncated IDAT decoded as black pixels — fix now: decodePng throws when the data is short; one helper test (158 passed, 0 failed).
+- diff-bug #11: an unwrapped header line, `var version`, `let exitCode` — reject (style).
+- prior-review #1: browser setup after launch was unguarded (exit 1, browser left running) — fix now, ad81e0d.
+- prior-review #2: size, decode, and page-1 reference errors ended the loop for later embeds — fix now, ad81e0d.
+- prior-review #3: the native_check lines sit outside the viewer-change protocol — reject (false: they are under the "After any change to `embedpdf-viewer.js`" heading, which runs until the check-helper heading); PROFILE's list now names them (ripple #2).
+- prior-review #4: no time limit on WebDriver calls — fix now, ad81e0d.
+- ripple #1: ROADMAP row "Self-contained native checks" still says display and `#page=` are unchecked — fix now at step 9 hygiene, which narrows the row to the save-button name and slides per the Scope's Out item.
+- ripple #2: PROFILE's verify slot did not name `native_check.mjs` — fix now, ad81e0d.
+- ripple #3: DESIGN calls a candidate entry a "ROADMAP row" — reject (false: tracking rules name candidate entries rows).
+- blame-history #1, #2, #3, #5, #7: counts, earlier checks, D-006 fit, the DESIGN citation, the helper list — reject (false: each reports no conflict).
+- blame-history #4: the README `page` row states a known Safari failure beside the option — reject (planned change, AC4).
+- blame-history #6: run-on helpers_test header — reject (style; the sentence keeps its earlier shape).
+- also fixed in review: DESIGN Known issues slides clause said "desktop Safari and Firefox"; no browser checked slides — now "in any browser" (ad81e0d).
+- Reruns after the fixes (2026-10-20): the six native lines exit 0 (embeds at most 0.0035; page references 0.1371, 0.0530, 0.0000; each reference differs from its control by at least 0.0401); every plant exits 1 in every browser, `refcontrol` on "matches the control".

@@ -1,7 +1,8 @@
 // PNG helpers for tests/native_check.mjs. tests/helpers_test.mjs tests them.
 //
 // decodePng(buf) gives { width, height, data } (RGBA bytes) of an 8-bit,
-// non-interlaced RGB or RGBA PNG, and throws on any other PNG.
+// non-interlaced RGB or RGBA PNG, and throws on any other PNG or on image
+// data shorter than its size needs.
 // diffShare(a, b, { shift, pixelDiff, block }) compares two decoded images
 // of one size by the average color of square blocks, at the best small shift
 // (see the function).
@@ -33,6 +34,7 @@ export function decodePng(buf) {
   const raw = zlib.inflateSync(Buffer.concat(idat));
   const bpp = colorType === 6 ? 4 : 3;
   const stride = width * bpp;
+  if (raw.length < height * (stride + 1)) throw new Error(`PNG data holds ${raw.length} bytes, ${height * (stride + 1)} needed`);
   const out = Buffer.alloc(width * height * 4);
   let prev = Buffer.alloc(stride);
   for (let y = 0; y < height; y++) {

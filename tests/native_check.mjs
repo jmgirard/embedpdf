@@ -4,7 +4,7 @@
 //   node tests/native_check.mjs --browser chromium|firefox|safari
 //        --page selfcontained_test.html --alone file|http
 //        --expect-native <n> --reference sample.pdf [--same-pages]
-//        [--plant otherpdf|broken|blank|fileaddr|nopage] [--plant-at <k>]
+//        [--plant otherpdf|broken|blank|fileaddr|nopage|refcontrol] [--plant-at <k>]
 //
 // A self-contained page (embed-resources: true) holds its PDF as a data:
 // address, and the viewer gives each native <object> a blob: URL of it
@@ -19,8 +19,14 @@
 // fragment the page option asks for and the embed's size and fractional
 // position, alone on a page in the same browser. It fails unless the two
 // match, and unless both screenshots hold ink (tests/ink.mjs). Before
-// each screenshot it waits until two screenshots in a row are the same (at
-// most STABLE_MS).
+// each screenshot it waits until the screenshots stay the same for
+// STABLE_SPAN_MS (at most STABLE_MS in all). It also takes a control at each
+// reference's size and position: an <object> of files/broken.pdf (a text file
+// sent as a PDF, which the viewer cannot draw). It fails unless the reference
+// differs from the control by more than TOLERANCE, so a reference caught
+// before its viewer drew the PDF, which a broken embed would match, fails.
+// On 2026-10-20 every reference on the six CLAUDE.md lines differed from its
+// control in at least 0.0401 of the blocks (desktop Safari 27.0.1, 300 x 150).
 //
 // Two screenshots match when, at the best shift of up to SHIFT device pixels
 // each way, at most TOLERANCE of their BLOCK x BLOCK pixel blocks differ by
@@ -60,6 +66,9 @@
 //   blank     an empty blob:
 //   fileaddr  the reference's HTTP address, not a blob:
 //   nopage    the embed's own address without its #page fragment
+// --plant refcontrol instead points every reference at the control, as a
+// reference caught before its viewer drew the PDF would look; the run must
+// fail on "matches the control".
 // The fragment is kept (except nopage). The run must then fail and name that
 // embed; otherpdf and broken must fail as a mismatch. In desktop Safari
 // 27.0.1, which ignores the fragment, nopage fails only on the address.
@@ -84,9 +93,10 @@ const PIXEL_DIFF = 40; // an average channel difference above this makes a block
 const BLOCK = 4; // block side in device pixels
 const SHIFT = 2; // device pixels a reference may be shifted each way
 const STABLE_MS = 20000;
+const STABLE_SPAN_MS = 1500; // screenshots must stay the same this long
 const WD_MS = 60000; // time limit of one safaridriver call
 const VIEWPORT = { width: 1200, height: 900 };
-const PLANTS = ["otherpdf", "broken", "blank", "fileaddr", "nopage"];
+const PLANTS = ["otherpdf", "broken", "blank", "fileaddr", "nopage", "refcontrol"];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function bad(msg) {
@@ -122,6 +132,7 @@ const samePages = !!flags["same-pages"];
 const plant = flags.plant ?? null;
 if (plant && !PLANTS.includes(plant)) bad(`--plant must be one of ${PLANTS.join(", ")}`);
 if (flags["plant-at"] && !plant) bad("--plant-at needs --plant");
+if (flags["plant-at"] && plant === "refcontrol") bad("--plant refcontrol takes no --plant-at");
 if (flags["plant-at"] && !/^[1-9]\d*$/.test(flags["plant-at"])) bad("--plant-at must be 1 or more");
 const plantAt = flags["plant-at"] ? Number(flags["plant-at"]) : null;
 const source = path.resolve(DOCS, page);
@@ -130,8 +141,15 @@ if (!source.startsWith(DOCS + path.sep) || !fs.existsSync(source)) bad(`--page $
 const diffShare = (a, b) => diffShareOf(a, b, { shift: SHIFT, pixelDiff: PIXEL_DIFF, block: BLOCK });
 
 // --- servers and the page copy -----------------------------------------------
+const FILES = path.resolve(DOCS, "..", "files");
 const refServer = await serveDocs({
   routes: {
+    // the control: files/broken.pdf (a text file) as a PDF, which a native
+    // viewer cannot draw
+    "/__control.pdf": (req, res) => {
+      res.writeHead(200, { "Content-Type": "application/pdf", "Cache-Control": "no-store" });
+      res.end(fs.readFileSync(path.join(FILES, "broken.pdf")));
+    },
     // one <object> of ?src, ?w x ?h CSS pixels, at ?x, ?y in the page (the
     // embed's own fractional position, so the browser snaps it to pixels alike)
     "/__native_ref": (req, res) => {
@@ -167,7 +185,6 @@ const closeServers = () => {
 };
 
 // bytes a plant puts in a blob:, as base64 (from the repo's files/)
-const FILES = path.resolve(DOCS, "..", "files");
 const plantBytes = {
   otherpdf: () => fs.readFileSync(path.join(FILES, "large.pdf")).toString("base64"),
   broken: () => fs.readFileSync(path.join(FILES, "broken.pdf")).toString("base64"),
@@ -280,10 +297,12 @@ async function safariDriver() {
 async function stableShot(drv, css, index) {
   const start = Date.now();
   let prev = await drv.shotOf(css, index);
+  let sameSince = Date.now();
   for (;;) {
     await sleep(500);
     const next = await drv.shotOf(css, index);
-    if (next.equals(prev)) return { png: next, stable: true };
+    if (!next.equals(prev)) sameSince = Date.now();
+    else if (Date.now() - sameSince >= STABLE_SPAN_MS) return { png: next, stable: true };
     prev = next;
     if (Date.now() - start > STABLE_MS) return { png: next, stable: false };
   }
@@ -291,13 +310,26 @@ async function stableShot(drv, css, index) {
 
 // NATIVE_CHECK_SHOTS=<dir>: also save every screenshot there
 function saveShot(name, png) {
-  if (process.env.NATIVE_CHECK_SHOTS) fs.writeFileSync(path.join(process.env.NATIVE_CHECK_SHOTS, `${browserName}-${name}.png`), png);
+  const dir = process.env.NATIVE_CHECK_SHOTS;
+  if (!dir) return;
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, `${browserName}-${name.replace(/[^a-z0-9.,+-]/gi, "-")}.png`), png);
 }
 
 // --- the run -----------------------------------------------------------------
 const failures = [];
-const report = { browser: browserName, page, alone, reference: referenceAddress, planted: null, embeds: [], pageReferences: [] };
+const report = { browser: browserName, page, alone, reference: referenceAddress, planted: null, embeds: [], pageReferences: [], controls: [] };
 const drv = browserName === "safari" ? await safariDriver() : await puppeteerDriver(browserName);
+// Ctrl-C or a kill: close the browser (and safaridriver) and the servers; the
+// exit handler removes the temporary directory
+for (const sig of ["SIGINT", "SIGTERM"]) {
+  process.on(sig, () => {
+    drv.close().catch(() => {}).finally(() => {
+      closeServers();
+      process.exit(130);
+    });
+  });
+}
 report.version = drv.version;
 let exitCode = 0;
 // an argument the page cannot meet: exit 2 after the browser closes
@@ -309,7 +341,7 @@ try {
   const state = () =>
     drv.run(`() => ({
       unhydrated: document.querySelectorAll("div.embedpdf:not(.embedpdf-pdfjs):not(.embedpdf-native):not(.embedpdf-failed)").length,
-      native: [...document.querySelectorAll("div.embedpdf-native object")].map((o) => o.data),
+      native: [...document.querySelectorAll("div.embedpdf-native > object")].map((o) => o.data),
       pages: [...document.querySelectorAll("div.embedpdf-native")].map((d) => d.getAttribute("data-page") || ""),
     })`);
   // the #page fragment each native embed's page option asks for (data-page,
@@ -326,8 +358,10 @@ try {
   if (st.unhydrated > 0) failures.push(`${st.unhydrated} embed(s) not hydrated after 30 s`);
   if (st.native.length !== expectNative) failures.push(`expected ${expectNative} native embeds, found ${st.native.length}`);
 
+  // --plant refcontrol changes the references, not the page
+  if (plant === "refcontrol") report.planted = "refcontrol: every reference shows the control";
   // --plant: replace the target <object> with a copy at the planted address
-  if (plant) {
+  else if (plant) {
     let k = plantAt;
     if (!k) k = plant === "nopage" ? st.native.findIndex((d, i) => wantFrag(i)) + 1 : 1;
     if (k < 1 || k > st.native.length || (plant === "nopage" && !wantFrag(k - 1))) {
@@ -338,7 +372,7 @@ try {
     const addr = plant === "fileaddr" ? referenceAddress + frag : plant === "nopage" ? st.native[k - 1].split("#")[0] : null;
     await drv.run(
       `(k, bytes, addr, frag) => {
-        const o = document.querySelectorAll("div.embedpdf-native object")[k - 1];
+        const o = document.querySelectorAll("div.embedpdf-native > object")[k - 1];
         const n = o.cloneNode(false);
         if (addr !== null) n.data = addr;
         else {
@@ -369,11 +403,11 @@ try {
     if (!/^blob:/.test(data)) failures.push(`${at}: its address is not a blob: URL (${data.slice(0, 60)})`);
     let shot, size, img;
     try {
-      shot = await stableShot(drv, "div.embedpdf-native object", i);
+      shot = await stableShot(drv, "div.embedpdf-native > object", i);
       // the size once the screenshot settled (a box can grow as its viewer loads)
       size = await drv.run(
         `(i) => {
-          const r = document.querySelectorAll("div.embedpdf-native object")[i].getBoundingClientRect();
+          const r = document.querySelectorAll("div.embedpdf-native > object")[i].getBoundingClientRect();
           const frac = (v) => Math.round((v - Math.floor(v)) * 1000) / 1000;
           return { w: r.width, h: r.height, x: 8 + frac(r.left + scrollX), y: 8 + frac(r.top + scrollY) };
         }`,
@@ -394,18 +428,35 @@ try {
     report.embeds.push(entry);
   }
 
-  // references, one per fragment and size
+  // references, one per fragment and size, and controls, one per size
   const refs = new Map();
+  const controls = new Map();
+  async function controlImage(size) {
+    const key = `${size.w}x${size.h}+${size.x},${size.y}`;
+    if (!controls.has(key)) {
+      await drv.open(`${refBase}__native_ref?src=${encodeURIComponent(refBase + "__control.pdf")}&w=${size.w}&h=${size.h}&x=${size.x}&y=${size.y}`);
+      const shot = await stableShot(drv, "#ref", 0);
+      saveShot(`control-${key}`, shot.png);
+      controls.set(key, decodePng(shot.png));
+    }
+    return controls.get(key);
+  }
   async function refImage(frag, size) {
     const key = `${frag}|${size.w}x${size.h}+${size.x},${size.y}`;
     if (!refs.has(key)) {
-      const src = referenceAddress + frag;
+      const src = plant === "refcontrol" ? refBase + "__control.pdf" : referenceAddress + frag;
       await drv.open(`${refBase}__native_ref?src=${encodeURIComponent(src)}&w=${size.w}&h=${size.h}&x=${size.x}&y=${size.y}`);
       const shot = await stableShot(drv, "#ref", 0);
       const img = decodePng(shot.png);
-      saveShot(`reference${frag.replace(/[^a-z0-9]/gi, "-")}-${size.w}x${size.h}`, shot.png);
+      saveShot(`reference${frag}-${size.w}x${size.h}+${size.x},${size.y}`, shot.png);
       if (!shot.stable) failures.push(`reference ${frag || "(no fragment)"} ${size.w}x${size.h}: its screenshot did not settle`);
       if (!inkInPixels(img.data)) failures.push(`reference ${frag || "(no fragment)"} ${size.w}x${size.h}: no ink`);
+      const control = await controlImage(size);
+      const c = diffShare(img, control);
+      if (c !== null && c.share <= TOLERANCE) {
+        failures.push(`reference ${frag || "(no fragment)"} ${size.w}x${size.h}: matches the control (a PDF the viewer cannot draw; differs ${c.share.toFixed(4)}), so the viewer did not draw the PDF`);
+      }
+      report.controls.push({ reference: `${frag || "(no fragment)"} ${size.w}x${size.h}`, diff: c === null ? "size differs" : c.share.toFixed(4) });
       refs.set(key, img);
     }
     return refs.get(key);
@@ -441,7 +492,13 @@ try {
     if (samePages && !same) failures.push(`${entry.at}: --same-pages, but the page-1 and ${entry.frag} references differ (${diff})`);
     if (!samePages && same) failures.push(`${entry.at}: the page-1 and ${entry.frag} references match, so the browser does not open ${entry.frag}`);
   }
-  if (samePages && pageEmbeds === 0) throw new SetupError("--same-pages needs a native embed with a #page=<k> fragment, k > 1");
+  // an argument error only on a page that otherwise passed: a page whose
+  // embeds failed reports those failures instead
+  if (samePages && pageEmbeds === 0) {
+    const msg = "--same-pages needs a native embed with a #page=<k> fragment, k > 1";
+    if (failures.length) failures.push(msg);
+    else throw new SetupError(msg);
+  }
 } catch (err) {
   if (err instanceof SetupError) setupError = err.message;
   else failures.push(`error: ${err.message}`);

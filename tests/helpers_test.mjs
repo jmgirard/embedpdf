@@ -155,6 +155,16 @@ check("png: 16-bit is refused", pngThrows(encodePng(PNG_W, pngRows(4), { bitDept
 check("png: interlaced is refused", pngThrows(encodePng(PNG_W, pngRows(4), { interlace: 1 }), /interlace 1/));
 check("png: palette (color type 3) is refused", pngThrows(encodePng(PNG_W, pngRows(3), { colorType: 3 }), /color type 3/));
 check("png: a non-PNG is refused", pngThrows(Buffer.from("GIF89a and more bytes"), /not a PNG/));
+{
+  // the IDAT of a 6-row image under an IHDR that says 7 rows
+  const short = encodePng(PNG_W, pngRows(4));
+  const ihdrAt = short.indexOf("IHDR", 0, "latin1");
+  const body = Buffer.from(short.subarray(ihdrAt + 4, ihdrAt + 17));
+  body.writeUInt32BE(7, 4);
+  const fixed = Buffer.concat([short.subarray(0, ihdrAt - 4), pngChunk("IHDR", body), short.subarray(ihdrAt + 21)]);
+  check("png: image data shorter than the size is refused", pngThrows(fixed, /needed/));
+  check("png: the same data with its true size decodes", decodePng(short).height === 6);
+}
 
 // --- diffShare ----------------------------------------------------------------
 // a w x h white image with black squares [x, y, side]
@@ -178,6 +188,8 @@ function img(w, h, squares = []) {
   const dm = diffShare(base, img(40, 40, [[24, 24, 8]]));
   check("diff: a square elsewhere differs", dm.share > 0.05, JSON.stringify(dm));
   check("diff: images of other sizes give null", diffShare(base, img(40, 41)) === null);
+  check("diff: an image with no whole block inside the shift edge gives null", diffShare(img(5, 5), img(5, 5)) === null);
+  check("diff: the smallest image with one whole block compares", diffShare(img(8, 8), img(8, 8)).share === 0);
   check("diff: shift 0 does not absorb a 1-pixel move", diffShare(base, img(40, 40, [[13, 12, 8]]), { shift: 0 }).share > 0);
 }
 {
