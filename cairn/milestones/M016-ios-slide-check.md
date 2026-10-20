@@ -111,6 +111,8 @@ the viewer, so no version bump.
 - 2026-10-19: T4: after the fixes the six AC3 lines exit 0 again, and `--plant blank` on example.html exits 1 ("embed 1: pages without ink: 2"). T5 done (checkpoint 51696e9).
 - 2026-10-19: claim audit: not owed — internal tier.
 - 2026-10-19: implement complete; status review.
+- 2026-10-19: review: 4 lenses spawned; 22 findings fixed on the branch, 6 to row "Deck walk follow-ups", 5 rejected, 4 noted; re-verified at a5deeaa.
+- 2026-10-19: step-7 approval: m016-ios-slide-check approved for merge
 
 ## Decisions
 
