@@ -99,7 +99,7 @@ v1.2.1, v1.2.2, v1.2.3, v1.2.4, v1.2.5, v1.2.6, v1.2.7, v1.2.8, v1.2.9.
       name, published_at, and a SHA-256 of each body (`gh api ... releases
       --paginate`), and `git ls-remote --tags origin`. Check both against the
       values in AC2 and AC4.
-- [ ] T2: Confirm the Scope table: for each version, the commit is the first
+- [x] T2: Confirm the Scope table: for each version, the commit is the first
       in the `git log --reverse` of the In paragraph whose `_extension.yml`
       carries it, it is on `git log --first-parent main`, and nothing else
       in `<previous>..V` touches `_extensions/`.
@@ -134,6 +134,7 @@ v1.2.1, v1.2.2, v1.2.3, v1.2.4, v1.2.5, v1.2.6, v1.2.7, v1.2.8, v1.2.9.
 - 2026-10-20: plan gate chose the first commit whose `_extension.yml` carries the version as each tag's target over the later "review M0NN: done" commits, because the squash merge is the shipped code; falsified by a version whose shipped files differ between those two commits outside `cairn/`.
 - 2026-10-20: implement started on branch m026-tag-and-release-backlog, cut from main at e0b7be8.
 - 2026-10-20: T1 before-state: releases v0.5.0 2025-11-26T01:09:39Z, v0.4.1 2024-03-19T01:14:59Z, v0.4.0 2024-03-18T23:41:34Z, v0.2.0 2023-04-14T14:32:15Z, v0.1.0 2023-04-14T00:19:20Z, each named by its tag, none draft or prerelease; body SHA-256 prefixes v0.5.0 c1c9358b1e82fd5a, v0.4.1 403229f58d485754, v0.4.0 0daf0cca7e6c3c56, v0.2.0 21030e8ccbc6afc1, v0.1.0 dd95d5e454acab6d; `git ls-remote --tags origin` gave the eight tag objects and three `^{}` commits that AC2 lists. All match AC2 and AC4.
+- 2026-10-20: T2 confirmed the Scope table: each of the 13 commits is the first in the `git log --reverse` whose `_extension.yml` carries its version, is on main's first-parent line with one parent, and is the only commit touching `_extensions/` since the version before; the `embedpdf.lua` version marker matches at each (`version = "1.0.3"` at 1.0.3, `local VERSION` from 1.1.0).
 
 ## Decisions
 
