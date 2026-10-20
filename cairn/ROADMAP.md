@@ -1,16 +1,15 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-19 (triage: dropped "Remote rewrite quoting", "Canvas wait follow-ups", "Name plant slide target", "Remote failure line count", "Text check follow-ups", "Deck walk follow-ups", "iOS link check gaps", rejected on principle, D-006 written; corrected "GitHub releases for v1.0.x" and the Known issues release entry; validate green)_
+_Last hygiene check: 2026-10-19 (M019 done: graduated "Large PDF text check", pruned the M016 row; validate green)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M019 | Large PDF text check | review | — | normal | milestones/M019-large-pdf-text.md |
+| M019 | Large PDF text check | done | — | normal | milestones/archive/M019-large-pdf-text.md |
 | M018 | iOS deck and link checks | done | — | normal | milestones/archive/M018-ios-deck-and-links.md |
 | M017 | Check timing and ink report | done | — | normal | milestones/archive/M017-check-timing.md |
-| M016 | Slides check on iOS | done | — | normal | milestones/archive/M016-ios-slide-check.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
@@ -24,7 +23,6 @@ _Last hygiene check: 2026-10-19 (triage: dropped "Remote rewrite quoting", "Canv
 - Self-contained native checks: in a self-contained page the native `<object>` gets a `blob:` PDF, but only its bytes are checked (fetch in Chromium). Its display in desktop Safari and Firefox, `#page=` on a `blob:` URL, and the file name that the native viewer's own save button uses are not checked (M002 review) — added 2026-10-18
 - GitHub releases for v1.0.x: publish GitHub releases for tags v1.0.0 to v1.0.2. The README version badge shows the latest release, 0.5.0, while the extension is at 1.2.6, and v1.1.0 to v1.2.6 have no tags, so these releases alone do not make the badge current (corrected 2026-10-19) — added 2026-10-18 — DESIGN Known issues
 - Safari names on iOS: on iPhone and iPad, Safari's names are not checked: ios_check reads only the page DOM (embed name, hidden text, indicator text), and not the toolbar controls. On 2026-10-19 `tests/safari_check.mjs --target simulator` got "Could not find any session hosts that match the requested capabilities" from safaridriver on the iOS 27.0 simulators, whose Safari "Remote Automation" setting was not turned on, and `--target page-script` found no `Element.prototype.computedName`. Turning that setting on is the next try (M010 implement) — added 2026-10-19
-- Large PDF text check: `files/large.pdf` repeats the text of `sample.pdf` on its 14 pages, and `--expect-text` needs a phrase that is on one page only, so no check reads the hidden text of a PDF that PDF.js loaded by byte ranges. A large PDF with different text on each page would cover it (M013 implement) — added 2026-10-19 — started M019
 - [low] First-paint robustness: find load cases where an on-screen page still does not render after the v1.0.1 and v1.0.2 fixes. Since M001, `auto` puts iPhone and iPad on this timer path, and `ios_check.mjs` scrolls before it measures, so a no-scroll first paint on iOS is untested (M001 review) — added 2026-10-18 — DESIGN Known issues
 - [low] Apple touch detection edge cases: `isAppleMobile()` treats any Macintosh user agent with `maxTouchPoints > 1` as an iPad, which may also catch Safari on visionOS or a Mac with a third-party touch driver; not verified (M001 review) — added 2026-10-18
 - [low] Embed name follow-ups: see "Safari names on iOS". `fileName()` gives "." for `./`, ".." for `../`, "a/b.pdf" for `a%2Fb.pdf`, the whole address for `about:blank`, and a trailing space for `sample.pdf%20`; a self-contained embed whose download link has a query and no `.pdf` value now downloads as "document.pdf", not its last path segment; ios_check accepts any "Page i of n", so an indicator that never updates on scroll passes in Safari; `fileName()` also gives the whole address for `https:\\ex.com\a.pdf` (browsers read `\` as `/`), none for `get?a.pdf` and `view?file=https://o.com/x.pdf?y=1`, "report?x=a.pdf" for `report%3Fx=a.pdf`, and itself for `javascript:void(0)`; a query-style embed downloads by the server's name ("get"), not by the name rule; render_check and safari_check read whether page 1 moved before a 300 ms wait in which page heights can change (a false failure only, for mixed page sizes); safari_check calls `process.exit` right after `console.log`; no check covers AC2's counting of a failed embed in n (a page with one loaded and one failed embed of the same file), and ios_check does not check that a failed embed has no name; render_check and safari_check treat a frame of zero size as scrolled past the middle line (a false failure only); a `data-src` that starts with U+00A0 now goes to the inlined path, so on a `file://` page (where the fetch fails) it shows the failure message with no link, where it used to show it with an "Open the PDF" link (not checked in a browser; corrected M011); a broken UTF-8 escape is kept as written in a path segment but becomes U+FFFD in a query value; ios_check and render_check exit 1, not 2, when the browser or the simulator cannot start (M010 review) — added 2026-10-19
