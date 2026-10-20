@@ -345,6 +345,8 @@ errors.
   environment; can only be checked by a human on a phone).
 - A real iPhone or iPad loading the GitHub Pages site, and any iOS version
   before 27. `tests/ios_check.mjs` covers only iOS 27.0 and 27.1 simulators.
+- Any RevealJS slide deck in desktop Safari. `tests/safari_check.mjs` exits 2
+  on a slide deck.
 - A PDF from another site on a real phone, with or without
   `Access-Control-Allow-Origin`. Safari is checked in the iOS 27.0
   simulators, with no header and with `*`, and in desktop Safari 27.0.1 with
