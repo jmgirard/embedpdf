@@ -7,13 +7,16 @@
 //   node tests/safari_check.mjs --target simulator --device <name|udid> ...same...
 //   node tests/safari_check.mjs --target page-script --device <name|udid>
 //
-// --target mac and simulator drive Safari through safaridriver (WebDriver) and
-// read each name with WebDriver's "Get Computed Label", which returns the name
+// --target mac drives desktop Safari through safaridriver (WebDriver) and reads
+// each name with WebDriver's "Get Computed Label", which returns the name
 // Safari gives assistive technology. safaridriver must be turned on once with
-// `safaridriver --enable` (asks for an admin password). mac uses desktop
-// Safari; simulator asks safaridriver for Safari in the iOS simulator
-// (safari:useSimulator), which also needs Remote Automation on in the
-// simulator's Safari settings. The page comes from docs/ (tests/serve_docs.mjs).
+// `safaridriver --enable` (asks for an admin password). --target simulator
+// opens the page in Safari in a booted iOS simulator with `xcrun simctl
+// openurl` and reads it through the simulator's Web Inspector socket
+// (tests/webinspector.mjs). Each name there is the `label` that Web
+// Inspector's DOM.getAccessibilityPropertiesForNode gives. safaridriver opened
+// no session in the iOS 27.0 simulators (cairn/LESSONS.md). The page comes
+// from docs/ (tests/serve_docs.mjs).
 // Each run fails unless the page has --expect-native native embeds (0 when not
 // given), every native embed's <object> (or <iframe>, for a page option over
 // 1) has no title, every PDF.js embed's
@@ -27,9 +30,9 @@
 // when no embed of 2 or more pages can). One --expect-name names the
 // --expect-native plus --expect-pdfjs embeds; a "|" list names each, so a file
 // name that holds "|" cannot be given.
-// Get Computed Label gives a plain span no name, so to read the indicator the
-// check gives it role heading for the read, whose name Safari computes from
-// its content, and then removes the role.
+// Get Computed Label and the Web Inspector label give a plain span no name,
+// so to read the indicator the check gives it role heading for the read,
+// whose name Safari computes from its content, and then removes the role.
 // --plant rawindicator|nonumber plants a defect in the first PDF.js embed, as
 // in render_check (removes aria-hidden from its shown "i / n", or the " (k of
 // n)" from its name); --plant nativename changes the first native <object>'s
@@ -52,9 +55,10 @@
 //
 // Exits 0 on a pass, 1 on a failed check or a probe that cannot read names,
 // 2 on a bad argument, when --plant finds nothing to plant in, when the
-// server, safaridriver, a safaridriver session, or simctl cannot start, or
-// when --page is a RevealJS slide deck (the check does not move between
-// slides).
+// server, safaridriver, a safaridriver session, or simctl cannot start, when
+// the --device simulator is not booted or its Web Inspector socket does not
+// list the page, or when --page is a RevealJS slide deck (the check does not
+// move between slides).
 
 import { spawn, execFileSync } from "node:child_process";
 import net from "node:net";
