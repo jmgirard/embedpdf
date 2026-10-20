@@ -1,16 +1,15 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-19 (M015 done: graduated "Bare percent path", added "LaTeX path escapes", "Percent path follow-ups", and "LaTeX inline shortcode", pruned the M012 row; validate green)_
+_Last hygiene check: 2026-10-19 (M016 done: graduated "Self-contained slides on iOS", narrowed "Ink check follow-ups", added "iOS slide deck gaps" and "Deck walk follow-ups", pruned the M013 row; validate green)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M016 | Slides check on iOS | review | — | normal | milestones/M016-ios-slide-check.md |
+| M016 | Slides check on iOS | done | — | normal | milestones/archive/M016-ios-slide-check.md |
 | M015 | Percent sign in PDF paths | done | — | normal | milestones/archive/M015-percent-sign-paths.md |
 | M014 | Safari shared remote PDF | done | — | normal | milestones/archive/M014-safari-shared-remote-pdf.md |
-| M013 | Large PDF range check | done | — | normal | milestones/archive/M013-large-pdf-range-check.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
@@ -22,11 +21,10 @@ _Last hygiene check: 2026-10-19 (M015 done: graduated "Bare percent path", added
      open each row with its short title, the words the cairn pane shows, then `: `;
      tracking-rules "Candidate short title" has the whole rule -->
 - Self-contained native checks: in a self-contained page the native `<object>` gets a `blob:` PDF, but only its bytes are checked (fetch in Chromium). Its display in desktop Safari and Firefox, `#page=` on a `blob:` URL, and the file name that the native viewer's own save button uses are not checked (M002 review) — added 2026-10-18
-- Self-contained slides on iOS: check self-contained RevealJS slides in Safari on iPhone and iPad with `tests/ios_check.mjs`; M002 checks them only in Chrome or Chromium (M002 plan) — added 2026-10-18 — started M016
 - iOS slide deck gaps: `revealjs_test.html` has no ios_check line, because its PDF.js embeds have 1 and 2 pages on iOS and ios_check takes one `--expect-pages` for all embeds; ios_check also has no `--expect-links`, so the download links of self-contained pages are counted only in Chromium (M016 plan) — added 2026-10-19
 - GitHub releases for v1.0.x: publish GitHub releases for tags v1.0.0 to v1.0.2 so the README version badge is current — added 2026-10-18 — DESIGN Known issues
 - Safari names on iOS: on iPhone and iPad, Safari's names are not checked: ios_check reads only the page DOM (embed name, hidden text, indicator text), and not the toolbar controls. On 2026-10-19 `tests/safari_check.mjs --target simulator` got "Could not find any session hosts that match the requested capabilities" from safaridriver on the iOS 27.0 simulators, whose Safari "Remote Automation" setting was not turned on, and `--target page-script` found no `Element.prototype.computedName`. Turning that setting on is the next try (M010 implement) — added 2026-10-19
-- Ink check follow-ups: render_check now fails any PDF.js page with no canvas, but it waits fixed times (300 ms per page, then 4 s) before it measures, so a long PDF or a slow machine can fail on timing alone; ios_check `--plant blank|missing` has no "found nothing to plant in" exit, and its report shows "no canvas" and "no ink" alike; render_check rebuilds the ink rule with `new Function`, which a page whose CSP lacks `'unsafe-eval'` may block when the target is an outside http(s) URL (not checked) (M006 review) — added 2026-10-18
+- Ink check follow-ups: render_check now fails any PDF.js page with no canvas, but it waits fixed times (300 ms per page, then 4 s) before it measures, so a long PDF or a slow machine can fail on timing alone; ios_check's report shows "no canvas" and "no ink" alike; render_check rebuilds the ink rule with `new Function`, which a page whose CSP lacks `'unsafe-eval'` may block when the target is an outside http(s) URL (not checked) (M006 review; narrowed 2026-10-19 by M016) — added 2026-10-18
 - Large PDF text check: `files/large.pdf` repeats the text of `sample.pdf` on its 14 pages, and `--expect-text` needs a phrase that is on one page only, so no check reads the hidden text of a PDF that PDF.js loaded by byte ranges. A large PDF with different text on each page would cover it (M013 implement) — added 2026-10-19
 - [low] First-paint robustness: find load cases where an on-screen page still does not render after the v1.0.1 and v1.0.2 fixes. Since M001, `auto` puts iPhone and iPad on this timer path, and `ios_check.mjs` scrolls before it measures, so a no-scroll first paint on iOS is untested (M001 review) — added 2026-10-18 — DESIGN Known issues
 - [low] Apple touch detection edge cases: `isAppleMobile()` treats any Macintosh user agent with `maxTouchPoints > 1` as an iPad, which may also catch Safari on visionOS or a Mac with a third-party touch driver; not verified (M001 review) — added 2026-10-18
