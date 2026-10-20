@@ -105,3 +105,32 @@ scroll.
 - AC1: 2026-10-20, the four lines run at ea3f4bb (no code changed to HEAD 5f57c96: only README.md and this file). "embedpdf iPhone" and "embedpdf iPad", example.html: exit 0, native `<object>` "PDF: sample.pdf (10 of 11)" with no title, 10 PDF.js names "(1 of 11)" to "(11 of 11)" except 10, 9 toolbars whose 3 controls are named by their titles, indicators "Page 1 of 2" then "Page 2 of 2", 0 failures. page_test.html: exit 0, natives "(2 of 3)" and "(3 of 3)" with no title, PDF.js "(1 of 3)" with 3 controls named by title, indicator "Page 1 of 2" then "Page 2 of 2", 0 failures.
 - AC2: 2026-10-20 at 5f57c96. README.md item 91: "On 2026-10-20, the names that Safari gives screen readers were also checked there, through Web Inspector, on the test pages `example.html` and `page_test.html`", naming the embed's name, the toolbar controls' names, and the indicator "read with the role heading", and the native `<object>` name "on 2026-10-20 through Web Inspector". CLAUDE.md "Still unverified": the PDF.js entry says `--target simulator` reads Safari's names through Web Inspector for the group, toolbar controls, and indicator (read with role heading) on both pages, "These runs passed on 2026-10-20"; the native entry says the `<object>` name was checked through Web Inspector on both pages on 2026-10-20. The AC2 grep printed nothing (exit 1).
 - gate: cairn_validate exit 0, all checks passed; profile consistency-gate is none (generic); no principle changed, so no cairn_impact run.
+- spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1: a message the client cannot decode or parse threw inside the socket handler, an uncaught exit 1 with no report — fix now, fixed a99add8 (the handler ends the connection and waiting calls reject with the error).
+- diff-bug #2: the page target was fixed at the first `Target.targetCreated`; a process swap would send later calls to a dead target — fix now, fixed a99add8 (provisional targets skipped, `Target.didCommitProvisionalTarget` followed).
+- diff-bug #3: an error answer to the `Target.sendMessageToTarget` wrapper was never matched, so the call waited 10 s — fix now, fixed a99add8.
+- diff-bug #4: an `openurl` that times out but opens, then the retry, gives two tabs with the token and the client reads the first — follow-up, row "Harden the Web Inspector check client".
+- diff-bug #5: the Safari wait checks its limit only between 10 s reads, misses an `_rpc_applicationConnected:` in the same chunk, and reports a closed socket as "Safari is not running" — follow-up, same row.
+- diff-bug #6: a socket close does not reject waiting calls before their 10 s timer — follow-up, same row.
+- diff-bug #7: mac path: a failed `POST /url` left the session open, and a failed navigation became exit 2 instead of 1; spawn failures now print the JSON report first — fix now, fixed a99add8 (session kept before navigation, navigation outside the setup block, exit 1 again); the printed report is rejected as style.
+- diff-bug #8: the socket stayed open when the load wait threw — fix now, fixed a99add8.
+- diff-bug #9: over 65,535 objects threw a RangeError, not the named error — fix now, fixed a99add8 (checked in `add`, helper test).
+- diff-bug #10: `decodePlist` did not check the trailer against the buffer, so a cut-off body could decode as other values — fix now, fixed a99add8 (helper test; with both guards planted off it failed).
+- diff-bug #11: `close()` leaves the tab open, so tabs pile up — follow-up, same row.
+- diff-bug #12: a `--page` with a query gave a second `?` — fix now, fixed a99add8.
+- diff-bug #13: no helper test for 15 or more entries, 2-byte references, or a large payload — fix now, fixed a99add8 (301 keys, 200,000-byte value).
+- blame-history #1: same session leak as diff-bug #7 — fix now, fixed a99add8.
+- blame-history #2: D-005's `--remote cors` case has no `--target simulator` line in CLAUDE.md — reject, planned change (Scope Out: no criterion runs it; ios_check runs `cors` on the simulators).
+- blame-history #3: the switch to Web Inspector has no D-entry, and VoiceOver agreement is untested — reject, false: the choice, its rejected alternative, and its falsifier are in this file's work log (question set lines), and CLAUDE.md "Still unverified" keeps the real-screen-reader entries.
+- blame-history #4: the M010 lesson was rewritten in place — reject, false: LESSONS corrections are made in place and marked (corrected M024).
+- prior-review #1: tabs left open per run, unlike the WebDriver session delete — follow-up, row "Harden the Web Inspector check client".
+- prior-review #2: the load and hydration waits are flat 30 s limits, not M017's progress-based waits — follow-up, same row.
+- prior-review #3: README equated the Web Inspector label with the screen-reader name — fix now, fixed a99add8 (README says the names were read as Web Inspector reports them).
+- prior-review #4: a long comment line in helpers_test — reject, style.
+- ripple #1: ROADMAP row "Check Safari names in iOS simulators" still says the names cannot be read — fix now at post-merge hygiene (the row graduates).
+- ripple #2: row "Close the name and indicator check gaps" points at that row for the indicator part — fix now at post-merge hygiene (row narrowed).
+- ripple #3: CLAUDE.md describes the simulator page-DOM check and the Web Inspector name check in two places — reject, false: they are two checks (ios_check, safari_check) and do not disagree.
+- ripple #4: DESIGN.md Known issues sits beside the new claim — reject, false: it speaks of page text, which the diff does not change.
+- ripple #5: PROFILE.md's verify slot names safari_check without the new lines — reject, false: the slot runs every safari_check line in CLAUDE.md, which now holds the four.
+- ripple #6: native_check's header said safaridriver is how safari_check works — fix now, fixed a99add8 ("--target mac").
+- after the fixes: helpers_test 172 passed, 0 failed; AC1's four lines exit 0 again; `--plant nonumber` on the iPhone exit 1; the three `--target mac` lines exit 0 and `--target mac --plant nativename` exit 1; AC2 grep prints nothing.
