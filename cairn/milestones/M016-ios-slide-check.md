@@ -1,6 +1,6 @@
 # M016: Slides check on iOS
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -83,8 +83,8 @@ the viewer, so no version bump.
 - [x] T2: `quarto render`, then run both AC1 lines and read the report's
       slide fields.
 - [x] T3: Run the AC2 plant lines and see each fail for its own embed.
-- [ ] T4: Run the six AC3 lines.
-- [ ] T5: CLAUDE.md: add the AC1 lines to the self-contained block, drop the
+- [x] T4: Run the six AC3 lines.
+- [x] T5: CLAUDE.md: add the AC1 lines to the self-contained block, drop the
       self-contained slides bullet from "Still unverified", and correct the
       Known issues entry in `cairn/DESIGN.md` on self-contained slides.
 
@@ -108,6 +108,9 @@ the viewer, so no version bump.
 - 2026-10-19: T5 (in progress, checkpoint): CLAUDE.md holds the two AC1 lines and a note on slide decks, and drops the self-contained slides bullet from "Still unverified"; DESIGN.md Known issues entry corrected. T4 running: example.html iPhone line exits 0, five lines left.
 - 2026-10-19: T4: the six AC3 lines exit 0 (run before the fix below). An extra `--plant blank` run on example.html (no `--expect-text`) exited 0, a regression: the probe picked the first PDF.js embed before the embeds hydrated. Fixed: the embed is picked at plant time; on a deck the probe waits for hydration before the walk, and the per-slide wait needs each embed hydrated. `noslide` without `--expect-text` also passed on the iPhone, since scrolling the skipped slide's pages made it current in the scrolled view; `noslide` now skips that scroll too. Re-running AC1, AC2, and AC3 lines after these fixes.
 - 2026-10-19: after the fixes, both AC1 lines exit 0; the iPhone AC1 line exits 1 with `noslide` (embed 3: ink slide and text slide), `blank` (embed 1: no ink on page 2), and `notext` (embed 1, page 2); `noslide` on example.html exits 2; `noslide` without `--expect-text` exits 1 on iPhone and iPad (embed 3: ink slide). AC3 rerun in progress.
+- 2026-10-19: T4: after the fixes the six AC3 lines exit 0 again, and `--plant blank` on example.html exits 1 ("embed 1: pages without ink: 2"). T5 done (checkpoint 51696e9).
+- 2026-10-19: claim audit: not owed — internal tier.
+- 2026-10-19: implement complete; status review.
 
 ## Decisions
 
