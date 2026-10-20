@@ -156,7 +156,16 @@ node tests/ios_check.mjs --device "embedpdf iPhone" --page percent_test.html --a
 node tests/ios_check.mjs --device "embedpdf iPad" --page percent_test.html --alone yes --expect-embeds 2 --expect-name "100%.pdf"
 node tests/ios_check.mjs --device "embedpdf iPhone" --page selfcontained_test.html --alone yes --expect-embeds 2 --expect-native 1 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
 node tests/ios_check.mjs --device "embedpdf iPad" --page selfcontained_test.html --alone yes --expect-embeds 2 --expect-native 1 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/ios_check.mjs --device "embedpdf iPhone" --page selfcontained_slides_test.html --alone yes --expect-embeds 2 --expect-native 1 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/ios_check.mjs --device "embedpdf iPad" --page selfcontained_slides_test.html --alone yes --expect-embeds 2 --expect-native 1 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
 ```
+
+On a RevealJS page, both scripts show each slide in turn before they check
+its embeds. ios_check also fails a PDF.js embed whose ink or text it read
+while another slide was current. ios_check's `--plant noslide` skips the last
+slide that holds a PDF.js embed. On the iPhone simulator, RevealJS shows the slides
+in its scrolled view (the report's `scrollView`). `revealjs_test.html` has no
+ios_check line, because ios_check takes one `--expect-pages` for all embeds.
 
 A self-contained page whose embeds cannot show their PDF:
 `selfcontained_failed_test.html` holds `files/broken.pdf`, a text file that
@@ -336,8 +345,8 @@ errors.
   environment; can only be checked by a human on a phone).
 - A real iPhone or iPad loading the GitHub Pages site, and any iOS version
   before 27. `tests/ios_check.mjs` covers only iOS 27.0 and 27.1 simulators.
-- Self-contained RevealJS slides in Safari on iPhone and iPad (checked only in
-  Chromium).
+- Any RevealJS slide deck in desktop Safari. `tests/safari_check.mjs` exits 2
+  on a slide deck.
 - A PDF from another site on a real phone, with or without
   `Access-Control-Allow-Origin`. Safari is checked in the iOS 27.0
   simulators, with no header and with `*`, and in desktop Safari 27.0.1 with

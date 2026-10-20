@@ -24,7 +24,9 @@
 //                          system picks); a port in use, or any server that
 //                          cannot start, exits 2 with a message
 //   --timeout <s>          seconds to wait for the report (default 180, or 300
-//                          with --slow-text)
+//                          with --slow-text). On a RevealJS deck each slide
+//                          can take 50 s or more (see below), so a deck
+//                          of more than a few slides can need a larger value
 //   --screenshot <file>    save a simulator screenshot, taken with the first
 //                          renderer=native embed scrolled into view
 //   --shot-embed <n>       scroll embed n (1-based) into view for the screenshot
@@ -39,6 +41,7 @@
 //                          add a div.embedpdf with no data-src to the page
 //                          before the text wait; the check must then fail.
 //                          All but blank and missing need --expect-text.
+//                          Each exits 2 when it finds nothing to plant in.
 //   --expect-text "<p1>|<p2>|…"
 //                          phrase i is a phrase of page i's text. Before the
 //                          probe scrolls, it waits until every embed is
@@ -46,8 +49,11 @@
 //                          pass with no embed newly hydrated and no page
 //                          newly with text, or 60 s pass in all. If an embed
 //                          is still not hydrated then, the probe reports at
-//                          once and that is the one failure. Fail unless each
-//                          page's .embedpdf-text block contains its own
+//                          once and that is the one failure. The probe then
+//                          reads the text before it scrolls, or on a RevealJS
+//                          deck while each embed's slide is shown (below).
+//                          Fail unless each page's .embedpdf-text block
+//                          contains its own
 //                          phrase and no other page's, and is hidden but
 //                          readable: computed width and height 1px, overflow
 //                          hidden, user-select none, display not none,
@@ -169,6 +175,38 @@
 //                          so the check must fail and name each PDF.js
 //                          embed's address; with no PDF.js embed it exits 2
 //                          (nothing to plant in)
+//   --plant noslide        on a RevealJS deck, the probe does not show the
+//                          last slide that holds a PDF.js embed or scroll
+//                          its pages, so the check must fail for that
+//                          slide's embeds. It exits 2 (nothing to plant in)
+//                          on a page with no slides, on a deck with no
+//                          PDF.js embed, and when that slide was current
+//                          anyway at its ink measure
+//
+// On a RevealJS deck (window.Reveal), a PDF.js embed on a slide that is not
+// shown renders nothing, and RevealJS puts aria-hidden on that slide. So the
+// probe waits (after the --expect-text wait, when given) up to 10 s for
+// Reveal.isReady() and up to 30 s for every embed to hydrate. Then it takes
+// each slide of the deck (each section in .slides or in a vertical stack,
+// uncounted slides too, not the stack itself) and shows it in turn: it calls
+// Reveal.slide() and waits until RevealJS reports it as the current slide.
+// When the slide is not current after 3 s, it also scrolls the slide's embeds
+// into view and waits up to 10 s more. This is needed in RevealJS's scrolled
+// view (Reveal.isScrollView(), used on the iPhone simulator), where the
+// current slide follows the scroll position and Reveal.slide() may not reach
+// the last slide. The report's "scrollView" says which view was used.
+// While a slide is shown, the probe reads the hidden text of that slide's
+// embeds, scrolls their pages into view, waits up to 30 s for their canvases,
+// shows the slide again if a page scroll made another slide current, and
+// measures their ink. The report gives, per embed, its slide ("slide") and
+// the slide RevealJS showed at the text read ("textSlide") and at the ink
+// measure ("inkSlide"), counted from 0. A PDF.js embed fails when either
+// differs from its own slide (the text one only with --expect-text), when it
+// is in no slide of the deck, and when the number of pages with an ink
+// reading differs from its page count. These slide checks do not run with
+// --remote blocked, --missing-pdfs, or --expect-download.
+// On other pages the probe reads the text before it scrolls, and measures the
+// ink after.
 //
 // Exits 0 only when every embed not set to renderer=native used PDF.js, has
 // exactly --expect-pages page containers, and every page canvas has ink, and
@@ -302,8 +340,12 @@ const WAIT_PLANTS = ["unhydrated"];
 const DOWNLOAD_PLANTS = ["dltarget", "dlnoname", "dlwrongname", "dlhref", "dlsecond", "dltext", "decodelink", "extralog"];
 // planted in the docs server before the page loads; needs --expect-ranges
 const RANGE_PLANTS = ["noranges"];
-if (plant && !["blank", "missing", ...NAME_PLANTS, ...TEXT_PLANTS, ...WAIT_PLANTS, ...DOWNLOAD_PLANTS, ...RANGE_PLANTS].includes(plant)) {
-  console.error(`ios_check: --plant must be blank, missing, ${[...TEXT_PLANTS, ...WAIT_PLANTS, ...NAME_PLANTS, ...DOWNLOAD_PLANTS, ...RANGE_PLANTS].join(", ")}`);
+// planted in the slide walk of a RevealJS deck
+const SLIDE_PLANTS = ["noslide"];
+// planted in the first PDF.js embed just before its ink is measured
+const INK_PLANTS = ["blank", "missing"];
+if (plant && !["blank", "missing", ...NAME_PLANTS, ...TEXT_PLANTS, ...WAIT_PLANTS, ...DOWNLOAD_PLANTS, ...RANGE_PLANTS, ...SLIDE_PLANTS].includes(plant)) {
+  console.error(`ios_check: --plant must be blank, missing, ${[...TEXT_PLANTS, ...WAIT_PLANTS, ...NAME_PLANTS, ...DOWNLOAD_PLANTS, ...RANGE_PLANTS, ...SLIDE_PLANTS].join(", ")}`);
   process.exit(2);
 }
 if (RANGE_PLANTS.includes(plant) && !expectRanges) {
@@ -381,7 +423,8 @@ const deviceType = (dev.deviceTypeIdentifier || "").replace("com.apple.CoreSimul
 
 // The probe runs in Safari. It waits for every embed to hydrate, scrolls each
 // one (and each of its pages) into view so lazy rendering fires, waits for the
-// canvases, optionally plants a defect, measures, and POSTs the report. With
+// canvases, optionally plants a defect, measures, and POSTs the report. On a
+// RevealJS deck it does this one slide at a time (see the header). With
 // --expect-text, an embed still not hydrated when the text wait ends makes it
 // POST at once, without scrolling.
 const PROBE = `<script>
@@ -489,7 +532,7 @@ const PROBE = `<script>
     }
     return { inert, cv };
   };
-  const text = embeds().map((el) => [...el.querySelectorAll(".embedpdf-page")].map((p) => {
+  const readText = (el) => [...el.querySelectorAll(".embedpdf-page")].map((p) => {
     const t = p.querySelector(".embedpdf-text");
     if (!t) return null;
     const s = getComputedStyle(t);
@@ -500,9 +543,123 @@ const PROBE = `<script>
       userSelect: s.userSelect || s.webkitUserSelect, display: s.display, visibility: s.visibility,
       ariaHidden: !!t.closest('[aria-hidden="true"]'),
     };
-  }));
+  });
+  const text = embeds().map(readText);
 
-  if (!stuck) {
+  // the ink rule of tests/ink.mjs, inlined from its source text
+  const inkInPixels = ${inkInPixels.toString()};
+  const hasInk = (c) => {
+    try {
+      return inkInPixels(c.getContext("2d").getImageData(0, 0, c.width, c.height).data);
+    } catch (e) { errors.push("ink: " + e); }
+    return false;
+  };
+  const inkOf = (el) => [...el.querySelectorAll(".embedpdf-page")].map((p) => { const c = p.querySelector("canvas"); return !!c && hasInk(c); });
+  // blank its last page canvas, or remove that page's container
+  let inkPlanted = "";
+  const plantInk = (el) => {
+    const pages = el.querySelectorAll(".embedpdf-page");
+    const last = pages[pages.length - 1];
+    if (last && plant === "missing") { last.remove(); inkPlanted = plant; }
+    // a last page with no canvas already has no ink, so it counts as planted
+    const canvas = last && last.querySelector("canvas");
+    if (last && plant === "blank") {
+      if (canvas) {
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+      inkPlanted = plant;
+    }
+  };
+
+  // A RevealJS deck: a PDF.js embed on a slide that is not shown has pages of
+  // width 0 and renders nothing, and RevealJS puts aria-hidden on that slide,
+  // and scrolling does not change the slide. So the probe shows each slide in
+  // turn with Reveal.slide(), and while it is shown reads the hidden text of
+  // its embeds, scrolls their pages, waits for their canvases, and measures
+  // their ink. It records the slide RevealJS showed at the text read and at
+  // the ink measure. --plant noslide skips showing the last slide that holds
+  // a PDF.js embed.
+  let deck = null;
+  if (window.Reveal && typeof window.Reveal.slide === "function") {
+    for (const t0 = Date.now(); !(window.Reveal.isReady && window.Reveal.isReady()) && Date.now() - t0 < 10000; ) await sleep(100);
+    // Reveal.getSlides() leaves out slides with data-visibility="uncounted";
+    // a slide is a section in .slides or in a vertical stack, not a stack
+    // itself and not a section inside a slide's content
+    // (an ancestor test, since the scrolled view wraps slides in its own
+    // elements)
+    deck = [...document.querySelectorAll(".reveal .slides section")].filter((s) => {
+      const outer = s.parentElement.closest("section");
+      return !s.classList.contains("stack") && (!outer || outer.classList.contains("stack"));
+    });
+  }
+  const slideOf = (el) => (deck ? deck.findIndex((s) => s.contains(el)) : -1);
+  const shownSlide = () => (deck ? deck.indexOf(window.Reveal.getCurrentSlide()) : -1);
+  // per embed: its ink, and the slide shown at its text read and ink measure
+  const ink = new Map(), textSlide = new Map(), inkSlide = new Map();
+  let slidePlanted = "";
+  // without --expect-text nothing has waited for the embeds to hydrate yet
+  if (deck && !stuck) for (const t0 = Date.now(); unhydrated() && Date.now() - t0 < 30000; ) await sleep(100);
+  const skip = plant === "noslide" && deck
+    ? Math.max(-1, ...embeds().filter((el) => kind(el) === "pdfjs").map(slideOf))
+    : -1;
+  // read when it is used: without --expect-text the embeds may not be
+  // hydrated yet here
+  const firstPdfjs = () => embeds().find((el) => kind(el) === "pdfjs");
+
+  if (!stuck && deck) {
+    for (let k = 0; k < deck.length; k++) {
+      const mine = embeds().filter((el) => slideOf(el) === k);
+      const waitShown = async (ms) => { for (const t0 = Date.now(); shownSlide() !== k && Date.now() - t0 < ms; ) await sleep(100); };
+      // show slide k: Reveal.slide(), and when it is not current after 3 s
+      // scroll its embeds into view. On a narrow screen RevealJS can show the
+      // slides in a scrolled view (Reveal.isScrollView()), where the current
+      // slide follows the scroll position, and Reveal.slide() to the last
+      // slide may not reach it.
+      const show = async () => {
+        const { h, v } = window.Reveal.getIndices(deck[k]);
+        window.Reveal.slide(h, v);
+        await waitShown(3000);
+        if (shownSlide() !== k) {
+          for (const el of mine) el.scrollIntoView({ block: "center" });
+          await waitShown(10000);
+        }
+      };
+      if (k !== skip) {
+        await show();
+        await sleep(1500);
+      }
+      for (const el of mine) { text[embeds().indexOf(el)] = readText(el); textSlide.set(el, shownSlide()); }
+      const ready = () => mine.every((el) => {
+        if (kind(el) === "native" || kind(el) === "failed") return true;
+        const pages = [...el.querySelectorAll(".embedpdf-page")];
+        return kind(el) === "pdfjs" && pages.length > 0 && pages.every((p) => p.querySelector("canvas"));
+      });
+      // --plant noslide: no scroll either, since in the scrolled view a scroll
+      // to the slide's pages would make it the current slide
+      for (const t0 = Date.now(); k !== skip && Date.now() - t0 < 30000; ) {
+        for (const el of mine) {
+          for (const p of el.querySelectorAll(".embedpdf-page")) {
+            p.scrollIntoView({ block: "nearest" });
+            await sleep(400);
+          }
+        }
+        if (ready()) break;
+        await sleep(1000);
+      }
+      await sleep(1000);
+      // in the scrolled view a page scroll can make a nearby slide current
+      if (k !== skip && shownSlide() !== k) { await show(); await sleep(1000); }
+      // --plant noslide counts as planted only when another slide is current
+      if (k === skip && shownSlide() !== k) slidePlanted = plant;
+      for (const el of mine) {
+        if (el === firstPdfjs()) plantInk(el);
+        ink.set(el, inkOf(el));
+        inkSlide.set(el, shownSlide());
+      }
+    }
+  } else if (!stuck) {
     const t0 = Date.now();
     while (Date.now() - t0 < 90000) {
       await scrollAll();
@@ -511,6 +668,8 @@ const PROBE = `<script>
     }
     await sleep(1000);
   }
+  // an embed not measured on a slide (no deck, or not on any slide)
+  if (firstPdfjs() && !ink.has(firstPdfjs())) plantInk(firstPdfjs());
 
   let namePlanted = "";
   if (plant === "nativename" || plant === "nativetitle") {
@@ -549,19 +708,6 @@ const PROBE = `<script>
     if (bare !== label) { first.setAttribute("aria-label", bare); namePlanted = plant; }
   }
 
-  if (plant === "blank" || plant === "missing") {
-    const first = embeds().find((el) => kind(el) === "pdfjs");
-    const pages = first ? first.querySelectorAll(".embedpdf-page") : [];
-    const last = pages[pages.length - 1];
-    if (last && plant === "missing") last.remove();
-    const canvas = last && last.querySelector("canvas");
-    if (canvas && plant === "blank") {
-      const ctx = canvas.getContext("2d");
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
-  }
-
   // download plants (with --expect-download): the link of the first failed
   // embed whose inlined PDF decoded (the viewer removed its data-src), or
   // (decodelink) the first failed embed whose data-src is still a data:
@@ -592,14 +738,6 @@ const PROBE = `<script>
     dlPlanted = plant;
   }
 
-  // the ink rule of tests/ink.mjs, inlined from its source text
-  const inkInPixels = ${inkInPixels.toString()};
-  const hasInk = (c) => {
-    try {
-      return inkInPixels(c.getContext("2d").getImageData(0, 0, c.width, c.height).data);
-    } catch (e) { errors.push("ink: " + e); }
-    return false;
-  };
   const report = {
     run: params.get("run") || "",
     userAgent: navigator.userAgent,
@@ -610,6 +748,11 @@ const PROBE = `<script>
     textPlanted,
     namePlanted,
     dlPlanted,
+    inkPlanted,
+    slidePlanted,
+    slides: deck ? deck.length : 0,
+    // RevealJS's scrolled view, which it can use on a narrow screen
+    scrollView: deck && typeof window.Reveal.isScrollView === "function" ? window.Reveal.isScrollView() : null,
     textWaitedMs,
     slowPages,
     waitPlanted,
@@ -634,8 +777,13 @@ const PROBE = `<script>
         requested: el.dataset.renderer || "auto",
         renderer: kind(el),
         pages: pages.length,
-        ink: pages.map((p) => { const c = p.querySelector("canvas"); return !!c && hasInk(c); }),
+        ink: ink.has(el) ? ink.get(el) : inkOf(el),
         text: text[i],
+        // on a deck: the embed's own slide, and the slide shown at its text
+        // read and ink measure (0-based); null elsewhere
+        slide: deck ? slideOf(el) : null,
+        textSlide: textSlide.has(el) ? textSlide.get(el) : null,
+        inkSlide: inkSlide.has(el) ? inkSlide.get(el) : null,
         role: el.getAttribute("role"),
         label: el.getAttribute("aria-label"),
         // a native embed's name is on its <object>
@@ -777,6 +925,9 @@ try {
   if (screenshot) simctl("io", dev.udid, "screenshot", path.resolve(screenshot));
 
   const checked = report.embeds.filter((e) => e.requested !== "native");
+  // a 0-based slide index from the report, as words: -1 is a current slide
+  // that is not in the deck, null is none recorded
+  const slideName = (n) => (n === null ? "no recorded slide" : n < 0 ? "a slide not in the deck" : `slide ${n + 1}`);
   const failures = [];
   // with --expect-text, an embed still not hydrated when the text wait ended
   // is the one failure: the probe measured nothing more
@@ -839,7 +990,17 @@ try {
       // judged below, with every embed on the page
     } else if (e.renderer !== "pdfjs") failures.push(`embed ${e.index}: renderer ${e.renderer}, expected pdfjs`);
     else if (e.pages !== expectPages) failures.push(`embed ${e.index}: ${e.pages} page containers, expected ${expectPages}`);
+    // on a deck the ink is measured on the slide, and the pages counted at the
+    // report, so an embed that hydrated after its slide has fewer ink entries
+    else if (e.ink.length !== e.pages) failures.push(`embed ${e.index}: ink measured for ${e.ink.length} pages, but it has ${e.pages}`);
     else if (!e.ink.every(Boolean)) failures.push(`embed ${e.index}: pages without ink: ${e.ink.map((v, i) => (v ? null : i + 1)).filter(Boolean).join(", ")}`);
+    // on a RevealJS deck: the probe measured the ink, and read the text, while
+    // the embed's own slide was shown (slides counted from 1 here)
+    if (e.slide !== null && e.renderer === "pdfjs" && !blocked && !missingPdfs && !expectDownloads) {
+      if (e.slide < 0) failures.push(`embed ${e.index}: on a RevealJS deck but in no slide, so it was never shown`);
+      else if (e.inkSlide !== e.slide) failures.push(`embed ${e.index}: ink measured while ${slideName(e.inkSlide)} was shown, not its slide ${e.slide + 1}`);
+      if (e.slide >= 0 && phrases && e.textSlide !== e.slide) failures.push(`embed ${e.index}: text read while ${slideName(e.textSlide)} was shown, not its slide ${e.slide + 1}`);
+    }
     // --expect-name: the embed's role and name, read from the DOM
     if (expectLabels && !blocked && e.renderer === "pdfjs") {
       const name = expectLabels[e.index - 1];
@@ -857,7 +1018,8 @@ try {
         if (ind.others) failures.push(`embed ${e.index}: the indicator holds ${ind.others} node(s) besides its two spans`);
       }
     }
-    // --expect-text: the hidden text, read before the probe scrolled
+    // --expect-text: the hidden text, read before the probe scrolled (on a
+    // deck, while the embed's slide was shown)
     if (phrases && !blocked && e.renderer === "pdfjs") {
       if (e.text.length !== phrases.length) failures.push(`embed ${e.index}: ${e.text.length} pages read for text, --expect-text gives ${phrases.length} phrases`);
       e.text.forEach((b, j) => {
@@ -982,7 +1144,7 @@ try {
     exitCode = 2;
   }
   // a text plant that found nothing proves nothing about the check
-  if ((TEXT_PLANTS.includes(plant) && !report.textPlanted) || (NAME_PLANTS.includes(plant) && !report.namePlanted) || (WAIT_PLANTS.includes(plant) && !report.waitPlanted) || (DOWNLOAD_PLANTS.includes(plant) && !report.dlPlanted)) {
+  if ((TEXT_PLANTS.includes(plant) && !report.textPlanted) || (NAME_PLANTS.includes(plant) && !report.namePlanted) || (WAIT_PLANTS.includes(plant) && !report.waitPlanted) || (DOWNLOAD_PLANTS.includes(plant) && !report.dlPlanted) || (SLIDE_PLANTS.includes(plant) && !report.slidePlanted) || (INK_PLANTS.includes(plant) && !report.inkPlanted)) {
     console.error(`ios_check: --plant ${plant} found nothing to plant in`);
     exitCode = 2;
   }

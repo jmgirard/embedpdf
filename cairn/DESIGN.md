@@ -165,8 +165,9 @@ load on the same queue, and a text task runs only when no page render waits
 - In a self-contained document with JavaScript disabled, the fallback link
   and the `button` link point at the separate PDF file, which is not shipped
   (corrected M002; self-contained embeds render since v1.1.0; split 2026-10-18).
-- Self-contained RevealJS slides are checked only in Chromium (split
-  2026-10-18 from the no-JavaScript link entry) — observed 2026-10-18.
+- Self-contained RevealJS slides are checked in Chromium and in Safari in the
+  iOS 27.0 iPhone and iPad simulators, not on a real phone or in desktop
+  Safari (corrected M016) — observed 2026-10-19.
 - The PDF.js viewer has no text selection or search (out of scope, see the
   contract boundary).
 - A PDF.js embed's hidden page text is checked in Chromium's accessibility
