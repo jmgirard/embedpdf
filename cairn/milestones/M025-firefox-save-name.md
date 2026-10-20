@@ -116,7 +116,7 @@ Firefox's viewer" row's detail stays the record of the tried forms.
       section of CLAUDE.md and the variants its prose requires, and the
       shortcode tests. Run the Safari save lines a few minutes apart (LESSONS
       M023).
-- [ ] T5: Update the self-contained bullet of README.md and the save-name
+- [x] T5: Update the self-contained bullet of README.md and the save-name
       entry of the Known issues in cairn/DESIGN.md. In CLAUDE.md, update the
       save-name paragraph and the "Still unverified" item, and add the four
       T1 lines. Update the header of `save_name_check.mjs` ("Firefox is not a
@@ -141,6 +141,8 @@ Firefox's viewer" row's detail stays the record of the tried forms.
 - 2026-10-20: T1 done: `--browser firefox` in save_name_check.mjs reads `_docFilename` in the frame whose address (no fragment) is the embed's; Firefox takes only file-name entries and the wrongname and nosave plants. On a deck the check now shows the slide of an `<iframe>` with no address yet and of the embed it checks (the slides line read nothing for embed 3 before). Before T2 all four lines exited 1 with `document.pdf` for each of the 12 embeds.
 - 2026-10-20: T2 done: `inlinedPdf` makes a `File` named `opts.filename` (Blob where `File` is not a constructor); version 1.2.9; `quarto render` clean; shortcode tests 162 passed, 0 failed. All four Firefox lines exit 0 (`sample.pdf` x 12). Plants on the http line: wrongname at 1 and at 3 exit 1 naming the embed (`dummy.pdf`), nosave at 2 exits 1 (no viewer); otherbytes and `@blob` exit 2. Chromium save line (file) still saves `<blob id>.pdf`.
 - 2026-10-20: T3 done: the user saved each of the 3 native embeds of `selfcontained_test.html` (1.2.9) alone in windowed Firefox 158 on macOS, as a local file (scratchpad copy) and over HTTP (serveDocs on port 8765), clearing `sample*` files or reading the dialog before each save; the user reported the 6 names as `sample.pdf`, `sample.pdf`, `sample.pdf` (file) and `sample.pdf`, `sample.pdf`, `sample.pdf` (HTTP), in one answer ("All six: sample.pdf").
+- 2026-10-20: minor amendment: T5 ran before T4, since AC3 runs the CLAUDE.md lines as they stand after T5; task labels unchanged.
+- 2026-10-20: T5 done: README self-contained bullet, DESIGN Known issues save-name entry (marked corrected M025), CLAUDE.md save-name paragraph, its four Firefox lines, and the "Still unverified" item (automated Firefox save, slides by hand, other names); save_name_check.mjs header updated in T1.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local. -->
