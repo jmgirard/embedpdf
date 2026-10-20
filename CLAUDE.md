@@ -179,31 +179,62 @@ takes one count for every embed not set to `renderer=native`. It also takes a
 `revealjs_test.html` these are `dummy2.pdf` (2 pages) and then `dummy.pdf`
 with `renderer=auto` (1 page).
 
-The native embeds of a self-contained page: `native_check.mjs` opens
-`selfcontained_test.html` alone and takes a screenshot of each native
-`<object>`. The reference is a screenshot of an `<object>` of
-`docs/sample.pdf` on the check's own server, at the embed's size. It shows
+Native embeds and their `page` option: a native embed is an `<object>`. On a
+desktop browser with a built-in PDF viewer, an embed whose `page` is over 1
+is an `<iframe>` instead (D-007). Desktop Safari 27.0.1 opens an `<object>`
+at page 1 whatever its `#page` fragment says, and opens an `<iframe>` at that
+page. `native_check.mjs` takes a screenshot of each native embed. The
+reference is a screenshot of the element that the embed must be. It shows
+`docs/sample.pdf` from the check's own server at the embed's size. It shows
 the page that the embed's `page` option names. Each reference must differ
-from a control, an `<object>` of a file the viewer cannot draw. So a
-reference caught before the PDF was drawn fails. The check also fails unless
-each `<object>` address is a `blob:` URL with that `#page` fragment. The
-fourth embed has `page=2`. In Chromium and Firefox the page-1 and page-2
-references must differ. Desktop Safari 27.0.1 opens a native embed at page 1
-whatever the fragment says. So the Safari lines take `--same-pages`, and
-there the two references must match. Chromium and Firefox run headless. The
-header states the plants (`otherpdf`, `broken`, `blank`, `fileaddr`,
-`nopage`, placed by `--plant-at <k>`, and `refcontrol`). Firefox started from Claude Code fails
-with "Could not find profile folder" until its folder exists. On 2026-10-19
-one launch through macOS `open` made it (the command is in the script's
-header). If Firefox is not in `/Applications`, set `FIREFOX_PATH`:
+from a control, the same element showing a file that the viewer cannot draw.
+So a reference caught before the PDF was drawn fails. For an embed with
+`page=2`, the page-1 and page-2 references must differ. The check also fails
+in these cases:
+
+- An embed is not the element that its `page` option asks for.
+- An address does not have that `#page` fragment.
+- An `<iframe>` has a border or a box other than its width and height.
+- Other content of the placeholder shows.
+
+With `--alone`, the check opens `selfcontained_test.html` alone, and each
+address must be a `blob:` URL. Without it, the check serves the page from
+`docs/`, and each address must be the embed's `data-src`. On
+`page_test.html` the first two embeds have `page=2`. On
+`selfcontained_test.html` the fourth embed does. Chromium and Firefox run
+headless. The header states the plants. `otherpdf`, `broken`, `blank`,
+`fileaddr`, `nopage`, `object`, `border`, and `fallback` go into the embed
+that `--plant-at <k>` names. `refcontrol` changes the references. Firefox started from Claude Code fails with "Could
+not find profile folder" until its folder exists. On 2026-10-19 one launch
+through macOS `open` made it (the command is in the script's header). If
+Firefox is not in `/Applications`, set `FIREFOX_PATH`:
 
 ```
+node tests/native_check.mjs --browser chromium --page page_test.html --expect-native 3 --reference sample.pdf
+node tests/native_check.mjs --browser firefox --page page_test.html --expect-native 3 --reference sample.pdf
+node tests/native_check.mjs --browser safari --page page_test.html --expect-native 3 --reference sample.pdf
 node tests/native_check.mjs --browser chromium --page selfcontained_test.html --alone file --expect-native 3 --reference sample.pdf
 node tests/native_check.mjs --browser chromium --page selfcontained_test.html --alone http --expect-native 3 --reference sample.pdf
 node tests/native_check.mjs --browser firefox --page selfcontained_test.html --alone file --expect-native 3 --reference sample.pdf
 node tests/native_check.mjs --browser firefox --page selfcontained_test.html --alone http --expect-native 3 --reference sample.pdf
-node tests/native_check.mjs --browser safari --page selfcontained_test.html --alone file --expect-native 3 --reference sample.pdf --same-pages
-node tests/native_check.mjs --browser safari --page selfcontained_test.html --alone http --expect-native 3 --reference sample.pdf --same-pages
+node tests/native_check.mjs --browser safari --page selfcontained_test.html --alone file --expect-native 3 --reference sample.pdf
+node tests/native_check.mjs --browser safari --page selfcontained_test.html --alone http --expect-native 3 --reference sample.pdf
+```
+
+The other checks on `page_test.html`: on desktop its three embeds are
+native. On iPhone, iPad, and Android, the `renderer=auto` embed uses PDF.js,
+and the two `renderer=native` embeds stay `<object>`s. If a native embed on
+those devices is not an `<object>`, render_check and ios_check fail:
+
+```
+node tests/render_check.mjs page_test.html --expect-native 3 --expect-pdfjs 0 --expect-name sample.pdf
+node tests/render_check.mjs page_test.html --device mac-safari --expect-native 3 --expect-pdfjs 0 --expect-name sample.pdf
+node tests/render_check.mjs page_test.html --device windows-touch --expect-native 3 --expect-pdfjs 0 --expect-name sample.pdf
+node tests/render_check.mjs page_test.html --device iphone --expect-native 2 --expect-pdfjs 1 --expect-pages 2 --expect-name sample.pdf
+node tests/render_check.mjs page_test.html --device android --expect-native 2 --expect-pdfjs 1 --expect-pages 2 --expect-name sample.pdf
+node tests/ios_check.mjs --device "embedpdf iPhone" --page page_test.html --expect-native 2 --expect-embeds 1 --expect-name sample.pdf
+node tests/ios_check.mjs --device "embedpdf iPad" --page page_test.html --expect-native 2 --expect-embeds 1 --expect-name sample.pdf
+node tests/safari_check.mjs --target mac --page page_test.html --expect-native 3 --expect-pdfjs 0 --expect-name sample.pdf
 ```
 
 A self-contained page whose embeds cannot show their PDF:
@@ -425,6 +456,9 @@ errors.
   window. `native_check.mjs` runs them headless. Also such an embed on
   self-contained RevealJS slides, in any browser. Also the file
   name that a native viewer's save button gives the copy of the PDF.
+- A native `<iframe>` embed (`page` over 1) in Chromium or Firefox with a
+  window. Also such an embed of a PDF from a site that forbids framing, and
+  a real screen reader reading its name.
 - GitHub Pages' answer to an address with `%25`, which the shortcode writes
   for a bare `%` in a PDF path since v1.2.6. It is checked only on the local
   test server.

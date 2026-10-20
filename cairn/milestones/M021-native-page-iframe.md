@@ -103,7 +103,7 @@ placeholder, hidden. Every other native embed stays an `<object>`. Version 1.2.7
       `--plant-at` aimed at an `<iframe>` embed, in Safari as well; a new native_check plant that puts an
       `<object>` in place of an `<iframe>`, whose Safari run must name both the element and a page-2 mismatch;
       and new native_check plants for a border and a visible fallback.
-- [ ] T6: CLAUDE.md: `page_test.html` lines (render_check desktop, `mac-safari`, `windows-touch`, `iphone`,
+- [x] T6: CLAUDE.md: `page_test.html` lines (render_check desktop, `mac-safari`, `windows-touch`, `iphone`,
       `android`; ios_check iPhone and iPad; safari_check `--target mac`; native_check in three browsers), the
       Safari native_check lines without `--same-pages`, and the native_check paragraph. README `page` row and
       self-contained paragraph; DESIGN.md architecture and Known issues.
@@ -131,6 +131,7 @@ placeholder, hidden. Every other native embed stays an `<object>`. Version 1.2.7
 - 2026-10-20: T5 (native_check part): on page_test.html embed 1 in Safari and Chromium, nopage, object, border, fallback, refcontrol, and otherpdf (`--plant-at 1`) each exit 1 naming that embed; in Safari nopage and object also fail as a page-2 mismatch (0.0952).
 - 2026-10-20: T4 done: render_check, safari_check, and ios_check read a native embed's `<object>` or `<iframe>` (names, title, name plants, link selector with `.embedpdf-fallback`, alone and remote addresses); render_check reports `nativeTags` and fails on iphone, ipad, or android when one is not `<object>`; ios_check fails on any native `<iframe>`; safari_check now takes `--expect-pdfjs 0` when native embeds are expected. page_test.html passes: render_check desktop and iphone/android, safari_check `--target mac`, ios_check iPhone and iPad.
 - 2026-10-20: T5 done: on page_test.html render_check nativename, nativetitle, nativedesc and safari_check nativename, nativetitle each exit 1 naming the `<iframe>` of embed 1; with the docs/ viewer copy changed to give an `<iframe>` on every device (restored after), render_check `--device iphone` and ios_check "embedpdf iPhone" each exit 1 naming a native `<iframe>`.
+- 2026-10-20: T6 done: CLAUDE.md native_check paragraph rewritten for the `<iframe>` rule, 3 page_test native_check lines added, `--same-pages` dropped from the Safari lines, 8 page_test lines for render_check, ios_check, and safari_check, and a "Still unverified" item for the `<iframe>` form; README `page` row and self-contained paragraph; DESIGN.md Viewer, architecture, and Known issues (with the missing-PDF difference). The simple-english hook reports the same 39 CLAUDE.md hits as before this milestone; README hits left are in untouched text.
 
 ## Decisions
 

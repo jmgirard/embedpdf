@@ -48,8 +48,9 @@ renderers.
   `toolbar`, `border`, `class`, `button`. Defaults come from the `embedpdf`
   metadata key, and per-shortcode values override them.
 - **Viewer** (`embedpdf-viewer.js`, `embedpdf.css`): hydrates each
-  `div.embedpdf` placeholder as a native `<object>` or a PDF.js canvas viewer
-  with a toolbar (zoom, page indicator, download).
+  `div.embedpdf` placeholder as a native `<object>` (an `<iframe>` for a
+  `page` over 1 where the browser has a built-in PDF viewer, D-007) or a
+  PDF.js canvas viewer with a toolbar (zoom, page indicator, download).
 - **Other formats**: LaTeX output uses `\includepdf` (pdfpages). Every other
   non-HTML format gets a download link.
 
@@ -128,7 +129,10 @@ inside a group where `%` is a plain character. In the browser,
 `embedpdf-viewer.js` picks a renderer per placeholder: `auto` uses PDF.js on
 iPhone and iPad (an iPhone, iPod, or iPad user agent, or a Mac user agent with
 `maxTouchPoints > 1`). Elsewhere, `auto` uses the native `<object>` if
-`navigator.pdfViewerEnabled` is true, and otherwise PDF.js (corrected M001). PDF.js is
+`navigator.pdfViewerEnabled` is true, and otherwise PDF.js (corrected M001). A
+native embed whose `page` is over 1 is an `<iframe>` there, with its no-JS
+fallback content hidden beside it; elsewhere it stays an `<object>` (M021,
+D-007). PDF.js is
 imported on demand from those scripts' `src`, so desktop visitors on the
 native path never download it. With `embed-resources: true`, Quarto inlines
 the viewer as a `data:` module, the PDF.js files as the scripts' text, and
@@ -168,14 +172,17 @@ load on the same queue, and a text task runs only when no page render waits
 - Self-contained RevealJS slides are checked in Chromium and in Safari in the
   iOS 27.0 iPhone and iPad simulators, not on a real phone or in desktop
   Safari (corrected M016) — observed 2026-10-19.
-- Desktop Safari 27.0.1 opens a native embed at page 1 whatever its `page`
-  option says, for the PDF file and the in-page copy of a self-contained page
-  alike (ROADMAP row "Make Safari native embeds honor page"). The native
-  embeds of a self-contained HTML page showing `sample.pdf` are checked in
-  Chromium 155 and Firefox 158 (headless) and desktop Safari 27.0.1, over a
-  local file and HTTP (`tests/native_check.mjs`). Not checked: such embeds on
-  self-contained RevealJS slides in any browser, and the file
-  name that a native viewer's save button gives the in-page copy (added
+- A native embed with a `page` over 1 is an `<iframe>` in a desktop browser
+  with a built-in PDF viewer, because desktop Safari 27.0.1 opens an
+  `<object>` at page 1 whatever its `#page` says (D-007). Such an embed opened
+  at page 2 on `page_test.html` and on the in-page copy of
+  `selfcontained_test.html` (local file and HTTP) in Chromium 155 and Firefox
+  158 (headless) and desktop Safari 27.0.1 (`tests/native_check.mjs`;
+  corrected M021) — observed 2026-10-20. For a PDF missing at view time,
+  such an embed shows a blank frame or the server's error page, where an
+  `<object>` shows its download link to the same missing file. Not checked:
+  native embeds on self-contained RevealJS slides in any browser, and the
+  file name that a native viewer's save button gives the in-page copy (added
   M020) — observed 2026-10-19.
 - The PDF.js viewer has no text selection or search (out of scope, see the
   contract boundary).
