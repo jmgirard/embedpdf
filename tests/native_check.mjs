@@ -4,7 +4,7 @@
 //   node tests/native_check.mjs --browser chromium|firefox|safari
 //        --page <page>.html [--alone file|http]
 //        --expect-native <n> --reference sample.pdf
-//        [--plant otherpdf|broken|blank|fileaddr|nopage|object|border|fallback|refcontrol] [--plant-at <k>]
+//        [--plant otherpdf|broken|blank|fileaddr|nopage|object|border|fallback|refcontrol|noslide] [--plant-at <k>]
 //
 // The viewer shows a native embed as an <object>, or as an <iframe> when its
 // page option is over 1 and frameAllowed accepts it (embedpdf-viewer.js;
@@ -34,6 +34,19 @@
 // box (an <iframe> shows no child content, so the viewer hides the no-JS
 // fallback beside it). Every failure of an embed is reported, not only the
 // first.
+//
+// On a RevealJS slide deck the check sets Reveal's minScale and maxScale to
+// 1, so each embed has the CSS size its options give (for Quarto's 1050 x 700
+// deck with margin 0.1, no whole-pixel window size gives a scale of exactly
+// 1), and exits 2 unless Reveal.getScale() is then 1. So other scales are not
+// checked. For each native embed in page order it shows the slide that holds
+// the embed (Reveal.slide; uncounted slides too), waits up to 5 s for an
+// <iframe>'s address (the viewer sets it once the frame has a box), reads
+// the embed's element, address, box, and placeholder
+// there, and takes its screenshot. It fails an embed whose slide is not the
+// current slide (Reveal.getCurrentSlide()) before or after its screenshot,
+// and an embed for which Reveal did not show the slide the check went to in
+// 5 s. A plant whose embed has no address after 5 s exits 2.
 //
 // It then takes a screenshot of each native embed and a screenshot of a
 // reference: the element the embed should be (an <iframe>, or an <object
@@ -97,6 +110,9 @@
 //             of an <iframe>
 //   border    gives an <iframe> a 2px inset border, as a browser's default
 //   fallback  shows the hidden fallback content beside an <iframe>
+//   noslide   (a RevealJS deck only) shows the first slide that does not
+//             hold the embed, in place of its own slide; the run must fail
+//             on "not the current slide"
 // The run must then fail and name that embed; otherpdf and broken must fail as
 // a mismatch, and in desktop Safari, nopage and object must fail as a
 // mismatch too.
@@ -127,7 +143,7 @@ const STABLE_MS = 20000;
 const STABLE_SPAN_MS = 1500; // screenshots must stay the same this long
 const WD_MS = 60000; // time limit of one safaridriver call
 const VIEWPORT = { width: 1200, height: 900 };
-const PLANTS = ["otherpdf", "broken", "blank", "fileaddr", "nopage", "object", "border", "fallback", "refcontrol"];
+const PLANTS = ["otherpdf", "broken", "blank", "fileaddr", "nopage", "object", "border", "fallback", "refcontrol", "noslide"];
 // plants aimed at an embed whose page option is over 1 (an <iframe>)
 const PAGE_PLANTS = ["nopage", "object", "border", "fallback"];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -419,19 +435,61 @@ try {
   if (st.unhydrated > 0) failures.push(`${st.unhydrated} embed(s) not hydrated after 30 s`);
   if (st.native.length !== expectNative) failures.push(`expected ${expectNative} native embeds, found ${st.native.length}`);
 
-  // --plant refcontrol changes the references, not the page
+  // a RevealJS slide deck: hold Reveal's scale at 1, so each embed has the
+  // CSS size its options give, as the references do (Reveal scales by the
+  // window's size less its margin, and for Quarto's 1050 x 700 deck with
+  // margin 0.1 no whole-pixel window size gives exactly 1)
+  const deck = await drv.run(`() => !!(window.Reveal && typeof window.Reveal.slide === "function" && document.querySelector(".reveal .slides"))`);
+  if (deck) {
+    let scale = null;
+    for (let t = 0; t < 50; t++) {
+      scale = await drv.run(`() => {
+        if (!window.Reveal.isReady()) return null;
+        const c = window.Reveal.getConfig();
+        if (c.minScale !== 1 || c.maxScale !== 1) window.Reveal.configure({ minScale: 1, maxScale: 1 });
+        window.Reveal.layout();
+        return window.Reveal.getScale();
+      }`);
+      if (scale !== null) break;
+      await sleep(200);
+    }
+    report.deck = { scale };
+    if (scale !== 1) throw new SetupError(`Reveal's scale is ${scale}, not 1, after setting minScale and maxScale to 1`);
+  }
+  if (plant === "noslide" && !deck) throw new SetupError("--plant noslide needs a RevealJS slide deck");
+  if (plant === "noslide" && (plantAt || 1) > st.native.length) throw new SetupError(`--plant noslide found nothing to plant in (native embed ${plantAt || 1})`);
+
+  // --plant refcontrol changes the references, not the page; --plant noslide
+  // changes which slide the walk below shows
   if (plant === "refcontrol") report.planted = "refcontrol: every reference shows the control";
-  // --plant: change the target embed's element
-  else if (plant) {
+  else if (plant === "noslide") report.planted = `noslide in native embed ${plantAt || 1}`;
+  // --plant: change the target embed's element. On a slide deck this waits
+  // until the walk below shows the embed's slide, because the viewer gives an
+  // <iframe> that has no box (its slide not displayed) its address only once
+  // it has one.
+  let plantTarget = null;
+  if (plant && plant !== "refcontrol" && plant !== "noslide") {
     let k = plantAt;
     if (!k) k = PAGE_PLANTS.includes(plant) ? st.native.findIndex((d, i) => wantFrag(i)) + 1 : 1;
     if (k < 1 || k > st.native.length || (PAGE_PLANTS.includes(plant) && !wantFrag(k - 1))) {
       throw new SetupError(`--plant ${plant} found nothing to plant in (native embed ${k || "with #page="})`);
     }
-    const cur = st.native[k - 1];
-    if (["object", "border", "fallback"].includes(plant) && cur.tag !== "iframe") {
-      throw new SetupError(`--plant ${plant} needs an <iframe>, and native embed ${k} is <${cur.tag}>`);
+    if (["object", "border", "fallback"].includes(plant) && st.native[k - 1].tag !== "iframe") {
+      throw new SetupError(`--plant ${plant} needs an <iframe>, and native embed ${k} is <${st.native[k - 1].tag}>`);
     }
+    plantTarget = k;
+  }
+  const applyPlant = async (k) => {
+    // the embed's address now (at most 5 s for one that is still empty)
+    let cur = st.native[k - 1];
+    for (let t = 0; !cur.address && t < 25; t++) {
+      await sleep(200);
+      st = await state();
+      cur = st.native[k - 1];
+    }
+    // a plant copies the address and its fragment, so an empty one would make
+    // the run fail for another reason than the plant's
+    if (!cur.address) throw new SetupError(`--plant ${plant}: native embed ${k} has no address after 5 s`);
     const bytes = plantBytes[plant] ? plantBytes[plant]() : null;
     const frag = cur.address.includes("#") ? cur.address.slice(cur.address.indexOf("#")) : "";
     const addr = plant === "fileaddr" ? referenceAddress + frag : plant === "nopage" ? cur.address.split("#")[0] : null;
@@ -479,11 +537,66 @@ try {
     if (!done) throw new SetupError(`--plant ${plant} found no hidden fallback content beside native embed ${k}`);
     report.planted = `${plant} in native embed ${k}`;
     st = await state();
-  }
+  };
+  if (plantTarget && !deck) await applyPlant(plantTarget);
 
   // each native embed: its element, address, box, a stable screenshot, its size
+  // on a slide deck: show the slide that holds native embed i (with --plant
+  // noslide, for the target embed, the first slide that does not hold it);
+  // it returns that slide's indices once Reveal reports it current (at most
+  // 5 s), or null
+  const showSlide = async (i, other) => {
+    const at = await drv.run(
+      `(i, other) => {
+        const d = document.querySelectorAll("div.embedpdf-native")[i];
+        // every slide, the uncounted ones too (Reveal.getSlides() leaves out
+        // data-visibility="uncounted"); a slide is a section with no section in it
+        const slides = [...document.querySelectorAll(".reveal .slides section")].filter((x) => !x.querySelector("section"));
+        const s = other ? slides.find((x) => !x.contains(d)) : slides.find((x) => x.contains(d));
+        if (!s) return null;
+        const { h, v } = window.Reveal.getIndices(s);
+        window.Reveal.slide(h, v);
+        return { h, v: v || 0 };
+      }`,
+      i,
+      other
+    );
+    if (!at) return null;
+    for (let t = 0; t < 25; t++) {
+      const now = await drv.run(`() => { const { h, v } = window.Reveal.getIndices(); return { h, v: v || 0 }; }`);
+      if (now.h === at.h && now.v === at.v) {
+        await sleep(300);
+        return at;
+      }
+      await sleep(200);
+    }
+    return null;
+  };
+  // whether the current slide holds native embed i
+  const onCurrent = (i) =>
+    drv.run(`(i) => {
+      const c = window.Reveal.getCurrentSlide();
+      return !!c && c.contains(document.querySelectorAll("div.embedpdf-native")[i]);
+    }`, i);
   const embeds = [];
   for (let i = 0; i < st.native.length; i++) {
+    let slide = null;
+    let current = true;
+    if (deck) {
+      slide = await showSlide(i, plant === "noslide" && i === (plantAt || 1) - 1);
+      // the embed's own state on its slide: on a slide that RevealJS does not
+      // display, its element has no box, and nothing of its placeholder shows
+      st = await state();
+      if (!slide) failures.push(`native embed ${i + 1}: Reveal did not show the slide the check went to in 5 s`);
+      // the viewer gives an <iframe> its address once it has a box, so wait
+      // for it (at most 5 s), as a reader's view would
+      for (let t = 0; st.native[i].tag === "iframe" && !st.native[i].address && t < 25; t++) {
+        await sleep(200);
+        st = await state();
+      }
+      if (plantTarget === i + 1) await applyPlant(plantTarget);
+      current = await onCurrent(i);
+    }
     const e = st.native[i];
     const data = e.address;
     const at = `native embed ${i + 1}`;
@@ -512,6 +625,7 @@ try {
     try {
       const mark = `[data-native-check="${i}"]`;
       shot = await stableShot(drv, mark, 0);
+      if (deck) current = current && (await onCurrent(i));
       // the size once the screenshot settled (a box can grow as its viewer loads)
       size = await drv.run(
         `(css) => {
@@ -525,11 +639,13 @@ try {
     } catch (err) {
       // a box of size 0, for example: this embed fails, the others are still checked
       failures.push(`${at}: no screenshot (${err.message.split("\n")[0]})`);
-      report.embeds.push({ at, tag: e.tag, address: data.slice(0, 40), frag });
+      if (!current) failures.push(`${at}: its slide is not the current slide (Reveal.getCurrentSlide()) at its screenshot`);
+      report.embeds.push({ at, tag: e.tag, address: data.slice(0, 40), frag, ...(deck ? { slide, current } : {}) });
       continue;
     }
+    if (!current) failures.push(`${at}: its slide is not the current slide (Reveal.getCurrentSlide()) at its screenshot`);
     saveShot(`embed-${i + 1}`, shot.png);
-    const entry = { at, tag: e.tag, address: data.slice(0, 40), frag, kind: tag, size, stable: shot.stable, ink: inkInPixels(img.data) };
+    const entry = { at, tag: e.tag, address: data.slice(0, 40), frag, kind: tag, size, stable: shot.stable, ink: inkInPixels(img.data), ...(deck ? { slide, current } : {}) };
     if (!shot.stable) failures.push(`${at}: its screenshot did not settle in ${STABLE_MS / 1000} s`);
     if (!entry.ink) failures.push(`${at}: no ink`);
     embeds.push({ entry, img });

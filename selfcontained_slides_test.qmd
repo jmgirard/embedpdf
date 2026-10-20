@@ -16,3 +16,7 @@ format:
 ## PDF.js renderer
 
 {{< pdf sample.pdf renderer=pdfjs height=500 button="Download the PDF" >}}
+
+## Native renderer at page 2
+
+{{< pdf sample.pdf renderer=native page=2 width=600 height=400 >}}
