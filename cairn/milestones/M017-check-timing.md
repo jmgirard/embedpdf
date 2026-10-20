@@ -80,6 +80,8 @@ Make `render_check.mjs` measure ink when the pages have rendered rather than aft
 - 2026-10-19: T6 done (Chromium 155, iOS 27.0 simulators): a script read CLAUDE.md "Verify before finishing" and ran every render_check line (65 runs, with `--alone http` for each `--alone file` line, mac-safari and windows-touch for the selfcontained_test, `--remote`, and `--missing-pdfs` desktop lines, ipad for the selfcontained_test iphone lines) and every ios_check line (28 runs); all 93 exit 0. One ios run (iPad, example.html) failed at `simctl openurl` with "Operation timed out" and passed on its repeat. The throttled line took 59 s; with `--plant norender` added it exits 1 with "no canvas" on all 28 pages after a 17.8 s wait. name_rule_test 32 passed, 0 failed; helpers_test 133 passed, 0 failed. safari_check not run: the branch does not change it or the viewer.
 - 2026-10-19: claim audit: not owed — internal tier.
 - 2026-10-19: implement done; status set to review.
+- 2026-10-19: review pass 1: 5 of 5 criteria pass; 28 findings (12 fixed in 5fce77b or at hygiene, 4 to row "Canvas wait follow-ups", 12 rejected); no returns.
+- 2026-10-19: step-7 approval: m017-check-timing approved for merge
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local. -->
