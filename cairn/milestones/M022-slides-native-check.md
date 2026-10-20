@@ -29,8 +29,8 @@ A check shows that each native embed on the self-contained RevealJS slides shows
 - [ ] AC3: With `--plant noslide --plant-at 3` added to the chromium `--alone file` run of AC2, the run exits 1, and its failure names native embed 3 as not on the current slide (`Reveal.getCurrentSlide()`) at its screenshot.
 - [ ] AC4: Each of the plants `otherpdf`, `broken`, `nopage`, `object`, `border`, and `fallback`, added to the chromium `--alone file` run of AC2, makes the run exit 1 with a failure that names the planted embed. Each of `otherpdf`, `broken`, `nopage`, and `object`, added to the safari `--alone file` run of AC2, makes the run exit 1 with a mismatch failure for that embed.
 - [ ] AC5: The nine `native_check.mjs` lines already in CLAUDE.md (on `page_test.html` and `selfcontained_test.html`) exit 0.
-- [ ] AC6: `cairn/DESIGN.md` Known issues has a dated entry on the file name that headless Chromium's native PDF viewer gives a saved copy of a native embed on `selfcontained_test.html` opened alone. The entry gives either the name or the fact that it is still unknown.
-- [ ] AC7: Every line that `grep -n -i "revealjs\|slide" CLAUDE.md README.md cairn/DESIGN.md` prints and that this milestone adds or changes is true of the repo at the milestone's head. No line that this grep prints says that no browser checks native embeds on self-contained RevealJS slides, and CLAUDE.md lists the six AC2 lines.
+- [x] AC6: `cairn/DESIGN.md` Known issues has a dated entry on the file name that headless Chromium's native PDF viewer gives a saved copy of a native embed on `selfcontained_test.html` opened alone. The entry gives either the name or the fact that it is still unknown.
+- [x] AC7: Every line that `grep -n -i "revealjs\|slide" CLAUDE.md README.md cairn/DESIGN.md` prints and that this milestone adds or changes is true of the repo at the milestone's head. No line that this grep prints says that no browser checks native embeds on self-contained RevealJS slides, and CLAUDE.md lists the six AC2 lines.
 - [ ] AC8: The viewer is 1.2.8 (`version:` in `_extensions/embedpdf/_extension.yml` and the `add_html_dependency` version in `_extensions/embedpdf/embedpdf.lua`). Each `node tests/render_check.mjs`, `ios_check.mjs`, `name_rule_test.mjs`, `safari_check.mjs`, `native_check.mjs`, and `frame_rule_check.mjs` line in a fenced block of CLAUDE.md "Verify before finishing" at commit 6a70301, with AC1's count changes, exits 0, and so do the six AC2 lines. `pandoc lua tests/test_shortcode.lua` prints `0 failed`.
 
 ## Coverage
@@ -92,3 +92,7 @@ A check shows that each native embed on the self-contained RevealJS slides shows
 ## Decisions
 
 ## Review
+
+- Review pass 1, 2026-10-20, branch at 86dc974 (main 180552b, not moved).
+- AC6: `cairn/DESIGN.md:209-214` Known issues entry, observed 2026-10-20, gives the name headless Chromium 155 gave the saved copy (`03acb7cf-e9fe-49b4-b425-fa1a410248fe.pdf`) for the first native embed of `selfcontained_test.html` opened alone. Pass.
+- AC7: `grep -n -i "revealjs\|slide" CLAUDE.md README.md cairn/DESIGN.md` prints 51 lines; the lines this milestone added or changed (`git diff main...HEAD`) were read against the repo (claim audit plus this read); the only grep hits for "any browser / not checked this way / no browser / were not checked" are README.md:86's "Firefox and Safari were not checked" about the save button, not slides; CLAUDE.md holds the six AC2 lines (exact-line `grep -c` = 6). Pass.
