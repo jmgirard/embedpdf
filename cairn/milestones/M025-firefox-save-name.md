@@ -152,6 +152,7 @@ Firefox's viewer" row's detail stays the record of the tried forms.
 - 2026-10-20: implement complete; status review.
 - 2026-10-20: review started: no PR, main not moved; all 138 check lines re-running for fresh AC3 evidence; four lenses spawned; fix-now edits from their findings checkpointed here before the Review section is written (half-done: evidence and dispositions not yet recorded).
 - 2026-10-20: the user asked the run to stop using Safari (two Safari windows of theirs were open); no Safari check runs again in this milestone.
+- 2026-10-20: step-7 approval: m025-firefox-save-name approved for merge
 - 2026-10-20: review return 1: AC4 fails as written — CLAUDE.md's save-name paragraph does not state the hand-save name and date, and its "Still unverified" item does not state the name Firefox's viewer reports; both passages must state both names with the date.
 - 2026-10-20: minor amendment: T6 added for review return 1 (Coverage AC4 → T5, T6).
 - 2026-10-20: T6 done: CLAUDE.md's save-name paragraph now states the reported `sample.pdf` (four Firefox lines) and the hand-save `sample.pdf` with 2026-10-20; the "Still unverified" item now states the reported name `sample.pdf` with the date beside the hand saves. Docs only, no check affected; status review.
