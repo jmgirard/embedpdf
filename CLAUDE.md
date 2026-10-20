@@ -199,14 +199,20 @@ in these cases:
 - An `<iframe>` has a border or a box other than its width and height.
 - Other content of the placeholder shows.
 
-With `--alone`, the check opens `selfcontained_test.html` alone, and each
+With `--alone`, the check opens the self-contained page alone, and each
 address must be a `blob:` URL. Without it, the check serves the page from
 `docs/`, and each address must be the embed's `data-src`. On
 `page_test.html` the first two embeds have `page=2`. On
-`selfcontained_test.html` the fourth embed does. Chromium and Firefox run
+`selfcontained_test.html` the fourth embed does. On
+`selfcontained_slides_test.html` the third native embed does, on the last
+slide. On a RevealJS deck the check sets Reveal's scale to 1. It shows each
+embed's slide before it reads and screenshots that embed, and it fails an
+embed that is not on the current slide. Chromium and Firefox run
 headless. The header states the plants. `otherpdf`, `broken`, `blank`,
 `fileaddr`, `nopage`, `object`, `border`, and `fallback` go into the embed
-that `--plant-at <k>` names. `refcontrol` changes the references. Firefox started from Claude Code fails with "Could
+that `--plant-at <k>` names. `refcontrol` changes the references. On a
+deck, `noslide` shows another slide in place of the slide of the embed
+that `--plant-at <k>` names. Firefox started from Claude Code fails with "Could
 not find profile folder" until its folder exists. On 2026-10-19 one launch
 through macOS `open` made it (the command is in the script's header). If
 Firefox is not in `/Applications`, set `FIREFOX_PATH`:
@@ -221,6 +227,12 @@ node tests/native_check.mjs --browser firefox --page selfcontained_test.html --a
 node tests/native_check.mjs --browser firefox --page selfcontained_test.html --alone http --expect-native 3 --reference sample.pdf
 node tests/native_check.mjs --browser safari --page selfcontained_test.html --alone file --expect-native 3 --reference sample.pdf
 node tests/native_check.mjs --browser safari --page selfcontained_test.html --alone http --expect-native 3 --reference sample.pdf
+node tests/native_check.mjs --browser chromium --page selfcontained_slides_test.html --alone file --expect-native 3 --reference sample.pdf
+node tests/native_check.mjs --browser chromium --page selfcontained_slides_test.html --alone http --expect-native 3 --reference sample.pdf
+node tests/native_check.mjs --browser firefox --page selfcontained_slides_test.html --alone file --expect-native 3 --reference sample.pdf
+node tests/native_check.mjs --browser firefox --page selfcontained_slides_test.html --alone http --expect-native 3 --reference sample.pdf
+node tests/native_check.mjs --browser safari --page selfcontained_slides_test.html --alone file --expect-native 3 --reference sample.pdf
+node tests/native_check.mjs --browser safari --page selfcontained_slides_test.html --alone http --expect-native 3 --reference sample.pdf
 ```
 
 The other checks on `page_test.html`: on desktop its three embeds are
@@ -473,8 +485,13 @@ errors.
 ## Still unverified
 - A native embed of a self-contained page in Chromium or Firefox with a
   window. `native_check.mjs` runs them headless. Also such an embed on
-  self-contained RevealJS slides, in any browser. Also the file
-  name that a native viewer's save button gives the copy of the PDF.
+  self-contained RevealJS slides in Chromium or Firefox with a window. Also
+  a route to a slide other than showing the slides in order. One Chromium
+  probe of a jump from slide 0 opened its `<iframe>` at page 2. Also a tab or
+  other part of a page hidden at load. Also the file name that a native
+  viewer's save button gives the copy of the PDF in Firefox and Safari. In
+  headless Chromium 155 one probe got the `blob:` URL's id, not
+  `sample.pdf` (DESIGN Known issues), and no check reads it.
 - A native `<iframe>` embed (`page` over 1) in Chromium or Firefox with a
   window. Also such an embed of a PDF whose own site forbids framing, and a
   real screen reader reading its name.
@@ -491,8 +508,9 @@ errors.
   environment; can only be checked by a human on a phone).
 - A real iPhone or iPad loading the GitHub Pages site, and any iOS version
   before 27. `tests/ios_check.mjs` covers only iOS 27.0 and 27.1 simulators.
-- Any RevealJS slide deck in desktop Safari. `tests/safari_check.mjs` exits 2
-  on a slide deck.
+- A RevealJS slide deck in desktop Safari, except the native embeds of
+  `selfcontained_slides_test.html`, which `native_check.mjs` checks.
+  `tests/safari_check.mjs` exits 2 on a slide deck.
 - A PDF from another site on a real phone, with or without
   `Access-Control-Allow-Origin`. Safari is checked in the iOS 27.0
   simulators, with no header and with `*`, and in desktop Safari 27.0.1 with

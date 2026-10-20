@@ -173,8 +173,9 @@ load on the same queue, and a text task runs only when no page render waits
   and the `button` link point at the separate PDF file, which is not shipped
   (corrected M002; self-contained embeds render since v1.1.0; split 2026-10-18).
 - Self-contained RevealJS slides are checked in Chromium and in Safari in the
-  iOS 27.0 iPhone and iPad simulators, not on a real phone or in desktop
-  Safari (corrected M016) — observed 2026-10-19.
+  iOS 27.0 iPhone and iPad simulators, not on a real phone. In desktop
+  Safari only their native embeds are checked, by `tests/native_check.mjs`
+  (corrected M016; corrected M022) — observed 2026-10-20.
 - Desktop Safari 27.0.1 opens a native `<object>` at page 1 whatever its
   `#page` says. So in a desktop browser with a built-in PDF viewer, a native
   embed with a `page` over 1 is an `<iframe>` in the cases `frameAllowed()`
@@ -192,10 +193,25 @@ load on the same queue, and a text task runs only when no page render waits
   Chromium 155 and Firefox 158 (headless) and desktop Safari 27.0.1
   (`tests/native_check.mjs`; corrected M021) — observed 2026-10-20. A server
   that answers a HEAD request as inline `application/pdf` and a GET as an
-  attachment still gets an `<iframe>`, which then downloads the PDF. Not
-  checked: native embeds on self-contained RevealJS slides in any browser,
-  and the file name that a native viewer's save button gives the in-page
-  copy (added M020) — observed 2026-10-19.
+  attachment still gets an `<iframe>`, which then downloads the PDF.
+  An `<iframe>` that loaded its PDF while it had no box opened at page 1 in
+  Chromium 155 and showed the pages shrunk in desktop Safari 27.0.1 once
+  shown (v1.2.7, on a slide that RevealJS did not display at load). Since
+  v1.2.8 the viewer gives such an `<iframe>` its address once it has a box.
+  On `selfcontained_slides_test.html` its slide-4 `<iframe>` then opened at
+  page 2 in Chromium 155 and Firefox 158 (headless) and desktop Safari
+  27.0.1, when `tests/native_check.mjs` showed the slides in order (M022) —
+  observed 2026-10-20. A direct jump to that slide from slide 0 opened it at
+  page 2 in one Chromium 155 probe. Not checked: that jump in other
+  browsers, a slide hidden at load within RevealJS's view distance, a tab or
+  other part of a page hidden at load, and slides of a deck that is not
+  self-contained.
+- A native viewer's save control names the in-page copy of an inlined PDF by
+  its `blob:` address, not by the PDF's file name. In headless Chromium 155,
+  saving the first native embed of `selfcontained_test.html` opened alone
+  gave `03acb7cf-e9fe-49b4-b425-fa1a410248fe.pdf`, the random id of that
+  embed's `blob:` URL, where the file is `sample.pdf` (M022 probe) — observed
+  2026-10-20. Not checked in Firefox or desktop Safari.
 - The PDF.js viewer has no text selection or search (out of scope, see the
   contract boundary).
 - A PDF.js embed's hidden page text is checked in Chromium's accessibility
