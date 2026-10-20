@@ -16,14 +16,16 @@ Key files:
   example used by `example.qmd`.
 - `name_test.qmd`, `name_edge_test.qmd`, `percent_test.qmd`, `percent_page_test.qmd`,
   `selfcontained_test.qmd`, `selfcontained_slides_test.qmd`,
-  `selfcontained_failed_test.qmd`, `large_test.qmd`, and `shared_test.qmd` are test pages, also
+  `selfcontained_failed_test.qmd`, `large_test.qmd`, `shared_test.qmd`, and `page_test.qmd` are test pages, also
   rendered into `docs/`. `files/` holds `sample.pdf` again under each name
   they test, and `inlined-sample.md`, the hand-written embed that
   `name_edge_test.qmd` includes. It also holds `broken.pdf` and
   `undecodable-embeds.md` for `selfcontained_failed_test.qmd`, and
   `large.pdf` and `large-2.pdf` for `large_test.qmd`, and `large-source.md`,
   the source of `large.pdf`. `shared_test.qmd` shows `large.pdf` too. `100%.pdf` is for `percent_test.qmd` and `percent_page_test.qmd`, and
-  `50%off.pdf` is for `percent_page_test.qmd`.
+  `50%off.pdf` is for `percent_page_test.qmd`. `page_test.qmd` shows
+  `sample.pdf` with `page=2` (auto and `renderer=native`) and with
+  `renderer=native` alone.
 
 ## Verify before finishing — you are the test runner (no CI)
 

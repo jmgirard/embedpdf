@@ -85,7 +85,7 @@ placeholder, hidden. Every other native embed stays an `<object>`. Version 1.2.7
       the self-contained download links stay in the page. Give the `<iframe>` no border in `embedpdf.css`.
       Update the comments at :3–7, :38, and :153. Bump `version:` to 1.2.7 in `_extension.yml` and in
       `add_html_dependency` in `embedpdf.lua`.
-- [ ] T2: Add `page_test.qmd` (not self-contained): `sample.pdf` with `page=2` (auto), with `renderer=native
+- [x] T2: Add `page_test.qmd` (not self-contained): `sample.pdf` with `page=2` (auto), with `renderer=native
       page=2`, and with `renderer=native`, each 600 x 400. Run `quarto render`. Name the page in CLAUDE.md's
       file list.
 - [ ] T3: `tests/native_check.mjs`: take `<iframe>` native embeds; for an `<iframe>` embed, both references
@@ -126,6 +126,7 @@ placeholder, hidden. Every other native embed stays an `<object>`. Version 1.2.7
 - 2026-10-20: new candidate row "Check embeds open at their page option" holds the PDF.js, iOS `renderer=native`, and framing-refused checks left out of this scope.
 - 2026-10-20: implement started on branch m021-native-page-iframe; status in-progress.
 - 2026-10-20: T1 done: `hydrateNative()` makes an `<iframe>` (`src`, width, height, `aria-label`) when `page` > 1 and `nativeSupported()`; fallback children go to a hidden `div.embedpdf-fallback` after it; `embedpdf.css` gives `.embedpdf-native > iframe` border 0; version 1.2.7; shortcode tests 162 passed, 0 failed. Browser checks run at T7.
+- 2026-10-20: T2 done: `page_test.qmd` added and named in CLAUDE.md's file list; `quarto render` completed with no error, docs/ libraries now at 1.2.7.
 
 ## Decisions
 
