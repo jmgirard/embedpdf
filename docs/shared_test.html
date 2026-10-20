@@ -70,7 +70,7 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p>Both embeds show <code>files/large.pdf</code>, the PDF of 14 pages and over 128 KB that <code>large_test.qmd</code> also shows. The native embed comes first and the PDF.js embed second. The checks in <code>tests/</code> serve this PDF from another site (<code>--remote cors</code>), to check that the PDF.js embed loads it by byte ranges while the native embed on the same page shows the same PDF.</p>
+<p>Both embeds show <code>files/large.pdf</code>, the PDF of 14 pages and over 128 KB that <code>large_test.qmd</code> also shows. Each of its pages has a heading that no other page holds. The native embed comes first and the PDF.js embed second. The checks in <code>tests/</code> serve this PDF from another site (<code>--remote cors</code>), to check that the PDF.js embed loads it by byte ranges while the native embed on the same page shows the same PDF.</p>
 <section id="native" class="level2">
 <h2 class="anchored" data-anchor-id="native">Native</h2>
 <div class="embedpdf" data-src="files/large.pdf" data-renderer="native"><a href="files/large.pdf" download="">Download PDF file.</a></div>
