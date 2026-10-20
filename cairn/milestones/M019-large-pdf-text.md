@@ -2,14 +2,14 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M019: Large PDF text check
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1
 - **Resolves:** —
 - **Surface tier:** internal — a test PDF and check lines; no extension user relies on them
-- **Branch/PR:** —
+- **Branch/PR:** m019-large-pdf-text
 
 ## Goal
 
@@ -60,7 +60,7 @@ text. Desktop Safari byte ranges and real-phone checks stay in CLAUDE.md
 
 ## Tasks
 
-- [ ] T1: Write the source of a 14-page PDF with one phrase per page (words,
+- [x] T1: Write the source of a 14-page PDF with one phrase per page (words,
       not page numbers, so no phrase holds another: "Page 1" is inside
       "Page 10"). Build it with tools already on the machine (Quarto's LaTeX,
       `pdfunite`). If one render is not over 131,072 bytes, build the pages
@@ -89,6 +89,9 @@ text. Desktop Safari byte ranges and real-phone checks stay in CLAUDE.md
 - 2026-10-19: plan gate chose keeping 14 pages over another count because every `--expect-pages 14` line then stays as it is; falsified by a page count that cannot reach 131,072 bytes.
 - 2026-10-19: criteria audit (reduced mode, fresh Opus reader): 3 findings, all fixed. AC2 claimed the committed PDF came from the source, which nothing checks: narrowed to a fresh build passing AC1. AC3 cut the throttle line out of one grep for one claim and not the other: split into AC3 (filtered grep) and AC4 (unfiltered), and the run environments moved out of the promise. AC5's grep missed "copies of `sample.pdf`": pattern added (not `pdfunite`, which the new build may use).
 - 2026-10-19: no changelog entry: no extension change.
+- 2026-10-19: implement: branch m019-large-pdf-text cut from main at 82f5284; status in-progress.
+- 2026-10-19: T1 done: `files/large-source.md` (14 parts split at `\newpage`, a heading phrase each) and `tests/make_large_pdf.sh <out.pdf>` (renders each part with `quarto pandoc` and LuaLaTeX, joins with `pdfunite`, fails unless 14 pages and over 131,072 bytes). One whole render was 25,999 bytes and an uncompressed one 61,357, so the parts are rendered apart. New `large.pdf` 142,962 bytes, `large-2.pdf` a `cmp`-equal copy; 196-check phrase loop clean on it and on a fresh build (142,964 bytes; not byte-identical, so no `cmp` against the build), and it named missing phrases on the old `large.pdf`.
+- 2026-10-19: the `quarto render <file>.md --output-dir` route failed ("only be used when rendering projects"), so the script calls `quarto pandoc`.
 
 ## Decisions
 
