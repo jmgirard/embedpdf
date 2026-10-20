@@ -1,16 +1,15 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-19 (M017 done: graduated "Ink check follow-ups", added "Canvas wait follow-ups", re-pointed "Text check follow-ups", pruned the M014 row; validate green)_
+_Last hygiene check: 2026-10-19 (M018 done: graduated "iOS slide deck gaps", added "iOS link check gaps", pruned the M015 row; validate green)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M018 | iOS deck and link checks | review | — | normal | milestones/M018-ios-deck-and-links.md |
+| M018 | iOS deck and link checks | done | — | normal | milestones/archive/M018-ios-deck-and-links.md |
 | M017 | Check timing and ink report | done | — | normal | milestones/archive/M017-check-timing.md |
 | M016 | Slides check on iOS | done | — | normal | milestones/archive/M016-ios-slide-check.md |
-| M015 | Percent sign in PDF paths | done | — | normal | milestones/archive/M015-percent-sign-paths.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
@@ -22,7 +21,6 @@ _Last hygiene check: 2026-10-19 (M017 done: graduated "Ink check follow-ups", ad
      open each row with its short title, the words the cairn pane shows, then `: `;
      tracking-rules "Candidate short title" has the whole rule -->
 - Self-contained native checks: in a self-contained page the native `<object>` gets a `blob:` PDF, but only its bytes are checked (fetch in Chromium). Its display in desktop Safari and Firefox, `#page=` on a `blob:` URL, and the file name that the native viewer's own save button uses are not checked (M002 review) — added 2026-10-18
-- iOS slide deck gaps: `revealjs_test.html` has no ios_check line, because its PDF.js embeds have 1 and 2 pages on iOS and ios_check takes one `--expect-pages` for all embeds; ios_check also has no `--expect-links`, so the download links of self-contained pages are counted only in Chromium (M016 plan) — added 2026-10-19 — started M018
 - GitHub releases for v1.0.x: publish GitHub releases for tags v1.0.0 to v1.0.2 so the README version badge is current — added 2026-10-18 — DESIGN Known issues
 - Safari names on iOS: on iPhone and iPad, Safari's names are not checked: ios_check reads only the page DOM (embed name, hidden text, indicator text), and not the toolbar controls. On 2026-10-19 `tests/safari_check.mjs --target simulator` got "Could not find any session hosts that match the requested capabilities" from safaridriver on the iOS 27.0 simulators, whose Safari "Remote Automation" setting was not turned on, and `--target page-script` found no `Element.prototype.computedName`. Turning that setting on is the next try (M010 implement) — added 2026-10-19
 - Large PDF text check: `files/large.pdf` repeats the text of `sample.pdf` on its 14 pages, and `--expect-text` needs a phrase that is on one page only, so no check reads the hidden text of a PDF that PDF.js loaded by byte ranges. A large PDF with different text on each page would cover it (M013 implement) — added 2026-10-19
