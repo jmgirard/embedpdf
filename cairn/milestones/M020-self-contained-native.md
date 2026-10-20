@@ -4,14 +4,14 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M020: Self-contained native display check
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1
 - **Resolves:** —
 - **Surface tier:** user-facing — README and DESIGN claims about what readers of a self-contained page see change
-- **Branch/PR:** —
+- **Branch/PR:** m020-self-contained-native
 
 ## Goal
 
@@ -82,7 +82,7 @@ true or stale.
 
 ## Tasks
 
-- [ ] T1: Add `{{< pdf sample.pdf renderer=native page=2 >}}` under its own
+- [x] T1: Add `{{< pdf sample.pdf renderer=native page=2 >}}` under its own
       heading at the end of `selfcontained_test.qmd`, run `quarto render`, and
       update the native, name, and link counts of every
       `selfcontained_test.html` line in CLAUDE.md. Run each of those lines,
@@ -138,3 +138,5 @@ true or stale.
 - 2026-10-19: plan gate chose a screenshot comparison with an `<object>` of the PDF file at the same page and size over an ink-only test, because ink alone passes a viewer error page or the wrong page; falsified by a browser whose `blob:` and file-address viewers differ in chrome (toolbar, title) beyond a usable tolerance.
 - 2026-10-19: plan gate chose a new `tests/native_check.mjs` over extending `render_check.mjs` and `safari_check.mjs`, because render_check's accessibility, download, and CPU-throttle steps use Chromium's CDP, which Firefox does not offer, and one script covers the three browsers' screenshots alike; falsified by most of native_check's code duplicating render_check's.
 - 2026-10-19: criteria audit (full mode, fresh Opus reader) returned 8 findings, all fixed: AC1 now bounds its match by the header's tolerance, names the reference as `docs/sample.pdf` on the check's HTTP server, drops the check-behavior sentence, and names `--same-pages` on the Safari lines; T3's `otherpdf` uses the inked `files/large.pdf` and must fail as a mismatch, a `broken` plant covers a viewer error page, and `--plant-at` reaches every native embed; AC2's Safari clause states what the page shows, not how the check exits; AC3 names the device variants and the new counts; AC4 narrows to a self-contained HTML page with `sample.pdf`, says headless, and keeps the save-button name unchecked.
+- 2026-10-19: T1: added the `renderer=native page=2` embed to `selfcontained_test.qmd`, rendered; CLAUDE.md self-contained lines now expect 3 native/1 PDF.js (desktop), 2 native/2 PDF.js (iphone, iOS), and 5 links (the new embed's fallback link). All 10 render_check runs (file and http × desktop, mac-safari, windows-touch, iphone, ipad) and both ios_check runs exit 0.
+- 2026-10-19: the simple-english lint hook flags 38 hits across all of CLAUDE.md; this milestone's CLAUDE.md edits change command lines and add one paragraph, so the older prose is left as written.
