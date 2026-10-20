@@ -7,7 +7,8 @@
 //        --expect-native <n> --expect-save "<entry>|<entry>|…"
 //        [--plant wrongid|wrongname|otherbytes|nosave] [--plant-at <k>]
 //
-// For each native embed of the page (an <object>, or for some embeds with a
+// In Chromium and Safari (Firefox: see --browser firefox below):
+// for each native embed of the page (an <object>, or for some embeds with a
 // page option over 1 an <iframe>; frameAllowed in embedpdf-viewer.js,
 // D-008), in page order, the check loads
 // the page again, presses the save control of that embed's own PDF viewer,

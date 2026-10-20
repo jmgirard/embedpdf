@@ -254,7 +254,7 @@ a few minutes between Safari runs. Safari stopped saving for a few minutes
 after a burst of saves. A locked screen exits 2. Firefox's
 viewer saved no file under automation. So in Firefox the check saves no
 file and reads the name the viewer reports (`_docFilename` in the viewer's
-frame), which takes file names only, not `@blob`. Since 1.2.9 an inlined
+frame). In Firefox, `--expect-save` takes file names only, not `@blob`. Since 1.2.9 an inlined
 PDF is a `File` named by its download name, and Firefox's viewer reports
 that name. On a RevealJS deck the check shows each embed's slide. The
 header states the plants:

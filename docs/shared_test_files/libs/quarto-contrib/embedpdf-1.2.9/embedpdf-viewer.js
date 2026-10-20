@@ -45,7 +45,7 @@ function loadPdfjs() {
 // named by the embed's download name, which Firefox 158's own PDF viewer
 // takes as the name to save it under (it took "document.pdf" for a plain
 // Blob); Chromium 155 and desktop Safari 27.0.1 save it under the same name
-// either way (2026-10-20). A File of a Blob refers to its bytes, no copy.
+// either way (2026-10-20).
 async function inlinedPdf(src, filename) {
   const blob = await (await fetch(src)).blob();
   const pdf =
