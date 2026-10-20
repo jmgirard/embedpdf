@@ -1,16 +1,15 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-20 (M024 done: deleted "Check Safari names in iOS simulators"; narrowed "Close the name and indicator check gaps"; added "Harden the Web Inspector check client" at review; M021 row pruned; one lesson added; validate green)_
+_Last hygiene check: 2026-10-20 (M025 done: deleted "Name inlined PDFs in Firefox's viewer"; added "Close the Firefox save check gaps" at review; M022 row pruned; one lesson added; validate green)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M025 | Firefox saves inlined PDFs under their file name | review | — | normal | milestones/M025-firefox-save-name.md |
+| M025 | Firefox saves inlined PDFs under their file name | done | — | normal | milestones/archive/M025-firefox-save-name.md |
 | M024 | Safari names in the iOS simulators | done | — | normal | milestones/archive/M024-ios-safari-names.md |
 | M023 | Save name of inlined PDFs in native viewers | done | — | normal | milestones/archive/M023-native-save-name.md |
-| M022 | Native embeds on self-contained slides checked | done | — | normal | milestones/archive/M022-slides-native-check.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
@@ -22,7 +21,6 @@ _Last hygiene check: 2026-10-20 (M024 done: deleted "Check Safari names in iOS s
      open each row with its short title, the words the cairn pane shows, then `: `;
      tracking-rules "Candidate short title" has the whole rule -->
 - Publish GitHub releases for 1.0 tags: GitHub releases for v1.0.x: publish GitHub releases for tags v1.0.0 to v1.0.2. The README version badge shows the latest release, 0.5.0, while the extension is at 1.2.9, and v1.1.0 to v1.2.9 have no tags, so these releases alone do not make the badge current (corrected M021; corrected M022; corrected M025) — added 2026-10-18 — DESIGN Known issues
-- Name inlined PDFs in Firefox's viewer: Firefox 158's native viewer reports `document.pdf` for an inlined PDF's `blob:` address, and `sample.pdf` for a `blob:` of a `File` named `sample.pdf` or for a `#filename=sample.pdf` fragment, but its save control saved no file under puppeteer-core, so no saved name was seen (M023 T1). A `File` changed no saved name in Chromium 155 or desktop Safari 27.0.1. A saved file read from Firefox's viewer, by a route that works under automation or by hand, is what planning it needs (M023 implement) — added 2026-10-20 — started M025
 - [low] Check embeds open at their page option: a PDF.js embed scrolls to its `page` (`hydratePdfjs` in `embedpdf-viewer.js`; corrected M022), but no check reads which page it shows first; on iPhone and iPad a `renderer=native` embed stays an `<object>`, and whether iOS Safari opens it at its `page` is not checked; a native embed with a `page` over 1 can become an `<iframe>` (D-008), and a PDF whose own site forbids framing (`X-Frame-Options`, `frame-ancestors`) is not checked in that form (M021 plan); the viewer appends `#page=N` to an address that may already hold a fragment; while the HEAD request waits (up to 5 s, which also counts time waiting for a connection) the no-JS download link shows, and then the embed replaces it; a page whose CSP allows `object-src` but limits `frame-src` gets a blank `<iframe>`; an Android browser that reports a built-in PDF viewer would get the `<iframe>` too, not checked (M021 review; narrowed 2026-10-20 by M022) — added 2026-10-20
 - [low] Check native frames hidden at page load: see "Check embeds open at their page option". Since v1.2.8 a native `<iframe>` gets its PDF once it has a box, and only the self-contained slide deck walked by `native_check.mjs` at Reveal scale 1 is checked. Not checked: a frame that has a box while hidden (`visibility:hidden` or opacity 0, as on a Reveal future slide, or a closed `<details>` in Chromium), which loads at hydration; a framed embed hidden at load on a normal page (a tab) or on a deck that is not self-contained; a direct jump to such a slide outside one Chromium probe; other Reveal scales. A ResizeObserver of a hidden frame removed before it gets a box stays alive, with no effect found (M022 review) — added 2026-10-20
 - [low] Find first-paint cases that never render: First-paint robustness: find load cases where an on-screen page still does not render after the v1.0.1 and v1.0.2 fixes. Since M001, `auto` puts iPhone and iPad on this timer path, and `ios_check.mjs` scrolls before it measures, so a no-scroll first paint on iOS is untested (M001 review) — added 2026-10-18 — DESIGN Known issues
