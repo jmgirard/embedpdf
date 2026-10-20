@@ -257,7 +257,7 @@ file and reads the name the viewer reports (`_docFilename` in the viewer's
 frame). In Firefox, `--expect-save` takes file names only, not `@blob`. Since 1.2.9 an inlined
 PDF is a `File` named by its download name. On 2026-10-20 Firefox 158's
 viewer reported `sample.pdf` for each native embed on the four Firefox
-lines below. A save by hand in a Firefox 158 window gave `sample.pdf` for
+lines below (headless). A save by hand in a Firefox 158 window gave `sample.pdf` for
 each native embed of `selfcontained_test.html`, as a local file and over
 HTTP. On a RevealJS deck the check shows each embed's slide. The
 header states the plants:

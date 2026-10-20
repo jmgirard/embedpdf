@@ -70,7 +70,7 @@ Firefox's viewer" row's detail stays the record of the tried forms.
       the four `save_name_check.mjs` lines for Chromium (`@blob`) and desktop
       Safari (`Unknown.pdf`). `pandoc lua tests/test_shortcode.lua` prints
       "N passed, 0 failed".
-- [ ] AC4: Four passages state the name that Firefox's viewer reports (AC1)
+- [x] AC4: Four passages state the name that Firefox's viewer reports (AC1)
       and the name of the hand saves (AC2), with the date: the self-contained
       bullet of README.md, the save-name entry of the Known issues in
       cairn/DESIGN.md, and the save-name paragraph and the "Still unverified"
@@ -190,3 +190,10 @@ Firefox's viewer" row's detail stays the record of the tried forms.
 - ripple #4: row "Publish GitHub releases for 1.0 tags" says 1.2.8 — fix now, fixed 74ff6a6.
 - ripple #5: DESIGN's releases entry says 1.2.8 — fix now, fixed 74ff6a6.
 - ripple #6: the check header's "An entry is a file name, or @blob" lacks the Firefox limit — fix now, fixed 74ff6a6.
+- pass 2 (after review return 1): main not moved; since pass 1 only CLAUDE.md prose and tracking files changed (`git diff --stat 74ff6a6 HEAD -- tests _extensions docs README.md` empty before this pass's fixes, and the extracted check-line list is identical), so the AC1 to AC3 evidence above stands.
+- AC4: 2026-10-20 pass 2, read on the branch: README's self-contained bullet states the hand-save `sample.pdf` (2026-10-20) and the headless reported `sample.pdf` (2026-10-20, dated in this pass); DESIGN's save-name entry states both, "observed 2026-10-20"; CLAUDE.md's save-name paragraph states the reported `sample.pdf` (four Firefox lines, headless) and the hand-save `sample.pdf`, 2026-10-20; its "Still unverified" item states the reported `sample.pdf` and the hand saves, both 2026-10-20, and keeps "a save from Firefox's native viewer by a check" as not checked.
+- spawned (pass 2, on the delta be6658a..HEAD): diff-bug, ripple. History lenses not respawned: the delta is docs prose only and pass 1 ran them on the whole diff.
+- diff-bug #1 (pass 2): README's headless-check sentence has no date of its own — fix now (dated), fixed in this pass's commit.
+- diff-bug #2 (pass 2): CLAUDE.md's reported-name sentence omits that the run was headless — fix now, fixed in this pass's commit.
+- diff-bug #3 (pass 2): two adjacent sentences in the "Still unverified" item each carry the date — reject, style.
+- ripple #1 (pass 2): row "Name inlined PDFs in Firefox's viewer" still says Firefox reports `document.pdf` — reject, planned change: post-merge hygiene deletes the row.
