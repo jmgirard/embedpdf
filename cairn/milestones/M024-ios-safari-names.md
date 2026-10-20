@@ -2,14 +2,14 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M024: Safari names in the iOS simulators
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1
 - **Resolves:** —
 - **Surface tier:** user-facing — README's statement of what was checked in iOS Safari changes
-- **Branch/PR:** —
+- **Branch/PR:** m024-ios-safari-names
 
 ## Goal
 
@@ -56,7 +56,7 @@ scroll.
 
 ## Tasks
 
-- [ ] T1: Write `tests/webinspector.mjs`: a binary plist encoder and decoder, the socket lookup by `simctl getenv`, the page lookup by URL, and Web Inspector commands sent through `Target.sendMessageToTarget`. Add `tests/helpers_test.mjs` cases for the plist codec, one of them decoding a file that `plutil -convert binary1` wrote. Add the file to CLAUDE.md's list of check helpers. The 2026-10-20 probe (work log) is the starting point.
+- [x] T1: Write `tests/webinspector.mjs`: a binary plist encoder and decoder, the socket lookup by `simctl getenv`, the page lookup by URL, and Web Inspector commands sent through `Target.sendMessageToTarget`. Add `tests/helpers_test.mjs` cases for the plist codec, one of them decoding a file that `plutil -convert binary1` wrote. Add the file to CLAUDE.md's list of check helpers. The 2026-10-20 probe (work log) is the starting point.
 - [ ] T2: Switch `safari_check.mjs --target simulator` to it: open the page with `xcrun simctl openurl`, and run scripts, find elements, and read names and attributes through Web Inspector. `--target mac` stays on safaridriver. Run the AC1 lines on both simulators, and the CLAUDE.md `--target mac` lines. If Safari on iOS gives a name the viewer gets wrong, stop: it is a viewer defect.
 - [ ] T3: Show that the simulator runs can fail: on the iPhone simulator, `--plant rawindicator`, `nonumber`, `nativename`, and `nativetitle` each make the `example.html` line exit 1 with a failure line naming the planted defect. A `--device` that names a shut-down simulator exits 2 with a line naming that cause.
 - [ ] T4: Docs. In CLAUDE.md, add the four AC1 run lines to the verify block, and update the `safari_check.mjs` paragraph, the screen-reader entries of "Still unverified" (the toolbar-control and computed-name entries), and the helper list. Update README.md line 91 and the header of `tests/safari_check.mjs`. Correct the M010 lesson in `cairn/LESSONS.md` in place (safaridriver still finds no simulator session host; Web Inspector reads the names). Run the AC2 `grep`.
@@ -88,3 +88,5 @@ scroll.
 - 2026-10-20: collision check: unchanged from the first plan (rows "Check Safari names in iOS simulators" in full and "Close the name and indicator check gaps" in part; D-006); no D-entry covers Web Inspector.
 - 2026-10-20: criteria audit (full mode, Opus reader): 4 findings, all fixed. AC1 native clause gains "and no `title`" (the `nativetitle` plant tests it); AC2 grep pattern for the CLAUDE.md probe sentence fixed to match its first line; `only the page.s attributes and text were checked` and `session hosts` added for README's stale sentences; T4 names the CLAUDE.md screen-reader entries. Each grep pattern matched current text before the work.
 - 2026-10-20: agent decisions: a new helper file `tests/webinspector.mjs` rather than code inside safari_check, so helpers_test can test the plist codec; no version bump (no viewer change); changelog none.
+- 2026-10-20: implement started on branch m024-ios-safari-names, cut from main at ee5e5db.
+- 2026-10-20: T1: `tests/webinspector.mjs` written (plist codec, framing, `simulatorSocket`, `openSafariPage` with run/find/label/attribute). helpers_test 169 passed, 0 failed; with the UTF-16 byte swap removed from the decoder it gave 2 failures (plutil fixture, round trip). `plutil -p` read the encoder's output. A smoke run on page_test.html in the iPhone simulator read "PDF: sample.pdf (1 of 3)", the three toolbar names, and the two native names. Helper added to CLAUDE.md's helper list and PROFILE.md's verify slot. The simple-english hook flags 40 older hits in CLAUDE.md and 18 in PROFILE.md outside the edited lines; left as they are.

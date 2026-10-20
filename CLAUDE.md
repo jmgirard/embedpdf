@@ -452,8 +452,8 @@ xcrun simctl create "embedpdf iPad" "iPad Air 11-inch (M4)" com.apple.CoreSimula
 ```
 
 **After any change to a check helper** (`tests/ink.mjs`,
-`tests/serve_docs.mjs`, `tests/expect_names.mjs`, or `tests/png_diff.mjs`),
-run the helper tests (Node only, no browser). Then run the browser checks
+`tests/serve_docs.mjs`, `tests/expect_names.mjs`, `tests/png_diff.mjs`, or
+`tests/webinspector.mjs`), run the helper tests (Node only, no browser). Then run the browser checks
 above:
 
 ```
