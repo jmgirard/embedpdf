@@ -241,8 +241,8 @@ node tests/native_check.mjs --browser safari --page selfcontained_slides_test.ht
 ```
 
 The name under which a native viewer's own save control saves the PDF:
-`save_name_check.mjs` presses that control for each native embed and reads
-the saved file's name and bytes. The bytes must be the embed's own PDF.
+In Chromium and desktop Safari, `save_name_check.mjs` presses that control
+for each native embed and reads the saved file's name and bytes. The bytes must be the embed's own PDF.
 `--expect-save` gives one name per native embed, or one for all. `@blob`
 stands for the id of the embed's `blob:` URL plus `.pdf`. In Chromium the
 check reads the name from CDP download events. In desktop Safari it finds

@@ -147,6 +147,7 @@ Firefox's viewer" row's detail stays the record of the tried forms.
 - 2026-10-20: claim audit: 50 claims read, 6 corrected — embedpdf-viewer.js (dropped an unmeasured no-copy claim), README.md (name checked for `sample.pdf` with a download link only; hand saves on one page, no slides), CLAUDE.md (`--expect-save` refuses `@blob`), save_name_check.mjs (opening paragraph scoped to Chromium and Safari), cairn/DESIGN.md ("the same with 1.2.9" held until the Safari HTTP line passes). Viewer comment edit re-rendered (`quarto render` clean, version stays 1.2.9).
 - 2026-10-20: T4 done: the user unlocked the screen (a stop at a chip); the Safari save line over HTTP then exited 0 (`Unknown.pdf` x 3). All 138 lines exit 0; shortcode tests 162 passed, 0 failed. DESIGN's "the same with 1.2.9" now holds for Chromium and Safari, file and HTTP.
 - 2026-10-20: implement complete; status review.
+- 2026-10-20: review started: no PR, main not moved; all 138 check lines re-running for fresh AC3 evidence; four lenses spawned; fix-now edits from their findings checkpointed here before the Review section is written (half-done: evidence and dispositions not yet recorded).
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local. -->

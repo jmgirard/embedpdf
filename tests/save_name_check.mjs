@@ -14,7 +14,7 @@
 // the page again, presses the save control of that embed's own PDF viewer,
 // and reads the name and the bytes of the file the browser saves.
 // --expect-save gives one entry per native embed, or one entry for all of
-// them. An entry is a file name, or @blob: the id of the embed's blob: URL
+// them. An entry is a file name, or (not in Firefox) @blob: the id of the embed's blob: URL
 // (the address of an inlined PDF, which the viewer makes in inlinedPdf)
 // followed by ".pdf". Before any plant, the check reads that address and,
 // in the page, the SHA-256 of the bytes it holds (crypto.subtle; their count
@@ -74,11 +74,12 @@
 // file. In Firefox 158 on 2026-10-20 its PDF viewer saved no file under
 // puppeteer-core, from its download button, its menu's download item, or
 // Cmd+S, headless or with a window, while a plain download link saved one.
-// So for each native embed the check reads the name that the viewer reports,
-// PDFViewerApplication._docFilename, in the viewer's frame (the frame whose
-// address, with no fragment, is the embed's address). It compares that name
-// with the embed's entry, which must be a file name, not @blob. It reads no
-// saved name and no saved bytes. Firefox needs its profile folder first (see
+// So for each native embed the check removes the page's other native
+// embeds, as in Chromium, and reads the name that the viewer reports,
+// PDFViewerApplication._docFilename, in the viewer's frame (the one frame
+// whose address, with no fragment, is the embed's address). It compares that
+// name with the embed's entry, which must be a file name, not @blob. It
+// reads no saved name and no bytes, and it does not fetch the embed's PDF. Firefox needs its profile folder first (see
 // tests/native_check.mjs's header).
 //
 // On a RevealJS deck the check shows the slide of each native embed: before
@@ -126,7 +127,7 @@ import { serveDocs, DOCS } from "./serve_docs.mjs";
 import { decodePng } from "./png_diff.mjs";
 
 const HYDRATE_MS = 30000; // time for every embed of the page to hydrate
-const VIEWER_MS = 20000; // time for a Chromium viewer and its save control
+const VIEWER_MS = 20000; // time for a viewer (and in Chromium its save control)
 const SAVE_MS = 8000; // time for a saved file after a press
 const SAFARI_TRIES = 4;
 const WD_MS = 60000; // time limit of one safaridriver call
@@ -251,17 +252,19 @@ const READ_EMBEDS = `async (limit) => {
   }
 }`;
 // Read the bytes of native embed k's address (their SHA-256 in hex, or their
-// count where crypto.subtle is missing), keep the embed alone (remove the
-// others) unless asked not to, plant into it if asked, scroll it to the
-// middle, and return { bytes }.
-const PREPARE = `async (k, plant, dummy, keepOthers) => {
+// count where crypto.subtle is missing) unless asked not to, keep the embed
+// alone (remove the others) unless asked not to, plant into it if asked,
+// scroll it to the middle, and return { bytes }.
+const PREPARE = `async (k, plant, dummy, keepOthers, readBytes = true) => {
   if (!keepOthers) document.querySelectorAll("[data-save-check]").forEach((e) => { if (e.getAttribute("data-save-check") !== String(k)) e.remove(); });
   let el = document.querySelector('[data-save-check="' + k + '"]');
   const addr = el.tagName === "IFRAME" ? el.src : el.data;
-  const buf = await (await fetch(addr.split("#")[0])).arrayBuffer();
-  const bytes = crypto.subtle
-    ? { sha256: [...new Uint8Array(await crypto.subtle.digest("SHA-256", buf))].map((b) => b.toString(16).padStart(2, "0")).join("") }
-    : { length: buf.byteLength };
+  const buf = readBytes ? await (await fetch(addr.split("#")[0])).arrayBuffer() : null;
+  const bytes = !buf
+    ? null
+    : crypto.subtle
+      ? { sha256: [...new Uint8Array(await crypto.subtle.digest("SHA-256", buf))].map((b) => b.toString(16).padStart(2, "0")).join("") }
+      : { length: buf.byteLength };
   if (plant) {
     const frag = addr.includes("#") ? addr.slice(addr.indexOf("#")) : "";
     let next;
@@ -613,8 +616,8 @@ async function safariDriver() {
 
 // Firefox: its viewer saves no file under puppeteer-core (see the header), so
 // the check reads the name the viewer would save under,
-// PDFViewerApplication._docFilename, in the viewer's frame: the frame whose
-// address, with no fragment, is the embed's address.
+// PDFViewerApplication._docFilename, in the viewer's frame: the one frame
+// whose address, with no fragment, is the embed's address.
 async function firefoxDriver() {
   const { default: puppeteer } = await import("puppeteer-core");
   let browser;
@@ -642,17 +645,21 @@ async function firefoxDriver() {
         const native = await tab.evaluate(`(${READ_EMBEDS})(${HYDRATE_MS})`);
         const embed = native[k] ?? { tag: "", address: "" };
         if (native.length !== expectNative) return { count: native.length, ...embed, name: null };
-        await tab.evaluate(`(${PREPARE})(${k}, ${JSON.stringify(k + 1 === plantAt ? plant : null)}, ${JSON.stringify(DUMMY)}, true)`);
-        // the embed's address now (a plant changes it), with no fragment
-        const now = await tab.evaluate(`(() => {
-          const e = document.querySelector('[data-save-check="${k}"]');
-          if (!e || (e.tagName !== "OBJECT" && e.tagName !== "IFRAME")) return "";
-          return (e.tagName === "IFRAME" ? e.src : e.data).split("#")[0];
-        })()`);
+        // the other native embeds are removed, so no other viewer has the
+        // embed's address; the bytes are not read (no saved file to compare)
+        await tab.evaluate(`(${PREPARE})(${k}, ${JSON.stringify(k + 1 === plantAt ? plant : null)}, ${JSON.stringify(DUMMY)}, false, false)`);
         const end = Date.now() + VIEWER_MS;
         let viewerSeen = false;
-        while (now && Date.now() < end) {
-          const frame = tab.frames().find((f) => f.url().split("#")[0] === now);
+        while (Date.now() < end) {
+          // the embed's address now (a plant changes it, and an <iframe> on a
+          // slide just shown gets it late), with no fragment
+          const now = await tab.evaluate(`(() => {
+            const e = document.querySelector('[data-save-check="${k}"]');
+            if (!e || (e.tagName !== "OBJECT" && e.tagName !== "IFRAME")) return "";
+            return (e.tagName === "IFRAME" ? e.src : e.data).split("#")[0];
+          })()`);
+          const frames = now ? tab.frames().filter((f) => f.url().split("#")[0] === now) : [];
+          const frame = frames.length === 1 ? frames[0] : null;
           if (frame) {
             const name = await frame
               .evaluate(() => {
