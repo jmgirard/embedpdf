@@ -200,6 +200,6 @@ load on the same queue, and a text task runs only when no page render waits
 - In PDF output a PDF file that LaTeX cannot find stops the render with a
   pdfpages error, so IP2's "a missing file gives a warning" is not met there.
   This also covers a path with an escape that the shortcode keeps as written,
-  such as `%C3%A9` (ROADMAP row "LaTeX path escapes") — observed 2026-10-19.
+  such as `%C3%A9` (ROADMAP row "Handle escaped and special LaTeX paths") — observed 2026-10-19.
 - First paint is fragile. v1.0.1 and v1.0.2 both fixed pages that never
   rendered on load, and the timer-based first paint may still miss cases.
