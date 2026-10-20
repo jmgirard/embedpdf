@@ -4,7 +4,7 @@
 //   node tests/native_check.mjs --browser chromium|firefox|safari
 //        --page <page>.html [--alone file|http]
 //        --expect-native <n> --reference sample.pdf
-//        [--plant otherpdf|broken|blank|fileaddr|nopage|object|border|fallback|refcontrol] [--plant-at <k>]
+//        [--plant otherpdf|broken|blank|fileaddr|nopage|object|border|fallback|refcontrol|noslide] [--plant-at <k>]
 //
 // The viewer shows a native embed as an <object>, or as an <iframe> when its
 // page option is over 1 and frameAllowed accepts it (embedpdf-viewer.js;
@@ -34,6 +34,14 @@
 // box (an <iframe> shows no child content, so the viewer hides the no-JS
 // fallback beside it). Every failure of an embed is reported, not only the
 // first.
+//
+// On a RevealJS slide deck the check sets Reveal's minScale and maxScale to
+// 1, so each embed has the CSS size its options give (no window size gives a
+// scale of exactly 1), and exits 2 unless Reveal.getScale() is then 1. For
+// each native embed in page order it shows the slide that holds the embed
+// (Reveal.slide), reads the embed's element, address, box, and placeholder
+// there, and takes its screenshot. It fails an embed whose slide is not the
+// current slide (Reveal.getCurrentSlide()) before or after its screenshot.
 //
 // It then takes a screenshot of each native embed and a screenshot of a
 // reference: the element the embed should be (an <iframe>, or an <object
@@ -97,6 +105,9 @@
 //             of an <iframe>
 //   border    gives an <iframe> a 2px inset border, as a browser's default
 //   fallback  shows the hidden fallback content beside an <iframe>
+//   noslide   (a RevealJS deck only) shows the first slide that does not
+//             hold the embed, in place of its own slide; the run must fail
+//             on "not the current slide"
 // The run must then fail and name that embed; otherpdf and broken must fail as
 // a mismatch, and in desktop Safari, nopage and object must fail as a
 // mismatch too.

@@ -154,7 +154,6 @@ function hydrateNative(el, opts, framed) {
   // browser with no built-in PDF viewer, too).
   const frame = document.createElement(framed ? "iframe" : "object");
   if (framed) {
-    frame.src = address;
     // lets the PDF viewer in the frame ask for full screen
     frame.allowFullscreen = true;
   } else {
@@ -179,6 +178,26 @@ function hydrateNative(el, opts, framed) {
   el.appendChild(frame);
   if (keep !== frame) el.appendChild(keep);
   el.classList.add("embedpdf-native");
+  // An <iframe> that loads its PDF while it has no box (on a RevealJS slide
+  // that is not displayed, for example) opens at page 1 in Chromium 155 and
+  // shrunk in desktop Safari 27.0.1 when it is shown (2026-10-20). So it gets
+  // its address once it has a box.
+  if (framed) {
+    const load = () => {
+      frame.src = address;
+    };
+    if (frame.getClientRects().length > 0 && frame.offsetWidth > 0 && frame.offsetHeight > 0) {
+      load();
+    } else {
+      const watch = new ResizeObserver(() => {
+        if (frame.offsetWidth > 0 && frame.offsetHeight > 0) {
+          watch.disconnect();
+          load();
+        }
+      });
+      watch.observe(frame);
+    }
+  }
 }
 
 // PDF.js could not load the PDF (for example a PDF on another site that sends
