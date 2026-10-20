@@ -1,0 +1,34 @@
+---
+title: "embedpdf paths with a percent sign"
+resources:
+  - "files/100%.pdf"
+  - "files/50%off.pdf"
+  - "files/sample copy.pdf"
+---
+
+This is a normal page, not a self-contained one, so the browser loads each PDF
+from its path. `files/100%.pdf`, `files/50%off.pdf`, and
+`files/sample copy.pdf` are copies of `sample.pdf`. The shortcode writes a `%`
+that is not followed by two hex digits as `%25`, so a bare `%` reaches the
+server as a valid address. The checks in `tests/` read the embed names and
+check that each page is drawn. A PDF render of this page shows each PDF once.
+
+## Bare %, PDF.js
+
+{{< pdf "files/100%.pdf" renderer=pdfjs >}}
+
+## Path with %25, PDF.js
+
+{{< pdf "files/100%25.pdf" renderer=pdfjs >}}
+
+## Bare %, automatic renderer
+
+{{< pdf "files/100%.pdf" >}}
+
+## Bare % before a letter, PDF.js
+
+{{< pdf "files/50%off.pdf" renderer=pdfjs >}}
+
+## Path with %20, PDF.js
+
+{{< pdf "files/sample%20copy.pdf" renderer=pdfjs >}}

@@ -110,7 +110,7 @@ Version 1.2.6.
       `esc_src` at embedpdf.lua:117 and the link at embedpdf.lua:104) and a
       LaTeX rule (embedpdf.lua:99). Bump `VERSION` and `_extension.yml` to
       1.2.6. The unit tests pass.
-- [ ] T3: Add `files/50%off.pdf` (a copy of `sample.pdf`) and
+- [x] T3: Add `files/50%off.pdf` (a copy of `sample.pdf`) and
       `percent_page_test.qmd`. List the PDFs under `resources:`, and keep
       the phrase "On the Origin of Coastlines" out of the page's own text.
       Run `quarto render` and the AC3 lines, and the native `fetch` probe.
@@ -142,6 +142,7 @@ Version 1.2.6.
 - 2026-10-19: implement started on branch m015-percent-sign-paths.
 - 2026-10-19: T1: 70 percent checks in tests/test_shortcode.lua (14 paths × data-src, no-JS link, button link, other-format link, LaTeX line). Against v1.2.5: 68 passed, 42 failed (the 7 bare-% paths in the 4 link targets, and all 14 LaTeX lines).
 - 2026-10-19: T2: `url_path()` and `latex_path()` in embedpdf.lua (one `gsub` pass each). The LaTeX group wraps the line only when the path still holds a `%`, so a path with no `%` writes the v1.2.5 line. Version 1.2.6 in both files. Unit tests: 110 passed, 0 failed.
+- 2026-10-19: T3: `percent_page_test.qmd` and `files/50%off.pdf` added. `quarto render` gave no warning. The 5 render_check lines (Chromium 155) and the 2 ios_check lines (iOS 27.0 simulators) exit 0. Native probe (scratch `native_probe.mjs` with `serveDocs`): the `<object>` data is `files/100%25.pdf`, fetch HTTP 200, bytes equal `sample.pdf`. With the v1.2.5 shortcode the desktop line exits 1 ("embedpdf: failed to render files/100%.pdf", HTTP 400), and Quarto warns "Invalid URI" 3 times.
 
 ## Decisions
 
