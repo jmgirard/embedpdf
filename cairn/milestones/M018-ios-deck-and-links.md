@@ -79,18 +79,19 @@ Evidence at commit 30d3515, 2026-10-19, from one script run in the iOS 27.0 simu
 - AC5: all 30 `node tests/ios_check.mjs` lines in CLAUDE.md exit 0. These include the 10 `--expect-pages` lines and the two `example.html` lines (72, 73), so they cover every AC5 line.
 - Consistency gate: `cairn_validate.py` all checks passed. The generic profile names no toolchain checks.
 - spawned: diff-bug, blame-history, prior-review, ripple
-- diff-bug #1: an `--expect-pages` list shorter than the embeds found gives "expected NaN page containers" beside the count failure — fix now.
+- diff-bug #1: an `--expect-pages` list shorter than the embeds found gives "expected NaN page containers" beside the count failure — fix now, fixed e95fa31.
 - diff-bug #2: `--expect-links` is not refused with `--remote`, `--missing-pdfs`, or `--expect-download`, and on selfcontained_failed_test.html the "Download the PDF" link has no matched class, so `--expect-links 0` passes there; render_check refuses none either — follow-up, row "iOS link check gaps".
-- diff-bug #3: the header says `linkfile` uses the PDF's file name, but the code falls back to "sample.pdf" when a link has no download name — fix now.
+- diff-bug #3: the header says `linkfile` uses the PDF's file name, but the code falls back to "sample.pdf" when a link has no download name — fix now, fixed e95fa31.
 - diff-bug #4: a link plant on a run that stops with an embed not hydrated fails on that stop (exit 1), not with exit 2 — follow-up, row "iOS link check gaps".
-- diff-bug #5: the rewritten exit-summary comment line is 97 characters — fix now (rewrapped with the comment fixes).
-- diff-bug #6: CLAUDE.md does not describe `--expect-links` or the `nolink` and `linkfile` plants — fix now.
+- diff-bug #5: the rewritten exit-summary comment line is 97 characters — fix now, fixed e95fa31 (rewrapped with the comment fixes).
+- diff-bug #6: CLAUDE.md does not describe `--expect-links` or the `nolink` and `linkfile` plants — fix now, fixed e95fa31.
 - diff-bug #7: a one-entry `--expect-pages` list counts as one count for every embed — reject, planned change: AC1 defines one number that way.
 - blame-history #1: the link selector is a copy of render_check's string, so an edit to one splits the two checks — follow-up, row "iOS link check gaps".
-- blame-history #2: reflowed comment lines run past 80 columns — fix now (rewrapped).
+- blame-history #2: reflowed comment lines run past 80 columns — fix now, fixed e95fa31 (rewrapped).
 - blame-history #3: the `--expect-pages` header entry changes the flag column layout — reject, style.
 - prior-review #1: the revealjs_test.html lines keep the 180 s report timeout while a deck slide can take 50 s — follow-up, already held by row "Deck walk follow-ups", which names that timeout (no edit).
-- prior-review #2: the `--expect-links` code comment says each link holds "the PDF held in the page", but only the href scheme is checked — fix now.
-- prior-review #3: same as diff-bug #3 — fix now.
+- prior-review #2: the `--expect-links` code comment says each link holds "the PDF held in the page", but only the href scheme is checked — fix now, fixed e95fa31.
+- prior-review #3: same as diff-bug #3 — fix now, fixed e95fa31.
 - prior-review #4: `--expect-links` counts links in hidden RevealJS slides too — reject, planned change: AC3 counts the page's links as render_check does.
 - ripple #1: candidate row "iOS slide deck gaps" in cairn/ROADMAP.md is now stale — reject, planned change: post-merge hygiene graduates that row.
+- After the fixes, at e95fa31: the evidence script ran again with the same results: the AC1 and AC3 runs give the same exits and lines, and all 30 CLAUDE.md ios_check lines exit 0. example.html (iPhone, `--expect-embeds 2 --expect-pages "2|2"`) exits 1 with the count failure and "embed 3: no --expect-pages entry for it" for each embed past the list, with no NaN line. `cairn_validate.py` all checks passed.
