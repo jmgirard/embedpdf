@@ -137,7 +137,10 @@ than 10 s.
 
 Self-contained pages (`embed-resources: true`): `--alone http|file` (render_check)
 and `--alone yes` (ios_check) load a copy of the page with no other file beside it.
-Run each `--alone file` line again with `--alone http`. Run the
+Run each `--alone file` line again with `--alone http`. In both scripts,
+`--expect-links <n>` fails the run unless the page holds n download links,
+each with a `data:` or `blob:` address. ios_check's `--plant nolink` removes
+one such link, and `--plant linkfile` points one at a file name. Run the
 `selfcontained_test.html` lines also with `--device mac-safari` and
 `--device windows-touch` (the desktop counts) and `--device ipad` (the iphone
 counts). `revealjs_test.html` is a normal slide deck:
@@ -154,18 +157,23 @@ node tests/render_check.mjs percent_test.html --alone http --expect-native 0 --e
 node tests/render_check.mjs percent_test.html --alone file --device iphone --expect-native 0 --expect-pdfjs 2 --expect-pages 2 --expect-name "100%.pdf"
 node tests/ios_check.mjs --device "embedpdf iPhone" --page percent_test.html --alone yes --expect-embeds 2 --expect-name "100%.pdf"
 node tests/ios_check.mjs --device "embedpdf iPad" --page percent_test.html --alone yes --expect-embeds 2 --expect-name "100%.pdf"
-node tests/ios_check.mjs --device "embedpdf iPhone" --page selfcontained_test.html --alone yes --expect-embeds 2 --expect-native 1 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
-node tests/ios_check.mjs --device "embedpdf iPad" --page selfcontained_test.html --alone yes --expect-embeds 2 --expect-native 1 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
-node tests/ios_check.mjs --device "embedpdf iPhone" --page selfcontained_slides_test.html --alone yes --expect-embeds 2 --expect-native 1 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
-node tests/ios_check.mjs --device "embedpdf iPad" --page selfcontained_slides_test.html --alone yes --expect-embeds 2 --expect-native 1 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/ios_check.mjs --device "embedpdf iPhone" --page selfcontained_test.html --alone yes --expect-embeds 2 --expect-native 1 --expect-links 4 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/ios_check.mjs --device "embedpdf iPad" --page selfcontained_test.html --alone yes --expect-embeds 2 --expect-native 1 --expect-links 4 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/ios_check.mjs --device "embedpdf iPhone" --page selfcontained_slides_test.html --alone yes --expect-embeds 2 --expect-native 1 --expect-links 4 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/ios_check.mjs --device "embedpdf iPad" --page selfcontained_slides_test.html --alone yes --expect-embeds 2 --expect-native 1 --expect-links 4 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
+node tests/ios_check.mjs --device "embedpdf iPhone" --page revealjs_test.html --expect-embeds 2 --expect-native 1 --expect-pages "2|1" --expect-name "dummy.pdf|dummy2.pdf|dummy.pdf"
+node tests/ios_check.mjs --device "embedpdf iPad" --page revealjs_test.html --expect-embeds 2 --expect-native 1 --expect-pages "2|1" --expect-name "dummy.pdf|dummy2.pdf|dummy.pdf"
 ```
 
 On a RevealJS page, both scripts show each slide in turn before they check
 its embeds. ios_check also fails a PDF.js embed whose ink or text it read
 while another slide was current. ios_check's `--plant noslide` skips the last
 slide that holds a PDF.js embed. On the iPhone simulator, RevealJS shows the slides
-in its scrolled view (the report's `scrollView`). `revealjs_test.html` has no
-ios_check line, because ios_check takes one `--expect-pages` for all embeds.
+in its scrolled view (the report's `scrollView`). ios_check's `--expect-pages`
+takes one count for every embed not set to `renderer=native`. It also takes a
+`|` list with one count per such embed, in page order. On
+`revealjs_test.html` these are `dummy2.pdf` (2 pages) and then `dummy.pdf`
+with `renderer=auto` (1 page).
 
 A self-contained page whose embeds cannot show their PDF:
 `selfcontained_failed_test.html` holds `files/broken.pdf`, a text file that
