@@ -148,8 +148,9 @@
 //                       with no data-src before the text wait, and norender
 //                       makes every canvas's getContext return null from
 //                       load on, so no page gets a canvas (meant for a
-//                       RevealJS page: elsewhere each embed's canvas wait
-//                       runs out in turn). Needs --expect-text.
+//                       RevealJS page: elsewhere each embed's tree-check
+//                       canvas wait runs out in turn). Without
+//                       --expect-text, norender is an ink plant (above).
 //   --expect-name "<file name>" | "<name 1>|<name 2>|..."
 //                       after the pages are scrolled, fail unless each PDF.js
 //                       embed has role="group" and its expected aria-label
@@ -238,10 +239,35 @@
 //                       the run must fail and name each PDF.js embed's
 //                       address; with no PDF.js embed it exits 2 (nothing
 //                       to plant in).
+//   --cpu-throttle <n>  slow Chromium's CPU n times (n a whole number above
+//                       1), as on a slow machine; the page load may then
+//                       take up to 120 s
+//   --csp               the page's server sends NO_EVAL_CSP (in
+//                       tests/serve_docs.mjs), a Content-Security-Policy
+//                       whose script-src omits 'unsafe-eval'; fail unless
+//                       the page arrives with it. Not with a URL or --alone
+//                       file. render_check runs no eval or new Function in
+//                       the page. In Chromium 155, code that puppeteer ran
+//                       in the page used them under this header with no
+//                       error (2026-10-19), so the run shows that the viewer
+//                       renders under it, not that render_check needs no eval.
+//   --plant norender    every canvas's getContext returns null from load
+//                       on, so no page gets a canvas; the run must then fail
+//                       with "no canvas" on every PDF.js page, after the
+//                       canvas wait below runs out. Needs no other flag; with
+//                       --expect-text it is also a text plant (below).
 // Set CHROME_PATH to use another Chrome or Chromium binary.
 //
-// On a RevealJS page the check goes to each slide with Reveal.slide() and
-// scrolls each embed's pages into view before it measures. On each slide (or
+// Canvas wait: after the pages scroll, the check waits until every embed is
+// hydrated and every page of its PDF.js embeds has a canvas. Each pass scrolls
+// each page with no canvas into view again. The wait ends when nothing is
+// missing, after 10 s in which no embed newly hydrated and no page newly got
+// a canvas, or after 120 s in all. It waits no fixed time before it measures.
+// The report gives each wait in "canvasWaits".
+//
+// On a RevealJS page the check goes to each slide with Reveal.slide(),
+// scrolls each embed's pages into view, and runs the canvas wait for that
+// slide before it measures. On each slide (or
 // on the whole page when it has no slides), the --expect-name check first
 // waits at most 10 s for the embeds to be hydrated, and fails when that wait
 // runs out. The --expect-text wait comes once, before the first slide.

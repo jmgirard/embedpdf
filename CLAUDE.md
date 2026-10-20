@@ -282,6 +282,23 @@ page. The run takes about 2 minutes:
 node tests/render_check.mjs large_test.html --device iphone --expect-native 0 --expect-pdfjs 2 --expect-pages 14 --expect-name "large.pdf|large-2.pdf" --cpu-throttle 70
 ```
 
+Both scripts give each PDF.js page's ink as "ok", "no canvas", "no ink", or
+"unreadable (…)". A failure line names each page that is not "ok". In
+ios_check, `--plant blank` paints the last page's canvas white, and the run
+must name "no ink". `--plant nocanvas` removes that canvas, and the run must
+name "no canvas".
+
+A page that forbids eval: with `--csp`, render_check's server sends a
+Content-Security-Policy whose `script-src` omits `'unsafe-eval'`. The run
+fails unless the page arrives with it. render_check runs no eval in the page.
+In Chromium 155 on 2026-10-19, code that puppeteer ran in the page used eval
+under this header with no error. So this line shows that the viewer renders
+under such a policy:
+
+```
+node tests/render_check.mjs example.html --csp --expect-native 9 --expect-pdfjs 2 --expect-pages 2
+```
+
 `render_check.mjs` serves `docs/` itself with `tests/serve_docs.mjs`. If every
 page of every PDF.js embed has a canvas with ink and the counts match, it exits
 0. Both scripts use the ink rule in `tests/ink.mjs`. If Google Chrome is not
