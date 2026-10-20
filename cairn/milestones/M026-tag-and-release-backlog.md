@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M026: Tag and release every 1.x version
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -112,12 +112,12 @@ v1.2.1, v1.2.2, v1.2.3, v1.2.4, v1.2.5, v1.2.6, v1.2.7, v1.2.8, v1.2.9.
       "embedpdf vX.Y.Z — <one-line summary>"`, as the v1.0.x tags are, and
       push them with `git push origin <tags>` (tags only, never a branch
       push or `--tags`). Read back with `git ls-remote --tags origin`.
-- [ ] T5: Publish the 16 releases oldest first: `gh release create V
+- [x] T5: Publish the 16 releases oldest first: `gh release create V
       --repo jmgirard/embedpdf --verify-tag --title V --notes-file <file>`,
       with `--latest=false` on all but v1.2.9 and `--latest` on v1.2.9. Read
       each back with `gh release view V --json body` and compare it to its
       file.
-- [ ] T6: Delete the DESIGN.md Known issues entry "GitHub releases stop at
+- [x] T6: Delete the DESIGN.md Known issues entry "GitHub releases stop at
       v0.5.0 and tags stop at v1.0.2 …", since every version then has a tag
       and a release.
 
@@ -137,6 +137,10 @@ v1.2.1, v1.2.2, v1.2.3, v1.2.4, v1.2.5, v1.2.6, v1.2.7, v1.2.8, v1.2.9.
 - 2026-10-20: T2 confirmed the Scope table: each of the 13 commits is the first in the `git log --reverse` whose `_extension.yml` carries its version, is on main's first-parent line with one parent, and is the only commit touching `_extensions/` since the version before; the `embedpdf.lua` version marker matches at each (`version = "1.0.3"` at 1.0.3, `local VERSION` from 1.1.0).
 - 2026-10-20: T3 drafted the 16 notes in the session scratchpad and checked each sentence against its diff (Decisions entry); two drafts changed: the v1.0.0 escaping line now says only `button` was escaped before (v0.5.0 lua), and a v1.2.0 line on toolbar names was cut, since the v1.1.1 controls already had `title` names.
 - 2026-10-20: T4 created the 13 annotated tags (message `embedpdf vX.Y.Z — <summary>`, as v1.0.x) and pushed them by explicit `refs/tags/` names; `git ls-remote --tags origin` then listed the 21 tags, each new `^{}` line on its Scope-table commit, and the eight older tag objects unchanged.
+- 2026-10-20: T5 published the 16 releases oldest first with `--verify-tag`, `--latest=false` on 15 and `--latest` on v1.2.9; each body read back equals its note file (a `--jq` read adds one newline), none is draft or prerelease, `releases/latest` is v1.2.9, and the five v0.x releases keep their names, dates, and body hashes from T1.
+- 2026-10-20: T6 deleted the DESIGN.md Known issues entry on the stale badge.
+- 2026-10-20: claim audit: not owed — no added lines outside cairn/.
+- 2026-10-20: implement done; verify slot has no check for a `cairn/`-only change; status set to review.
 
 ## Decisions
 
