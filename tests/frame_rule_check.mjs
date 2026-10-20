@@ -48,8 +48,10 @@
 // desktop Safari through safaridriver.
 //
 // Exits 0 on a pass, 1 on a failed check, 2 on a bad argument, when a plant
-// does not apply to the viewer's code, or when the browser, safaridriver, or
-// a server cannot start.
+// does not apply to the viewer's code, when docs/page_test.html has no viewer
+// script or not 3 embeds, or when the browser, safaridriver, or a server
+// cannot start; 130 on Ctrl-C or a kill. A missing puppeteer-core is an
+// uncaught import error (exit 1).
 
 import fs from "node:fs";
 import path from "node:path";

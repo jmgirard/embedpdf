@@ -844,7 +844,7 @@ const PROBE = `<script>
         inkSlide: inkSlide.has(el) ? inkSlide.get(el) : null,
         role: el.getAttribute("role"),
         label: el.getAttribute("aria-label"),
-        // a native embed's name is on its <object> (or <iframe>, D-007)
+        // a native embed's name is on its <object> (or <iframe>, D-008)
         object: (() => {
           const o = el.querySelector(":scope > object, :scope > iframe");
           return o ? { tag: o.tagName.toLowerCase(), label: o.getAttribute("aria-label"), title: o.getAttribute("title"), data: o.tagName === "IFRAME" ? o.src : o.data } : null;
@@ -998,9 +998,11 @@ try {
     failures.push(`expected ${expectNative} embeds set to renderer=native, found ${natives.length}`);
   }
   // on iPhone and iPad a native embed stays an <object>, whose fallback
-  // content shows where the PDF cannot; an <iframe> is for desktop (D-007)
+  // content shows where the PDF cannot; an <iframe> is for desktop (D-008).
+  // An embed that did not hydrate as native has no element to judge here; the
+  // --expect-name and --remote cors checks below report its renderer.
   for (const e of natives) {
-    if (e.renderer !== "native") continue; // named by the checks below
+    if (e.renderer !== "native") continue;
     if (!e.object) failures.push(`embed ${e.index}: native embed has no <object>`);
     else if (e.object.tag !== "object") failures.push(`embed ${e.index}: native embed is <${e.object.tag}>, not <object>`);
   }

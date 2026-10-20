@@ -181,8 +181,9 @@ with `renderer=auto` (1 page).
 
 Native embeds and their `page` option: a native embed is an `<object>`. On a
 desktop browser with a built-in PDF viewer, an embed whose `page` is over 1
-can be an `<iframe>` instead. The PDF's answer to a HEAD request decides it
-(D-008, `frame_rule_check.mjs` below). Desktop Safari 27.0.1 opens an `<object>` at
+can be an `<iframe>` instead. An inlined PDF always is. For any other PDF,
+its answer to a HEAD request decides it (D-008, `frame_rule_check.mjs`
+below). Desktop Safari 27.0.1 opens an `<object>` at
 page 1 whatever its `#page` fragment says, and opens an `<iframe>` at that
 page. `native_check.mjs` takes a screenshot of each native embed. The
 reference is a screenshot of the element that the embed must be. It shows
@@ -240,12 +241,12 @@ node tests/safari_check.mjs --target mac --page page_test.html --expect-native 3
 
 Which element a native embed with `page` over 1 gets: the viewer reads the
 PDF's answer to a HEAD request first (D-008). `frame_rule_check.mjs` serves
-a page with nine native embeds, each answered in its own way. It fails unless
+a page with nine native embeds, each at its own address. It fails unless
 each embed gets the element that its header lists, and unless the request
 logs are as the header says. `--slow-head` delays each HEAD answer by 3 s, and
 the run must still pass. The header states the plants. Run the plants in
-Chromium, because in Safari an `<iframe>` of a PDF sent as a download saves a
-copy in `~/Downloads`:
+Chromium. A plant can make an `<iframe>` of a PDF sent as a download, and
+desktop Safari saves that PDF in your `~/Downloads`:
 
 ```
 node tests/frame_rule_check.mjs --browser chromium
@@ -481,7 +482,8 @@ errors.
   a `page` over 1. `frame_rule_check.mjs` checks only the local test servers.
 - A native embed with a `page` over 1 on a page that is not self-contained
   and is opened as a `file:` page. A `file:` origin is opaque, so the viewer
-  gives it an `<object>`. No check opens such a page.
+  gives it an `<object>`, unless the PDF is inlined. No check opens such a
+  page.
 - GitHub Pages' answer to an address with `%25`, which the shortcode writes
   for a bare `%` in a PDF path since v1.2.6. It is checked only on the local
   test server.

@@ -1,6 +1,6 @@
 # M021: Native embeds open at their page in Safari
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -140,7 +140,7 @@ than `attachment` (both compared without case or parameters); any other answer, 
       with no element; `allowfullscreen` on the `<iframe>`.
 - [x] T10: Docs per AC6 and AC7 (README, DESIGN.md, CLAUDE.md incl. the ripple lines and "Still unverified":
       `file:` pages, GitHub Pages' HEAD answer); follow-ups into row "Check embeds open at their page option".
-- [ ] T11: `quarto render`, then every CLAUDE.md run line.
+- [x] T11: `quarto render`, then every CLAUDE.md run line.
 
 ## Work log
 
@@ -181,6 +181,9 @@ than `attachment` (both compared without case or parameters); any other answer, 
 - 2026-10-20: T8 done: `frameAllowed()` decides the element before `hydrateNative()` (inlined → `<iframe>`; same non-opaque origin → HEAD with `AbortSignal.timeout(5000)`, `<iframe>` for OK + `application/pdf` + non-`attachment`, compared without case or parameters; else `<object>`); `allowfullscreen` on the `<iframe>` (diff-bug #9); header comment no longer says renderer=native is always `<object>` (ripple #1); version stays 1.2.7 (unreleased). After `quarto render`, native_check chromium on page_test.html and selfcontained `--alone file` pass.
 - 2026-10-20: T9 done: new `tests/frame_rule_check.mjs` (nine native embeds on a page built from docs/page_test.html's scripts, AC7's cases plus HTTP 404, each at its own address; `--slow-head`; plants noorigin, nook, anydisp, get, casesens, swap) passes in Chromium 155, Firefox 158, and Safari 27.0.1, and with `--slow-head` in Chromium; each plant exits 1 in Chromium naming the embed it targets; the Safari run saved no file in ~/Downloads. Fix-now items: native_check screenshots each embed by a per-placeholder mark (diff-bug #5), accepts a blob: address for an embed with no data-src without `--alone` (diff-bug #6), and takes the expected box from `data-width`/`data-height` in px (diff-bug #10, prior-review #4); ios_check fails a native embed with no element (prior-review #1; shown red with the docs/ viewer copy changed to add no element, restored after). CLAUDE.md gains the four frame_rule_check lines.
 - 2026-10-20: T10 done: README `page` row names the `<iframe>` cases and the `<object>` cases that desktop Safari opens at page 1, and the `<iframe>` name check; DESIGN.md Viewer, architecture, Known issues (header rule, HEAD-vs-GET limit, no missing-PDF blank-frame sentence, version 1.2.7); CLAUDE.md name, native_check, `cors`, renderer gotcha, "Still unverified" (GitHub Pages' HEAD answer, `file:` pages); ROADMAP rows "Publish GitHub releases for 1.0 tags" (1.2.7), "Check native save names and slide embeds" (native embed), "Check embeds open at their page option" (D-008, RevealJS `<iframe>`, fragment doubling). Not changed: ios_check's `<object>` messages (on iPhone and iPad a native embed must be an `<object>`, so they hold), CLAUDE.md's Safari CORS gotcha (a cross-origin embed is always an `<object>` now). `grep "blank frame\|error page"` over README.md and DESIGN.md finds nothing. simple-english hits back to 39 (CLAUDE.md) and 11 (README).
+- 2026-10-20: T11 done: at b860dc6, all 102 `node tests/…` and `pandoc lua tests/…` lines in CLAUDE.md exited 0 on the first try (the 98 of T7 plus the 4 frame_rule_check lines); percent_page_test PDF render rc 0 with the phrase 5 times; helpers_test 158 passed, 0 failed; ~/Downloads gained no file.
+- 2026-10-20: claim audit: 74 claims read, 9 corrected (and 4 stale lines beside them) — CLAUDE.md (frame_rule_check paragraph, inlined PDFs, `file:` item), README `page` row (inlined `data:` PDFs, origin is site and port, failed request), tests/native_check.mjs (inlined PDFs skip the HEAD rule, header D-008, options not attributes), tests/ios_check.mjs (comment claim, D-008), tests/frame_rule_check.mjs (exit codes), embedpdf.css comment. All comment or docs text; after `quarto render` the docs/ diff is the CSS comment alone (8 copies).
+- 2026-10-20: implement complete after review return 1; status review.
 - 2026-10-20: the Goal stays as written (never edited in place); after the user's review decision it holds for PDFs that pass the header rule, and the docs name the rest (AC6).
 
 ## Decisions

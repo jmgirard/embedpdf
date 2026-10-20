@@ -7,14 +7,16 @@
 //        [--plant otherpdf|broken|blank|fileaddr|nopage|object|border|fallback|refcontrol] [--plant-at <k>]
 //
 // The viewer shows a native embed as an <object>, or as an <iframe> when its
-// page option is over 1 (embedpdf-viewer.js, hydrateNative; D-007), because
+// page option is over 1 and frameAllowed accepts it (embedpdf-viewer.js;
+// D-008), because
 // desktop Safari 27.0.1 opens an <object> at page 1 whatever #page= says.
 // Without --alone, the check opens the page from docs/ on its own HTTP server,
 // and each native embed's address must be its data-src, resolved against the
 // page, with the fragment below (a blob: URL for a hand-written inlined embed,
-// which has no data-src left). The viewer makes an <iframe> only when the
-// page's server answers a HEAD request for the PDF with application/pdf shown
-// inline (frameAllowed), so such a page must send its PDFs that way, as
+// which has no data-src left). For a PDF that is not inlined, the viewer makes
+// an <iframe> only when the page's server answers a HEAD request for it with
+// application/pdf shown inline (frameAllowed), so such a page must send its
+// PDFs that way, as
 // tests/serve_docs.mjs does. With --alone, the page must be self-contained
 // (embed-resources: true): it holds its PDF as a data: address, and the viewer
 // gives each native embed a blob: URL of it (inlinedPdf). The check then opens
@@ -376,7 +378,8 @@ try {
   // its element's address and tag, its page option (data-page, which the
   // shortcode writes and the viewer leaves on the embed), its data-src
   // resolved against the page (none for an inlined PDF), and for an <iframe>
-  // its border, its box, its width and height attributes, and how many other
+  // its border, its box, its width and height options (data-width,
+  // data-height), and how many other
   // elements of its placeholder have a rendered box
   const state = () =>
     drv.run(`() => ({
