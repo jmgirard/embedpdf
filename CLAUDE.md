@@ -168,8 +168,9 @@ while another slide was current. ios_check's `--plant noslide` skips the last
 slide that holds a PDF.js embed. On the iPhone simulator, RevealJS shows the slides
 in its scrolled view (the report's `scrollView`). ios_check's `--expect-pages`
 takes one count for every embed not set to `renderer=native`. It also takes a
-`|` list with one count per such embed, in page order. On `revealjs_test.html` these are
-`dummy2.pdf` (2 pages) and then `dummy.pdf` with `renderer=auto` (1 page).
+`|` list with one count per such embed, in page order. On
+`revealjs_test.html` these are `dummy2.pdf` (2 pages) and then `dummy.pdf`
+with `renderer=auto` (1 page).
 
 A self-contained page whose embeds cannot show their PDF:
 `selfcontained_failed_test.html` holds `files/broken.pdf`, a text file that

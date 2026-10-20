@@ -7,7 +7,7 @@ _Last hygiene check: 2026-10-19 (M017 done: graduated "Ink check follow-ups", ad
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M018 | iOS deck and link checks | in-progress | — | normal | milestones/M018-ios-deck-and-links.md |
+| M018 | iOS deck and link checks | review | — | normal | milestones/M018-ios-deck-and-links.md |
 | M017 | Check timing and ink report | done | — | normal | milestones/archive/M017-check-timing.md |
 | M016 | Slides check on iOS | done | — | normal | milestones/archive/M016-ios-slide-check.md |
 | M015 | Percent sign in PDF paths | done | — | normal | milestones/archive/M015-percent-sign-paths.md |
