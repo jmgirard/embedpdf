@@ -46,8 +46,9 @@
 // opens as on a first visit; with the default, it reopened a PDF at the page
 // last shown, and a reference after the page-2 embed opened at page 2.
 // Firefox started from Claude Code fails with "Could not find profile folder"
-// until its folder ~/Library/Application Support/Firefox exists; one launch
-// by `open -g -a Firefox` makes it. --browser safari drives desktop Safari
+// until its folder ~/Library/Application Support/Firefox exists. On
+// 2026-10-19 one launch through macOS open made it:
+// `open -g -n -a Firefox --args -headless -screenshot <png> <url>`. --browser safari drives desktop Safari
 // through safaridriver, as tests/safari_check.mjs does (turn safaridriver on
 // once with `safaridriver --enable`).
 //
@@ -186,7 +187,7 @@ async function puppeteerDriver(kind) {
   try {
     browser = await puppeteer.launch(opts);
   } catch (err) {
-    const hint = /profile folder/.test(err.message) ? " (run `open -g -a Firefox` once, then quit Firefox)" : "";
+    const hint = /profile folder/.test(err.message) ? " (launch it once through macOS open, as this script's header says)" : "";
     bad(`cannot start ${kind}${hint}: ${err.message.split("\n")[0]}`);
   }
   const tab = await browser.newPage();
@@ -404,7 +405,7 @@ try {
       continue;
     }
     const d = diffShare(img, ref);
-    entry.diff = d === null ? `size ${img.width}x${img.height} vs ${ref.width}x${ref.height}` : `${d.share.toFixed(4)} at shift ${d.dx},${d.dy}`;
+    entry.diff = d === null ? (img.width === ref.width && img.height === ref.height ? `too small to compare (${img.width}x${img.height})` : `size ${img.width}x${img.height} vs ${ref.width}x${ref.height}`) : `${d.share.toFixed(4)} at shift ${d.dx},${d.dy}`;
     if (d === null || d.share > TOLERANCE) failures.push(`${entry.at}: does not match the reference${entry.frag ? " at " + entry.frag : ""} (differs: ${entry.diff})`);
   }
   // page-1 against page-k references

@@ -189,8 +189,9 @@ whatever the fragment says. So the Safari lines take `--same-pages`, and
 there the two references must match. Chromium and Firefox run headless. The
 header states the plants (`otherpdf`, `broken`, `blank`, `fileaddr`,
 `nopage`, placed by `--plant-at <k>`). Firefox started from Claude Code fails
-with "Could not find profile folder" until one `open -g -a Firefox` launch
-makes its folder. If Firefox is not in `/Applications`, set `FIREFOX_PATH`:
+with "Could not find profile folder" until its folder exists. On 2026-10-19
+one launch through macOS `open` made it (the command is in the script's
+header). If Firefox is not in `/Applications`, set `FIREFOX_PATH`:
 
 ```
 node tests/native_check.mjs --browser chromium --page selfcontained_test.html --alone file --expect-native 3 --reference sample.pdf
@@ -418,7 +419,7 @@ errors.
 ## Still unverified
 - A native embed of a self-contained page in Chromium or Firefox with a
   window. `native_check.mjs` runs them headless. Also such an embed on
-  self-contained RevealJS slides in desktop Safari or Firefox. Also the file
+  self-contained RevealJS slides, in any browser. Also the file
   name that a native viewer's save button gives the copy of the PDF.
 - GitHub Pages' answer to an address with `%25`, which the shortcode writes
   for a bare `%` in a PDF path since v1.2.6. It is checked only on the local

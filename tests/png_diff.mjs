@@ -67,7 +67,7 @@ export function decodePng(buf) {
 
 // The smallest share of blocks that differ over every shift of b by up to
 // `shift` pixels each way, and that shift: { share, dx, dy }; null when the
-// sizes differ. The images are cut into squares of `block` x `block` pixels
+// sizes differ, or when no whole block fits inside the edge `shift` pixels. The images are cut into squares of `block` x `block` pixels
 // (the edge `shift` pixels of a and any part block left out); a block differs
 // when the average of one of its red, green, or blue channels differs by more
 // than `pixelDiff`. The shift absorbs where a viewer puts the page under a
