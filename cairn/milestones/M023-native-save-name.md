@@ -87,3 +87,29 @@ Review pass 1, 2026-10-20, branch head e1cc65c, main not moved (route d: no PR).
 - AC5 evidence: its condition ("If the viewer changed") does not hold. The AC4 diff of `_extensions/` is empty, so the version stays 1.2.8 and the viewer-change lines are not owed.
 - AC6 evidence: README.md:86 (the self-contained bullet) is dated 2026-10-20. It says the check covered `<object>` embeds and an `<iframe>` embed with `page=2`, then gives one name for each browser: the `blob:` id plus `.pdf` (Chromium 155) and `Unknown.pdf` (Safari 27.0.1). That one name covers both element types. Firefox 158 is "not checked" under AC2's fallback. DESIGN.md:209-220 states the same per element type, explicitly ("each `<object>` embed and the `page=2` `<iframe>` embed saved ..."), and is dated. Neither file, nor CLAUDE.md "Still unverified" (lines 511-515: Firefox only; "Chromium and desktop Safari are checked"), says Safari's save name is unchecked.
 - Consistency gate: `cairn_validate.py` all checks passed. No IP or GP principle changed (only a DESIGN Known issues entry), so `cairn_impact` was skipped. The generic profile's consistency-gate slot names no toolchain checks.
+- spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1: the Safari cleanup deleted a `.download` bundle that was in ~/Downloads before the run, and such a bundle made every save look partial — fix now, fixed 08e912f (the snapshot holds every entry; only new partials are waited on)
+- diff-bug #2: any file that appeared in ~/Downloads during a save was deleted, and could count as the save — fix now, fixed 08e912f (only the one new file starting with `%PDF-` counts and is deleted; others are left and named)
+- diff-bug #3: a click on "open in Preview" was not told apart from download — fix now, fixed 08e912f (Preview started by the press fails the embed)
+- diff-bug #4: the saved bytes were not checked — fix now, fixed 08e912f (SHA-256 against the embed's address read in the page; new `otherbytes` plant)
+- diff-bug #5: Chromium took the first of several saved files — fix now, fixed 08e912f
+- diff-bug #6: a locked screen or Safari behind another window exits 1, as a defect does — fix now for the locked screen (exit 2), fixed 08e912f; a window behind others stays a documented false failure, not tracked under D-006
+- diff-bug #7: a late file can be counted for the next embed — not tracked under D-006 (it needs the earlier embed to have failed, so the run already fails)
+- diff-bug #8: an interrupt skipped cleanup, and puppeteer's own handler exited first — fix now, fixed 08e912f (own handlers, cleanup at exit, exit 130 verified)
+- diff-bug #9: nothing asserts that the `page=2` embed is an `<iframe>` — reject, false: README and DESIGN state a dated observation of runs whose output names each embed's tag, and the element rule is `native_check.mjs`'s (D-008)
+- diff-bug #10: the gray band could be another gray area (dark mode) — not tracked under D-006 (shows as no bar or a failed save; the Preview guard catches a wrong button)
+- diff-bug #11: `--expect-native 0` passed without loading the page — fix now, fixed 08e912f (1 or more)
+- diff-bug #12: DESIGN said `#filename=sample.pdf` was tried in Chromium — fix now, fixed 08e912f (forms named per browser)
+- diff-bug #13: `wrongid` uses a fresh `blob:` and cannot run in Safari — fix now, fixed 08e912f (header says so; work log records it)
+- diff-bug #14: repeated flags override and a missing value takes the next flag — not tracked under D-006 (a flag mix that is not refused), same parser as `native_check.mjs`
+- blame-history #1: same as diff-bug #1 and #2 — fixed 08e912f
+- blame-history #2: README and DESIGN said every native viewer saves under another name, Firefox included — fix now, fixed 08e912f (Chromium and Safari only)
+- blame-history #3: same as diff-bug #12 — fixed 08e912f
+- blame-history #4: the script copies native_check's launch and serve code — reject, false against the plan gate's falsifier ("most of"): about 70 of about 570 lines are shared setup; the save, bar, bytes, and Downloads code is new
+- blame-history #5: the CLAUDE.md paragraph did not say safaridriver must be on — fix now, fixed 08e912f
+- prior-review #1: same as diff-bug #1 and #2 (M002's cleanup scope, M021's Downloads lesson) — fixed 08e912f
+- prior-review #2: ROADMAP row "Check native save names and slide embeds" still says Safari is not probed — follow-up at hygiene: the row is absorbed in full and is deleted there
+- ripple #1: same row — at hygiene, as prior-review #2
+- ripple #2: CLAUDE.md "No check saves it in Safari" read as covering native saves — fix now, fixed 08e912f ("the link's file")
+- ripple #3: PROFILE.md's verify slot did not list `save_name_check.mjs` — fix now, fixed 08e912f
+- Re-run after fixes (08e912f): the four `save_name_check.mjs` lines exit 0 ("with their own bytes"). Chromium plants wrongid, wrongname, otherbytes, nosave at embeds 1 and 3 each exit 1 naming that embed. Safari: otherbytes@1 and @3 fail on bytes, nosave@1 and @3 on no saved file, wrongname@3 (file) and @1 (http) on `dummy.pdf`. A file plus a `.download` folder put in ~/Downloads during the Safari lines survived. New finding while re-running: after about two runs' saves within a few minutes, Safari saved nothing, and later runs 2 to 3 minutes apart passed; a cross-origin `dummy.pdf` save made it worse, so the plant now uses a same-origin copy. Documented in the header and CLAUDE.md; a false failure only, not tracked under D-006.
