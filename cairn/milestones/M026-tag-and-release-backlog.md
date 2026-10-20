@@ -1,0 +1,138 @@
+<!-- Section ownership + write-modes: see tracking-rules.md "Milestone-file
+     section ownership". A phase skill never rewrites another phase's section.
+     Per-section owners are tagged below. The one size check that can fail is
+     cairn_validate's <150 over the plan-owned body. -->
+# M026: Tag and release every 1.x version
+
+- **Status:** planned
+- **Priority:** normal
+- **Depends on:** —
+- **Driving RR:** —
+- **Principles touched:** GP2
+- **Resolves:** —
+- **Surface tier:** user-facing — the tags, the GitHub releases page, and the README version badge are what users see
+- **Branch/PR:** —
+
+## Goal
+
+Every version from v1.0.0 to v1.2.9 has a tag on GitHub and a published GitHub release with notes.
+
+## Scope
+
+**In:** Publish releases for the three tags that have none (v1.0.0, v1.0.1,
+v1.0.2). Make an annotated tag for each of the 13 versions that have none,
+and publish a release for each. Each tag names the first commit in
+`git log --reverse v1.0.2..main -- _extensions/embedpdf/_extension.yml`
+whose file carries that version. Each such commit is a squash merge on
+main's first-parent line:
+
+| Version | Commit | Version | Commit |
+|---|---|---|---|
+| 1.0.3 | 8f1c68da9207e43204587f670f94b25366484eb1 | 1.2.4 | 47230e0b5d76e4a150d857277e786728af6b1eff |
+| 1.1.0 | 65d3afe9de471b669ca9ad2dad57582e50b089df | 1.2.5 | 7259b3c7d3b7034e7ddd3489b6d6a53ed587fcad |
+| 1.1.1 | ac0648fa1c0ce3ba540bf87f425193a731cd08d1 | 1.2.6 | 92a823eff2af6edf8cff5a8924a562405d8e8e36 |
+| 1.2.0 | c6227747972fc5f3f1f019b7826866dc382b4785 | 1.2.7 | fd582096d8de4ccfa59a568b3070909a8f33e037 |
+| 1.2.1 | a0429780f53fbae31a796014deb303a603bf0dce | 1.2.8 | 9c43bf93f2fd2b6cf7ee6439e8ac72931bd8beaf |
+| 1.2.2 | 4bb3b55d053977a7331c3118a7d41abd9a106018 | 1.2.9 | a68951d1022c87963258e6916a920f278775f367 |
+| 1.2.3 | a90e1ceef1f52df722cb82262b510659faf445b2 | | |
+
+The commit subject of 1.2.2 names no version. The notes follow the v0.5.0
+release: a short list of changes, then the Full Changelog compare link.
+Delete the DESIGN.md Known issues entry on the stale badge.
+
+**Out:** Making each later version get its tag and release when it merges →
+candidate row "Tag and release each version at merge". `quarto add
+jmgirard/embedpdf` installs from `main` in Quarto 1.10.19 (the
+`githubLatestUrlProvider` in `quarto.js`), so the releases do not change
+what users install, and no install change is planned.
+
+## Acceptance criteria
+
+The AC1 list is v1.0.0, v1.0.1, v1.0.2, v1.0.3, v1.1.0, v1.1.1, v1.2.0,
+v1.2.1, v1.2.2, v1.2.3, v1.2.4, v1.2.5, v1.2.6, v1.2.7, v1.2.8, v1.2.9.
+
+- [ ] AC1: For each version V in the AC1 list,
+      `gh release view V --repo jmgirard/embedpdf --json tagName,isDraft,isPrerelease`
+      shows a release with tag name V, `isDraft` false, and `isPrerelease` false.
+- [ ] AC2: `git ls-remote --tags origin` lists exactly v0.1.0, v0.2.0,
+      v0.4.0, v0.4.1, v0.5.0 and the 16 tags of the AC1 list, plus `^{}`
+      lines. Each AC1-list tag is annotated (it has a `^{}` line), and that
+      line names the commit that the Scope table gives (v1.0.0 d27bd412,
+      v1.0.1 808b403a, v1.0.2 9887d475 for the three that exist).
+      `git show V:_extensions/embedpdf/_extension.yml` gives `version:`
+      equal to V without its `v`. The tag objects of the eight tags that
+      exist stay: v0.1.0 f99bbaa7, v0.2.0 c8a52f3f, v0.4.0 f4d7ee07, v0.4.1
+      61efac62, v0.5.0 67e6974b, v1.0.0 a62c1fde, v1.0.1 a77ec2f8, v1.0.2
+      511e73a7.
+- [ ] AC3: `gh api repos/jmgirard/embedpdf/releases/latest --jq .tag_name`
+      prints `v1.2.9`.
+- [ ] AC4: `gh api repos/jmgirard/embedpdf/releases --paginate --jq '.[].tag_name'`
+      lists exactly v0.1.0, v0.2.0, v0.4.0, v0.4.1, v0.5.0 and the AC1 list.
+      Those five keep their name (equal to the tag name) and published_at
+      (v0.1.0 2023-04-14T00:19:20Z, v0.2.0 2023-04-14T14:32:15Z, v0.4.0
+      2024-03-18T23:41:34Z, v0.4.1 2024-03-19T01:14:59Z, v0.5.0
+      2025-11-26T01:09:39Z), and their bodies are unchanged from before T5.
+- [ ] AC5: Each AC1-list body ends with the line
+      `**Full Changelog**: https://github.com/jmgirard/embedpdf/compare/<previous>...<V>`,
+      where <previous> is the version before V in the AC1 list, or v0.5.0
+      for v1.0.0. Each body states the change that the subject of each
+      commit in `git log <previous>..V -- _extensions/` names. Each body
+      names every option name in the symmetric difference between the names
+      read through a literal `kwargs['…']` or `opt('…')` in
+      `git show <previous>:_extensions/embedpdf/embedpdf.lua` and in
+      `git show V:_extensions/embedpdf/embedpdf.lua`. The v1.0.0 body names
+      the `embedpdf` metadata key for defaults. A body that names a removed
+      option calls the removal a breaking change. Every sentence in a body is
+      borne out by `git diff <previous> V` or `git show V:<path>`.
+
+## Coverage
+
+- AC1 → T4, T5
+- AC2 → T1, T2, T4
+- AC3 → T5
+- AC4 → T1, T5
+- AC5 → T3, T5
+
+## Tasks
+
+- [ ] T1: Record the before-state in the work log: the five releases'
+      name, published_at, and a SHA-256 of each body (`gh api ... releases
+      --paginate`), and `git ls-remote --tags origin`. Check both against the
+      values in AC2 and AC4.
+- [ ] T2: Confirm the Scope table: for each version, the commit is the first
+      in the `git log --reverse` of the In paragraph whose `_extension.yml`
+      carries it, it is on `git log --first-parent main`, and nothing else
+      in `<previous>..V` touches `_extensions/`.
+- [ ] T3: Draft the 16 notes in files under the scratchpad (not the repo).
+      For each body, write one entry in this file's Decisions section that
+      lists, per sentence, the diff hunk, file, or commit that supports it, and run the option
+      rule of AC5. Commit subjects give the change; the diff decides what a
+      sentence claims. Link the PR number where a squash subject names one.
+- [ ] T4: Create the 13 annotated tags, `git tag -a vX.Y.Z <commit> -m
+      "embedpdf vX.Y.Z — <one-line summary>"`, as the v1.0.x tags are, and
+      push them with `git push origin <tags>` (tags only, never a branch
+      push or `--tags`). Read back with `git ls-remote --tags origin`.
+- [ ] T5: Publish the 16 releases oldest first: `gh release create V
+      --repo jmgirard/embedpdf --verify-tag --title V --notes-file <file>`,
+      with `--latest=false` on all but v1.2.9 and `--latest` on v1.2.9. Read
+      each back with `gh release view V --json body` and compare it to its
+      file.
+- [ ] T6: Delete the DESIGN.md Known issues entry "GitHub releases stop at
+      v0.5.0 and tags stop at v1.0.2 …", since every version then has a tag
+      and a release.
+
+## Work log
+
+- 2026-10-20: created by /milestone-plan.
+- 2026-10-20: tier check: milestone — pushing tags and publishing releases is an outward action with no file edit, so neither the hotfix nor the trivial tier fits.
+- 2026-10-20: collision check: absorbs candidate row "Publish GitHub releases for 1.0 tags" in full, widened to v1.0.3–v1.2.9 at the user's request; no planned or archived milestone and no D-entry covers releases or tags; inbox sweep found 0 open issues and 0 open PRs; no lesson bears on this scope.
+- 2026-10-20: question set: the user stopped the chip, asked whether tags or releases were missing, was told v1.0.0–v1.0.2 lack releases and 13 versions lack both, and wrote "can you fix all these issues?" — taken as the release window and as permission to push the 13 tags and publish the 16 releases in this run.
+- 2026-10-20: notes style decided by the agent (the question went unanswered): a short change list plus the Full Changelog link, as the v0.5.0 release has; the alternative was the compare link alone.
+- 2026-10-20: criteria audit (full mode, fresh Opus reader, two rounds). Round 1: option rule rewritten as a symmetric difference of literal names (fixed); `gh release list` has no body field, so AC4 names `gh api` (fixed); AC2 and AC4 bound to T1's record, so the known values are written into the criteria (fixed); "borne out" kept, with the per-sentence support list moved to T3 (fixed); v1.0.1's option removal must be called breaking (added); `--latest` made explicit (moved to T5).
+- 2026-10-20: criteria audit round 2: the option rule is empty for v1.0.3–v1.2.9, so AC5 adds the commit-subject clause (fixed); old tag SHAs and release dates written into AC2 and AC4 (fixed); new tags must be annotated (fixed); optional `local VERSION` match in `embedpdf.lua` not added (narrower promise); tag pushes need user approval (covered by the question-set line above).
+- 2026-10-20: plan gate chose publishing at implement over draft releases published after the merge, because the user asked for the fix now and review then reads live releases; falsified by a review finding in a note that an edit of the release cannot repair.
+- 2026-10-20: plan gate chose the first commit whose `_extension.yml` carries the version as each tag's target over the later "review M0NN: done" commits, because the squash merge is the shipped code; falsified by a version whose shipped files differ between those two commits outside `cairn/`.
+
+## Decisions
+
+## Review
