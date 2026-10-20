@@ -65,6 +65,7 @@
 - 2026-10-19: T5 done: all 30 `node tests/ios_check.mjs` lines in CLAUDE.md exit 0 on the first run with the ios_check.mjs of commit 852aea3 (4 s to 19 s each). A search of README.md, cairn/DESIGN.md, and CLAUDE.md found no text saying iOS does not check revealjs_test.html or that download links are counted only in Chromium. CLAUDE.md's new sentence was rewrapped.
 - 2026-10-19: claim audit: not owed — internal tier.
 - 2026-10-19: implement done, status review.
+- 2026-10-19: step-7 approval: m018-ios-deck-and-links approved for merge
 
 ## Decisions
 
