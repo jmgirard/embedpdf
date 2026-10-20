@@ -36,12 +36,17 @@
 // first.
 //
 // On a RevealJS slide deck the check sets Reveal's minScale and maxScale to
-// 1, so each embed has the CSS size its options give (no window size gives a
-// scale of exactly 1), and exits 2 unless Reveal.getScale() is then 1. For
-// each native embed in page order it shows the slide that holds the embed
-// (Reveal.slide), reads the embed's element, address, box, and placeholder
+// 1, so each embed has the CSS size its options give (for Quarto's 1050 x 700
+// deck with margin 0.1, no whole-pixel window size gives a scale of exactly
+// 1), and exits 2 unless Reveal.getScale() is then 1. So other scales are not
+// checked. For each native embed in page order it shows the slide that holds
+// the embed (Reveal.slide; uncounted slides too), waits up to 5 s for an
+// <iframe>'s address (the viewer sets it once the frame has a box), reads
+// the embed's element, address, box, and placeholder
 // there, and takes its screenshot. It fails an embed whose slide is not the
-// current slide (Reveal.getCurrentSlide()) before or after its screenshot.
+// current slide (Reveal.getCurrentSlide()) before or after its screenshot,
+// and an embed for which Reveal did not show the slide the check went to in
+// 5 s. A plant whose embed has no address after 5 s exits 2.
 //
 // It then takes a screenshot of each native embed and a screenshot of a
 // reference: the element the embed should be (an <iframe>, or an <object
@@ -431,8 +436,9 @@ try {
   if (st.native.length !== expectNative) failures.push(`expected ${expectNative} native embeds, found ${st.native.length}`);
 
   // a RevealJS slide deck: hold Reveal's scale at 1, so each embed has the
-  // CSS size its options give, as the references do (no window size gives a
-  // scale of exactly 1: Reveal scales by the window's size less its margin)
+  // CSS size its options give, as the references do (Reveal scales by the
+  // window's size less its margin, and for Quarto's 1050 x 700 deck with
+  // margin 0.1 no whole-pixel window size gives exactly 1)
   const deck = await drv.run(`() => !!(window.Reveal && typeof window.Reveal.slide === "function" && document.querySelector(".reveal .slides"))`);
   if (deck) {
     let scale = null;
@@ -481,6 +487,9 @@ try {
       st = await state();
       cur = st.native[k - 1];
     }
+    // a plant copies the address and its fragment, so an empty one would make
+    // the run fail for another reason than the plant's
+    if (!cur.address) throw new SetupError(`--plant ${plant}: native embed ${k} has no address after 5 s`);
     const bytes = plantBytes[plant] ? plantBytes[plant]() : null;
     const frag = cur.address.includes("#") ? cur.address.slice(cur.address.indexOf("#")) : "";
     const addr = plant === "fileaddr" ? referenceAddress + frag : plant === "nopage" ? cur.address.split("#")[0] : null;
@@ -540,7 +549,9 @@ try {
     const at = await drv.run(
       `(i, other) => {
         const d = document.querySelectorAll("div.embedpdf-native")[i];
-        const slides = window.Reveal.getSlides();
+        // every slide, the uncounted ones too (Reveal.getSlides() leaves out
+        // data-visibility="uncounted"); a slide is a section with no section in it
+        const slides = [...document.querySelectorAll(".reveal .slides section")].filter((x) => !x.querySelector("section"));
         const s = other ? slides.find((x) => !x.contains(d)) : slides.find((x) => x.contains(d));
         if (!s) return null;
         const { h, v } = window.Reveal.getIndices(s);
@@ -576,6 +587,13 @@ try {
       // the embed's own state on its slide: on a slide that RevealJS does not
       // display, its element has no box, and nothing of its placeholder shows
       st = await state();
+      if (!slide) failures.push(`native embed ${i + 1}: Reveal did not show the slide the check went to in 5 s`);
+      // the viewer gives an <iframe> its address once it has a box, so wait
+      // for it (at most 5 s), as a reader's view would
+      for (let t = 0; st.native[i].tag === "iframe" && !st.native[i].address && t < 25; t++) {
+        await sleep(200);
+        st = await state();
+      }
       if (plantTarget === i + 1) await applyPlant(plantTarget);
       current = await onCurrent(i);
     }

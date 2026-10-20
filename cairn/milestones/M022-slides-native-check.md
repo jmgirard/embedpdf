@@ -88,6 +88,7 @@ A check shows that each native embed on the self-contained RevealJS slides shows
 - 2026-10-20: claim audit (Opus reader) read 38 claims, 4 false and 1 loose, all corrected: README `page` row (slide not displayed at load, view distance), README line 86 (walk is slides 1, 2, 4; save name scoped to one Chromium probe), CLAUDE.md "Still unverified" (the walk), two native_check comments; DESIGN Known issues gets the same walk wording. Re-read pending (checkpoint).
 - 2026-10-20: claim audit: 38 claims read, 5 corrected — README.md, CLAUDE.md, tests/native_check.mjs; the re-read found all corrections hold and one more over-broad DESIGN Known issues line (save name), now scoped to headless Chromium 155.
 - 2026-10-20: status → review.
+- 2026-10-20: review: Scope In's "more than its view distance" is off by one (Reveal hides a slide at distance ≥ its view distance); plan-owned wording left as is, README corrected (diff-bug #3).
 
 ## Decisions
 
@@ -96,3 +97,30 @@ A check shows that each native embed on the self-contained RevealJS slides shows
 - Review pass 1, 2026-10-20, branch at 86dc974 (main 180552b, not moved).
 - AC6: `cairn/DESIGN.md:209-214` Known issues entry, observed 2026-10-20, gives the name headless Chromium 155 gave the saved copy (`03acb7cf-e9fe-49b4-b425-fa1a410248fe.pdf`) for the first native embed of `selfcontained_test.html` opened alone. Pass.
 - AC7: `grep -n -i "revealjs\|slide" CLAUDE.md README.md cairn/DESIGN.md` prints 51 lines; the lines this milestone added or changed (`git diff main...HEAD`) were read against the repo (claim audit plus this read); the only grep hits for "any browser / not checked this way / no browser / were not checked" are README.md:86's "Firefox and Safari were not checked" about the save button, not slides; CLAUDE.md holds the six AC2 lines (exact-line `grep -c` = 6). Pass.
+- Consistency gate: `cairn_validate.py` all checks passed (1 advisory: 8 criteria > 7); profile `generic` names no toolchain checks; no principle changed, `cairn_impact` skipped.
+- spawned: diff-bug, blame-history, prior-review, ripple.
+- A first full check run (41 of 125 lines, all exit 0) was stopped because fix-now work changed the viewer; the evidence below is from runs after the fixes.
+- diff-bug #1: `applyPlant` goes on after 5 s with an empty address, so a plant can fail for another reason — fix now: exits 2 (SetupError).
+- diff-bug #2: a deck embed that is not the plant target gets no wait for its `<iframe>` address — fix now: the walk waits up to 5 s for it.
+- diff-bug #3: the passing runs load the slide-4 `<iframe>` when slide 2 is current (slide 4 then displayed, opacity 0), and README's "more than the view distance" is off by one (Reveal hides distance ≥ 3) — fix now: README says "at least"; the Scope In text has the same off-by-one, left as plan-owned wording (logged in the work log).
+- diff-bug #4: DESIGN Known issues and the ROADMAP releases row say 1.2.7 — fix now: 1.2.8.
+- diff-bug #5: the viewer tests "has a box", not "is visible", so a frame with `visibility:hidden`, opacity 0, or in a closed `<details>` loads at hydration — follow-up: new candidate row at hygiene.
+- diff-bug #6: no ResizeObserver feature guard; a browser without it throws and leaves an empty `<iframe>` — fix now: such a browser loads at once, as in 1.2.7.
+- diff-bug #7: an observer of a frame removed before it gets a box stays — follow-up: new candidate row (a removed 0 x 0 frame gets no callback, so an `isConnected` check does not help).
+- diff-bug #8: `src` set after `appendChild` gives an initial about:blank — reject (false: no history entry and no `load` listener, as the reviewer found).
+- diff-bug #9: "slides 1, 2, and 4" are 0-based with the title as 0, unstated — fix now: README, CLAUDE.md, DESIGN say so.
+- blame-history #1: the same slide numbering — fix now (with diff-bug #9).
+- blame-history #2: README says slides were checked "in the same way" but only at Reveal scale 1 — fix now: README, CLAUDE.md "Still unverified", DESIGN, and the native_check header say other scales are not checked.
+- blame-history #3: the T3 work-log falsifier line reads as falsifying the chosen trigger — reject (false: the line names the evidence that would falsify the chosen approach, the form the plan template asks for; the work log is append-only).
+- blame-history #4: `noslide` passes silently if `showSlide` returns null — fix now: an embed whose slide Reveal did not show in 5 s fails.
+- blame-history #5: `applyPlant` empty address — fix now (with diff-bug #1).
+- blame-history #6: a framed embed hidden at load on a normal page has an empty `src` until shown, unchecked — follow-up: new candidate row (Scope Out names it; DESIGN Known issues lists it).
+- blame-history #7: "no window size gives a scale of exactly 1" is too broad — fix now: scoped to Quarto's 1050 x 700 deck with margin 0.1 (scale = window size x 0.9 / deck size, so exactly 1 needs 1166.67 or 777.78 px).
+- blame-history #8: CLAUDE.md "the self-contained page" lost the file name — reject (planned change: the sentence now covers two self-contained pages).
+- prior-review #1: the walk uses `Reveal.getSlides()`, which leaves out uncounted slides (M016 finding and lesson) — fix now: the walk finds slides as sections with no section inside.
+- prior-review #2: a frame in a container that is never shown never loads — reject (planned change: the fix loads the PDF only once the frame has a box).
+- ripple #1: row "Check native save names and slide embeds" says slides are unchecked and the save name unknown — fix at step 9 hygiene (records-hygiene §1 narrows the row).
+- ripple #2: row "Check embeds open at their page option" says no test page puts such an `<iframe>` on slides — fix at step 9 hygiene (narrowed there).
+- ripple #3: DESIGN releases entry says 1.2.7 — fix now (with diff-bug #4).
+- ripple #4: ROADMAP releases row says 1.2.7 — fix now (with diff-bug #4).
+- ripple #5: ROADMAP row cites `embedpdf-viewer.js:411`, already wrong — fix now: names `hydratePdfjs` instead.

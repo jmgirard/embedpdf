@@ -200,7 +200,7 @@ load on the same queue, and a text task runs only when no page render waits
   v1.2.8 the viewer gives such an `<iframe>` its address once it has a box.
   On `selfcontained_slides_test.html` its slide-4 `<iframe>` then opened at
   page 2 in Chromium 155 and Firefox 158 (headless) and desktop Safari
-  27.0.1, when `tests/native_check.mjs` showed slides 1, 2, and 4 in turn (M022) —
+  27.0.1, when `tests/native_check.mjs` showed slides 1, 2, and 4 in turn (the title slide is 0), at a RevealJS scale of 1 (M022) —
   observed 2026-10-20. A direct jump to that slide from slide 0 opened it at
   page 2 in one Chromium 155 probe. Not checked: that jump in other
   browsers, a slide hidden at load within RevealJS's view distance, a tab or
@@ -222,8 +222,8 @@ load on the same queue, and a text task runs only when no page render waits
   and 27.1 simulators by `tests/ios_check.mjs`, and iOS versions before 27 are
   not checked (corrected M001) — observed 2026-10-18.
 - GitHub releases stop at v0.5.0 and tags stop at v1.0.2, while the
-  extension is at 1.2.7, so the README version badge shows 0.5.0 (corrected
-  M021) — observed 2026-10-20.
+  extension is at 1.2.8, so the README version badge shows 0.5.0 (corrected
+  M021; corrected M022) — observed 2026-10-20.
 - Safari refuses a read of a PDF from another site that an `<object>` on the
   page loaded. So a PDF.js embed of that PDF reads it with `embedpdf=pdfjs`
   added to its query (corrected M014). A real site's answer to that address

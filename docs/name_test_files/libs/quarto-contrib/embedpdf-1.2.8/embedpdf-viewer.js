@@ -186,7 +186,8 @@ function hydrateNative(el, opts, framed) {
     const load = () => {
       frame.src = address;
     };
-    if (frame.getClientRects().length > 0 && frame.offsetWidth > 0 && frame.offsetHeight > 0) {
+    // a browser with no ResizeObserver loads it at once, as before 1.2.8
+    if (typeof ResizeObserver !== "function" || (frame.getClientRects().length > 0 && frame.offsetWidth > 0 && frame.offsetHeight > 0)) {
       load();
     } else {
       const watch = new ResizeObserver(() => {
