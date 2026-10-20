@@ -162,8 +162,8 @@ node tests/ios_check.mjs --device "embedpdf iPad" --page selfcontained_slides_te
 
 On a RevealJS page, both scripts show each slide in turn before they check
 its embeds. ios_check also fails a PDF.js embed whose ink or text it read
-while another slide was current. `--plant noslide` skips the last slide that
-holds a PDF.js embed. On the iPhone simulator, RevealJS shows the slides
+while another slide was current. ios_check's `--plant noslide` skips the last
+slide that holds a PDF.js embed. On the iPhone simulator, RevealJS shows the slides
 in its scrolled view (the report's `scrollView`). `revealjs_test.html` has no
 ios_check line, because ios_check takes one `--expect-pages` for all embeds.
 
