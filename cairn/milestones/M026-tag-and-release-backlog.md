@@ -72,7 +72,7 @@ v1.2.1, v1.2.2, v1.2.3, v1.2.4, v1.2.5, v1.2.6, v1.2.7, v1.2.8, v1.2.9.
       (v0.1.0 2023-04-14T00:19:20Z, v0.2.0 2023-04-14T14:32:15Z, v0.4.0
       2024-03-18T23:41:34Z, v0.4.1 2024-03-19T01:14:59Z, v0.5.0
       2025-11-26T01:09:39Z), and their bodies are unchanged from before T5.
-- [ ] AC5: Each AC1-list body ends with the line
+- [x] AC5: Each AC1-list body ends with the line
       `**Full Changelog**: https://github.com/jmgirard/embedpdf/compare/<previous>...<V>`,
       where <previous> is the version before V in the AC1 list, or v0.5.0
       for v1.0.0. Each body states the change that the subject of each
@@ -187,3 +187,25 @@ Pass 2 (2026-10-20), branch at a54fcc3 after review return 1, main not moved.
 - AC3: re-run, `releases/latest` gave `v1.2.9`.
 - AC4: re-run, 21 releases; the five v0.x names, published_at values, and body SHA-256 prefixes equal T1's.
 - Gate: `cairn_validate.py` all checks passed; the generic profile names no toolchain checks; no principle text changed, so `cairn_impact` is skipped.
+- spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1: v1.2.7 "now opens at that page in desktop Safari" overstates, since only an `<iframe>` does — fix now, fixed by release edit ("can now open").
+- diff-bug #2: v1.2.5 omits that the other site must allow cross-site reads, and says PDF.js adds the query where the viewer does — fix now, fixed by release edit.
+- diff-bug #3: v1.2.7 "when the browser has a built-in PDF viewer" is wrong on iPhone and iPad (`nativeSupported()` is false there) and omits the 5 s limit and the redirect-origin check — fix now, fixed by release edit.
+- diff-bug #4: v1.2.1 "or PDF when its address names no file" fits the v1.2.2 rule; at v1.2.1 the name is the last path part before a query, and an inlined PDF takes its link's name — fix now, fixed by release edit.
+- diff-bug #5: v1.0.0 calls the page indicator a control — fix now, fixed by release edit.
+- diff-bug #6: v1.0.0 and v1.2.6 say "PDF output" where only LaTeX output uses `\includepdf` — fix now, fixed by release edit.
+- diff-bug #7: v1.0.0 "when the browser reports one" omits the user-agent guess when `pdfViewerEnabled` is missing — fix now, fixed by release edit ("when the browser has one").
+- diff-bug #8: v1.0.1 "often" comes from the commit message, not the diff — fix now, fixed by release edit ("could stay blank").
+- diff-bug #9: v1.0.3 reads as if every iOS version shows only page 1; the code comment says older versions — fix now, fixed by release edit.
+- diff-bug #10: v1.2.6 omits that the download link of other formats also gets `%25` — fix now, fixed by release edit.
+- diff-bug #11: the T7 lines' support is in the work log, not the T3 Decisions entry — reject, false: the support is recorded, in the T7 work-log line.
+- diff-bug #12: the candidate row "Publish GitHub releases for 1.0 tags" still says the badge shows 0.5.0 — reject, planned change: post-merge hygiene deletes the row.
+- blame-history #1: the same candidate row stays on the branch — reject, planned change: post-merge hygiene deletes it.
+- blame-history #2: recurrence is guarded only by a candidate row — reject, planned change: the plan's Out item sends it to "Tag and release each version at merge".
+- blame-history #3: M026's choices are not D-entries — reject, false: milestone-local choices belong in the milestone file.
+- blame-history #4: the badge depends on `releases/latest` staying current — follow-up, already held by the row "Tag and release each version at merge".
+- blame-history #5: the hygiene stamp still names M025 — reject, planned change: post-merge hygiene replaces it.
+- prior-review: no prior-review evidence (no archived Review findings on these files; no PR review threads).
+- ripple #1: the candidate row "Publish GitHub releases for 1.0 tags" is stale — reject, planned change: post-merge hygiene deletes it.
+- ripple #2: the new row's "until M026" and "(M026 plan)" are out of date — reject, false: both are true lineage statements.
+- AC5: after the ten fixes, all 16 bodies read back equal their note files (16/16); each ends with its Full Changelog line (16/16); v1.0.0 names `page`, `renderer`, `toolbar`, and the `embedpdf` metadata key; v1.0.1 names the six `image*` options and says "Breaking change"; the option rule gives no other names; the diff-bug lens found each commit subject's change stated in its body and no false sentence before the edits, and each edited sentence was checked against `git show V:` (v1.2.7's page-1 sentence against `CLAUDE.md` at fd58209).
