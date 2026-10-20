@@ -269,6 +269,38 @@ node tests/ios_check.mjs --device "embedpdf iPhone" --page shared_test.html --re
 node tests/ios_check.mjs --device "embedpdf iPad" --page shared_test.html --remote cors --expect-ranges --expect-native 1 --expect-embeds 1 --expect-pages 14
 ```
 
+A slow machine: after render_check scrolls the pages, it waits until every
+embed is hydrated and every PDF.js page has a canvas. It measures ink after
+this wait, not after a fixed time. If nothing is missing, the wait ends. It
+also ends after 10 s in which no embed newly hydrated and no page newly got
+a canvas, or after 120 s in all. On a RevealJS page this wait runs on each
+slide. `--cpu-throttle <n>` slows Chromium's CPU n times. Only the page-load
+limit grows with it. The line below must exit 0. With `--plant norender`
+added, it must exit 1 and name "no canvas" for every page. In the runs on
+2026-10-19 it took 59 s to 127 s:
+
+```
+node tests/render_check.mjs large_test.html --device iphone --expect-native 0 --expect-pdfjs 2 --expect-pages 14 --expect-name "large.pdf|large-2.pdf" --cpu-throttle 70
+```
+
+Both scripts give each PDF.js page's ink as "ok", "no canvas", "no ink", or
+"unreadable (…)". A failure line names each page that is not "ok". In
+ios_check, `--plant blank` paints the canvas of the last page of the first
+PDF.js embed white, and the run must name "no ink". `--plant nocanvas`
+removes that canvas, and the run must name "no canvas".
+
+A page that forbids eval: with `--csp`, render_check's server sends a
+Content-Security-Policy whose `script-src` omits `'unsafe-eval'`. The run
+fails unless the page arrives with it. render_check runs no eval in the page.
+In Chromium 155 on 2026-10-19, code that puppeteer ran in the page used eval
+under this header with no error. So this line shows only that the viewer
+renders `sample.pdf` under such a policy. No check renders a PDF with JPEG
+2000 or JBIG2 images under it:
+
+```
+node tests/render_check.mjs example.html --csp --expect-native 9 --expect-pdfjs 2 --expect-pages 2
+```
+
 `render_check.mjs` serves `docs/` itself with `tests/serve_docs.mjs`. If every
 page of every PDF.js embed has a canvas with ink and the counts match, it exits
 0. Both scripts use the ink rule in `tests/ink.mjs`. If Google Chrome is not

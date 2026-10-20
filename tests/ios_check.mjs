@@ -4,9 +4,11 @@
 // directory that holds only a copy of the page. It injects a probe script into
 // every HTML response, opens the page in the simulator's Safari with `simctl openurl`, and
 // waits for the probe to POST a per-embed report: which renderer each embed
-// used, how many .embedpdf-page containers it has, and whether each page's
-// canvas has ink, by the rule in tests/ink.mjs (some pixel neither transparent
-// nor white, read over every pixel and channel). No dependencies beyond Node
+// used, how many .embedpdf-page containers it has, and each page's ink: "ok"
+// when its canvas has ink by the rule in tests/ink.mjs (some pixel neither
+// transparent nor white, read over every pixel and channel), else "no
+// canvas", "no ink", or "unreadable (…)". A failure line names each page that
+// is not "ok" and its state. No dependencies beyond Node
 // and Xcode's simctl.
 //
 // Setup (once): install Xcode, run its first-launch setup, download the iOS
@@ -30,17 +32,20 @@
 //   --screenshot <file>    save a simulator screenshot, taken with the first
 //                          renderer=native embed scrolled into view
 //   --shot-embed <n>       scroll embed n (1-based) into view for the screenshot
-//   --plant blank|missing|notext|swap|visible|inert|cvhidden|unhydrated
+//   --plant blank|nocanvas|missing|notext|swap|visible|inert|cvhidden|unhydrated
 //                          plant a defect in the first PDF.js embed before
 //                          measuring (blank its last page canvas, remove
-//                          that page's container, empty that page's hidden
+//                          that canvas and keep the page, remove that
+//                          page's container, empty that page's hidden
 //                          text, swap the first two pages' text, set the
 //                          last text block's overflow to visible, set inert
 //                          on the last page, or set the last text block's
 //                          content-visibility to hidden), or (unhydrated)
 //                          add a div.embedpdf with no data-src to the page
 //                          before the text wait; the check must then fail.
-//                          All but blank and missing need --expect-text.
+//                          All but blank, nocanvas, and missing need
+//                          --expect-text. blank and nocanvas need that page
+//                          to have a canvas.
 //                          Each exits 2 when it finds nothing to plant in.
 //   --expect-text "<p1>|<p2>|…"
 //                          phrase i is a phrase of page i's text. Before the
@@ -343,9 +348,9 @@ const RANGE_PLANTS = ["noranges"];
 // planted in the slide walk of a RevealJS deck
 const SLIDE_PLANTS = ["noslide"];
 // planted in the first PDF.js embed just before its ink is measured
-const INK_PLANTS = ["blank", "missing"];
-if (plant && !["blank", "missing", ...NAME_PLANTS, ...TEXT_PLANTS, ...WAIT_PLANTS, ...DOWNLOAD_PLANTS, ...RANGE_PLANTS, ...SLIDE_PLANTS].includes(plant)) {
-  console.error(`ios_check: --plant must be blank, missing, ${[...TEXT_PLANTS, ...WAIT_PLANTS, ...NAME_PLANTS, ...DOWNLOAD_PLANTS, ...RANGE_PLANTS, ...SLIDE_PLANTS].join(", ")}`);
+const INK_PLANTS = ["blank", "nocanvas", "missing"];
+if (plant && ![...INK_PLANTS, ...NAME_PLANTS, ...TEXT_PLANTS, ...WAIT_PLANTS, ...DOWNLOAD_PLANTS, ...RANGE_PLANTS, ...SLIDE_PLANTS].includes(plant)) {
+  console.error(`ios_check: --plant must be ${[...INK_PLANTS,...TEXT_PLANTS, ...WAIT_PLANTS, ...NAME_PLANTS, ...DOWNLOAD_PLANTS, ...RANGE_PLANTS, ...SLIDE_PLANTS].join(", ")}`);
   process.exit(2);
 }
 if (RANGE_PLANTS.includes(plant) && !expectRanges) {
@@ -548,29 +553,29 @@ const PROBE = `<script>
 
   // the ink rule of tests/ink.mjs, inlined from its source text
   const inkInPixels = ${inkInPixels.toString()};
-  const hasInk = (c) => {
+  // per page: "ok" when its canvas has ink, else "no canvas", "no ink", or
+  // "unreadable (…)" when the canvas cannot be read
+  const inkState = (c) => {
     try {
-      return inkInPixels(c.getContext("2d").getImageData(0, 0, c.width, c.height).data);
-    } catch (e) { errors.push("ink: " + e); }
-    return false;
+      return inkInPixels(c.getContext("2d").getImageData(0, 0, c.width, c.height).data) ? "ok" : "no ink";
+    } catch (e) { return "unreadable (" + e + ")"; }
   };
-  const inkOf = (el) => [...el.querySelectorAll(".embedpdf-page")].map((p) => { const c = p.querySelector("canvas"); return !!c && hasInk(c); });
-  // blank its last page canvas, or remove that page's container
+  const inkOf = (el) => [...el.querySelectorAll(".embedpdf-page")].map((p) => { const c = p.querySelector("canvas"); return c ? inkState(c) : "no canvas"; });
+  // blank its last page canvas, remove that canvas, or remove that page's
+  // container; blank and nocanvas need the canvas to be there
   let inkPlanted = "";
   const plantInk = (el) => {
     const pages = el.querySelectorAll(".embedpdf-page");
     const last = pages[pages.length - 1];
     if (last && plant === "missing") { last.remove(); inkPlanted = plant; }
-    // a last page with no canvas already has no ink, so it counts as planted
     const canvas = last && last.querySelector("canvas");
-    if (last && plant === "blank") {
-      if (canvas) {
-        const ctx = canvas.getContext("2d");
-        ctx.fillStyle = "#fff";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-      }
+    if (canvas && plant === "blank") {
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
       inkPlanted = plant;
     }
+    if (canvas && plant === "nocanvas") { canvas.remove(); inkPlanted = plant; }
   };
 
   // A RevealJS deck: a PDF.js embed on a slide that is not shown has pages of
@@ -993,7 +998,7 @@ try {
     // on a deck the ink is measured on the slide, and the pages counted at the
     // report, so an embed that hydrated after its slide has fewer ink entries
     else if (e.ink.length !== e.pages) failures.push(`embed ${e.index}: ink measured for ${e.ink.length} pages, but it has ${e.pages}`);
-    else if (!e.ink.every(Boolean)) failures.push(`embed ${e.index}: pages without ink: ${e.ink.map((v, i) => (v ? null : i + 1)).filter(Boolean).join(", ")}`);
+    else if (!e.ink.every((v) => v === "ok")) failures.push(`embed ${e.index}: ${e.ink.map((v, i) => (v === "ok" ? null : `page ${i + 1} ${v}`)).filter(Boolean).join(", ")}`);
     // on a RevealJS deck: the probe measured the ink, and read the text, while
     // the embed's own slide was shown (slides counted from 1 here)
     if (e.slide !== null && e.renderer === "pdfjs" && !blocked && !missingPdfs && !expectDownloads) {

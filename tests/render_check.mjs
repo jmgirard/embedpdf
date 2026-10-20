@@ -110,8 +110,10 @@
 //                       visible, no aria-hidden on it or an ancestor, and no
 //                       inert attribute or computed content-visibility
 //                       hidden on it or an element that contains it. After
-//                       the pages are scrolled and each has a canvas (a wait
-//                       of at most 10 s per embed), also fail unless Chrome's
+//                       the pages are scrolled and the canvas wait (below)
+//                       ends, the tree check waits again, at most 10 s per
+//                       embed, for each page to have a canvas, then fails
+//                       unless Chrome's
 //                       accessibility tree (puppeteer accessibility.snapshot,
 //                       interestingOnly false) gives each page role group,
 //                       the name "Page i of n", and its phrase, gives no page
@@ -148,8 +150,10 @@
 //                       with no data-src before the text wait, and norender
 //                       makes every canvas's getContext return null from
 //                       load on, so no page gets a canvas (meant for a
-//                       RevealJS page: elsewhere each embed's canvas wait
-//                       runs out in turn). Needs --expect-text.
+//                       RevealJS page: elsewhere each embed's tree-check
+//                       canvas wait runs out in turn). Without
+//                       --expect-text, norender is an ink plant (its own
+//                       entry below).
 //   --expect-name "<file name>" | "<name 1>|<name 2>|..."
 //                       after the pages are scrolled, fail unless each PDF.js
 //                       embed has role="group" and its expected aria-label
@@ -238,10 +242,41 @@
 //                       the run must fail and name each PDF.js embed's
 //                       address; with no PDF.js embed it exits 2 (nothing
 //                       to plant in).
+//   --cpu-throttle <n>  slow Chromium's CPU n times (n a whole number above
+//                       1), as on a slow machine; the page load may then
+//                       take up to 120 s. Only that limit grows: the
+//                       --expect-text wait and the --expect-name waits keep
+//                       their limits, so a throttled run with them can fail
+//                       on those limits alone.
+//   --csp               the page's server sends NO_EVAL_CSP (in
+//                       tests/serve_docs.mjs), a Content-Security-Policy
+//                       whose script-src omits 'unsafe-eval'; fail unless
+//                       the page arrives with it. Not with a URL or --alone
+//                       file. render_check runs no eval or new Function in
+//                       the page. In Chromium 155, code that puppeteer ran
+//                       in the page used them under this header with no
+//                       error (2026-10-19), so the run shows that the viewer
+//                       renders under it, not that render_check needs no eval.
+//   --plant norender    every canvas's getContext returns null from load
+//                       on, so no page gets a canvas; the run must then fail
+//                       with "no canvas" on every PDF.js page, after the
+//                       canvas wait below runs out. Needs no other flag; with
+//                       --expect-text it is also a text plant (see the
+//                       --plant list of text plants above).
 // Set CHROME_PATH to use another Chrome or Chromium binary.
 //
-// On a RevealJS page the check goes to each slide with Reveal.slide() and
-// scrolls each embed's pages into view before it measures. On each slide (or
+// Canvas wait: after the pages scroll, the check waits until every embed is
+// hydrated and every page of its PDF.js embeds has a canvas. Each pass scrolls
+// each page with no canvas into view again. The wait ends when nothing is
+// missing, after 10 s in which no embed newly hydrated and no page newly got
+// a canvas, or after 120 s in all (each limit checked before each 300 ms
+// scroll step). The ink measure waits for this, not for a fixed time; the
+// 300 ms per page scroll and 1500 ms per slide pauses only pace scrolling and
+// slide changes. The report gives each wait in "canvasWaits".
+//
+// On a RevealJS page the check goes to each slide with Reveal.slide(),
+// scrolls each embed's pages into view, and runs the canvas wait for that
+// slide before it measures. On each slide (or
 // on the whole page when it has no slides), the --expect-name check first
 // waits at most 10 s for the embeds to be hydrated, and fails when that wait
 // runs out. The --expect-text wait comes once, before the first slide.
@@ -263,7 +298,7 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import puppeteer from "puppeteer-core";
-import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, docsFile, REMOTE_MODES, DOCS, SLOW_ABOVE } from "./serve_docs.mjs";
+import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, docsFile, REMOTE_MODES, DOCS, SLOW_ABOVE, NO_EVAL_CSP } from "./serve_docs.mjs";
 import { inkInPixels } from "./ink.mjs";
 import { expectedNames } from "./expect_names.mjs";
 
@@ -319,8 +354,8 @@ const DEVICES = {
 // one optional page or URL, plus flags that each take a value and flags that
 // take none; anything else (a misspelled flag, --flag=value) is an error
 // rather than silently ignored
-const FLAGS = ["device", "expect-native", "expect-pdfjs", "expect-pages", "expect-links", "expect-failed", "expect-download", "expect-text", "expect-name", "plant", "alone", "remote", "slow-text"];
-const BOOL_FLAGS = ["missing-pdfs", "expect-ranges"];
+const FLAGS = ["device", "expect-native", "expect-pdfjs", "expect-pages", "expect-links", "expect-failed", "expect-download", "expect-text", "expect-name", "plant", "alone", "remote", "slow-text", "cpu-throttle"];
+const BOOL_FLAGS = ["missing-pdfs", "expect-ranges", "csp"];
 // planted in the server that serves the PDFs, before the page loads
 const RANGE_PLANTS = ["noranges"];
 const TEXT_PLANTS = ["notext", "swap", "visible", "gone", "inert", "cvhidden"];
@@ -376,6 +411,13 @@ if (flags["slow-text"] !== undefined && !(phrases && /^\d+$/.test(flags["slow-te
   console.error("render_check: --slow-text needs --expect-text and a whole number of milliseconds above 0");
   process.exit(2);
 }
+const cpuThrottle = flags["cpu-throttle"] === undefined ? null : Number(flags["cpu-throttle"]);
+if (flags["cpu-throttle"] !== undefined && !(/^\d+$/.test(flags["cpu-throttle"]) && cpuThrottle > 1)) {
+  console.error("render_check: --cpu-throttle needs a whole number above 1 (the factor by which Chromium's CPU is slowed)");
+  process.exit(2);
+}
+// --csp: the page's server sends NO_EVAL_CSP, which blocks eval in the page
+const cspHeader = flags["csp"] === true ? NO_EVAL_CSP : null;
 const expectName = flags["expect-name"] ?? null;
 // one name for the --expect-native plus --expect-pdfjs embeds, or
 // "a.pdf|b.pdf": one per native or PDF.js embed, in page order
@@ -402,6 +444,7 @@ if (
   plant &&
   !(
     INK_PLANTS.includes(plant) ||
+    plant === "norender" ||
     (phrases && [...TEXT_PLANTS, ...TREE_PLANTS, ...WAIT_PLANTS].includes(plant)) ||
     (expectName && NAME_PLANTS.includes(plant)) ||
     (expectDownloads && DOWNLOAD_PLANTS.includes(plant)) ||
@@ -409,7 +452,7 @@ if (
   )
 ) {
   console.error(
-    `render_check: --plant must be ${INK_PLANTS.join(", ")}, or ${[...TEXT_PLANTS, ...TREE_PLANTS, ...WAIT_PLANTS].join(", ")} with --expect-text, or ${NAME_PLANTS.join(", ")} with --expect-name, or ${DOWNLOAD_PLANTS.join(", ")} with --expect-download, or ${RANGE_PLANTS.join(", ")} with --expect-ranges`
+    `render_check: --plant must be ${INK_PLANTS.join(", ")}, norender, or ${[...TEXT_PLANTS, ...TREE_PLANTS, ...WAIT_PLANTS].join(", ")} with --expect-text, or ${NAME_PLANTS.join(", ")} with --expect-name, or ${DOWNLOAD_PLANTS.join(", ")} with --expect-download, or ${RANGE_PLANTS.join(", ")} with --expect-ranges`
   );
   process.exit(2);
 }
@@ -419,6 +462,10 @@ if (expectRanges && (alone || missingPdfs || /^https?:/.test(target) || (remote 
 }
 if (alone && alone !== "http" && alone !== "file") {
   console.error("render_check: --alone must be http or file");
+  process.exit(2);
+}
+if (cspHeader && (/^https?:/.test(target) || alone === "file")) {
+  console.error("render_check: --csp needs a page that render_check serves itself (not a URL, not --alone file)");
   process.exit(2);
 }
 if (remote && !REMOTE_MODES.includes(remote)) {
@@ -495,13 +542,14 @@ if (targetFile) {
 const server =
   /^https?:/.test(target) || alone === "file"
     ? null
-    : await serveDocs(
-        aloneDir
+    : await serveDocs({
+        ...(aloneDir
           ? { root: aloneDir }
           : remoteBase
             ? { transformHtml: (html) => pointPdfsAt(html, remoteBase, target) }
-            : { missingPdfs, ...rangeOpts }
-      ).catch(cannotServe("docs"));
+            : { missingPdfs, ...rangeOpts }),
+        csp: cspHeader,
+      }).catch(cannotServe("docs"));
 const url =
   alone === "file"
     ? pathToFileURL(path.join(aloneDir, path.basename(target))).href
@@ -655,6 +703,49 @@ function textFailures(report) {
     });
   });
   return out;
+}
+
+// After the pages scroll: wait until every embed under a root (the page, or
+// one slide) is hydrated and every page of its PDF.js embeds has a canvas.
+// The viewer puts a page's canvas in only once its render ends, so a canvas
+// means a painted page. Each pass scrolls each page with no canvas into view
+// again, 300 ms apart. The wait ends when nothing is missing, after 10 s in
+// which no embed newly hydrated and no page newly got a canvas, or after
+// 120 s in all (under puppeteer's 180 s limit for one call into the page).
+async function waitForCanvases(page, slide) {
+  return page.evaluate(async (slide) => {
+    const root = slide === null ? document : window.Reveal.getSlides()[slide];
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const unhydrated = () =>
+      [...root.querySelectorAll("div.embedpdf")].filter(
+        (el) => !["embedpdf-native", "embedpdf-pdfjs", "embedpdf-failed"].some((c) => el.classList.contains(c))
+      ).length;
+    const pages = () => [...root.querySelectorAll(".embedpdf-pdfjs .embedpdf-page")];
+    const bare = () => pages().filter((p) => !p.querySelector("canvas"));
+    const start = Date.now();
+    let seen = "";
+    let changed = start;
+    const missing = () => unhydrated() > 0 || bare().length > 0;
+    // read progress, then true when the wait must end; checked before each
+    // scroll, so a pass never runs past a limit by more than one 300 ms step
+    const done = () => {
+      const progress = `${unhydrated()} ${pages().length - bare().length}`;
+      if (progress !== seen) {
+        seen = progress;
+        changed = Date.now();
+      }
+      return !missing() || Date.now() - changed >= 10000 || Date.now() - start >= 120000;
+    };
+    while (!done()) {
+      for (const p of bare()) {
+        if (done()) break;
+        p.scrollIntoView({ block: "nearest" });
+        await sleep(300);
+      }
+      await sleep(100);
+    }
+    return { slide: slide === null ? null : slide + 1, waitedMs: Date.now() - start, unhydrated: unhydrated(), pagesWithoutCanvas: bare().length };
+  }, slide);
 }
 
 // --expect-text, after the pages scroll: Chrome's accessibility tree for each
@@ -1045,10 +1136,15 @@ try {
       HTMLCanvasElement.prototype.getContext = () => null;
     });
   }
-  const response = await page.goto(url, { waitUntil: "networkidle0" });
+  // --cpu-throttle: Chromium's CPU slowed by that factor (a slow machine);
+  // the load may then take longer than puppeteer's default 30 s
+  if (cpuThrottle) await page.emulateCPUThrottling(cpuThrottle);
+  const response = await page.goto(url, { waitUntil: "networkidle0", timeout: cpuThrottle ? 120000 : 30000 });
   if (!response || !response.ok()) {
     throw new Error(`could not load ${url} (HTTP ${response ? response.status() : "no response"})`);
   }
+  // --csp: the policy the page arrived with
+  const csp = response.headers()["content-security-policy"] ?? null;
   // scroll so lazily-rendered pages come into view; on a RevealJS page, show
   // each slide first, because a hidden slide's pages have no size to render at.
   // --expect-text reads the hidden text before the pages scroll, and the
@@ -1066,6 +1162,8 @@ try {
     }, slide);
   const textReports = [];
   const treeReports = [];
+  // one entry per waitForCanvases call (per slide on a RevealJS page)
+  const canvasWaits = [];
   const nameReports = [];
   // with --expect-text, a run that cannot get further stops at once: it prints
   // why and the text failures found so far, and exits 1
@@ -1091,6 +1189,7 @@ try {
       }, k);
       if (phrases) textReports.push(await measureText(page, k));
       await scrollPages(k);
+      canvasWaits.push(await waitForCanvases(page, k));
       if (phrases) treeReports.push(await treeFailures(page, k));
       // a later slide would wait as long again, and the run fails already
       if (phrases && treeReports[treeReports.length - 1].ranOut) {
@@ -1105,17 +1204,18 @@ try {
         window.scrollTo(0, y);
         await new Promise((r) => setTimeout(r, 150));
       }
-      await new Promise((r) => setTimeout(r, 1000));
     });
     await scrollPages(null);
+    canvasWaits.push(await waitForCanvases(page, null));
   }
-  await new Promise((r) => setTimeout(r, 4000));
   if (phrases && !slides) treeReports.push(await treeFailures(page, null));
   if (expectName && !slides) nameReports.push(await nameFailures(page, null, 0));
 
-  const res = await page.evaluate(async (inkSource, plant) => {
-    // the ink rule of tests/ink.mjs, rebuilt from its source text
-    const inkInPixels = new Function("return " + inkSource)();
+  // the ink rule of tests/ink.mjs, made a function in the page from its source
+  // text by the DevTools protocol, so the page itself runs no eval or new
+  // Function (see --csp)
+  const inkRule = await page.evaluateHandle(`(${inkInPixels.toString()})`);
+  const res = await page.evaluate(async (inkInPixels, plant) => {
     // "ok", "no ink", or why the canvas could not be read
     const inkOf = (c) => {
       try {
@@ -1280,7 +1380,8 @@ try {
       embedSrcs,
       inkPlanted,
     };
-  }, inkInPixels.toString(), plant);
+  }, inkRule, plant);
+  await inkRule.dispose();
 
   const text = phrases
     ? {
@@ -1316,7 +1417,7 @@ try {
         failures: nameReports.flatMap((r) => r.failures),
       }
     : undefined;
-  console.log(JSON.stringify({ device: deviceName || "chrome", alone, remote, missingPdfs, ...res, text, names, consoleErrors }, null, 2));
+  console.log(JSON.stringify({ device: deviceName || "chrome", alone, remote, missingPdfs, cpuThrottle, csp, canvasWaits, ...res, text, names, consoleErrors }, null, 2));
   if (names) {
     if (plant && NAME_PLANTS.includes(plant) && !names.planted) {
       // print every name failure first, so a real defect is still named; an
@@ -1366,6 +1467,10 @@ try {
   }
   // each PDF.js embed must have pages, and each page a canvas with ink
   let ok = true;
+  if (cspHeader && csp !== cspHeader) {
+    console.error(`render_check: --csp: the page arrived with Content-Security-Policy ${JSON.stringify(csp)}, expected ${JSON.stringify(cspHeader)}`);
+    ok = false;
+  }
   res.pdfjsPages.forEach((pages, i) => {
     if (pages.length === 0) {
       console.error(`render_check: PDF.js embed ${i + 1} has no pages`);
@@ -1379,7 +1484,10 @@ try {
   });
   // after the page failures are printed, so a real defect that left nothing
   // to plant in is still named
-  if (INK_PLANTS.includes(plant) && !res.inkPlanted) {
+  // norender without --expect-text: planted where some PDF.js embed has pages
+  // (with --expect-text, the text block above decides)
+  const norenderMissed = plant === "norender" && !text && !res.pdfjsPages.some((p) => p.length);
+  if ((INK_PLANTS.includes(plant) && !res.inkPlanted) || norenderMissed) {
     console.error(`render_check: --plant ${plant} found nothing to plant in`);
     await browser.close();
     server?.close();
