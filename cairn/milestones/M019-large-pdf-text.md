@@ -43,7 +43,7 @@ text. Desktop Safari byte ranges and real-phone checks stay in CLAUDE.md
 - [x] AC3: Each line that
       `grep -n '^node tests/.*\(large_test\|shared_test\)\.html' CLAUDE.md | grep -v -- '--cpu-throttle'`
       finds carries `--expect-text` with the 14 phrases in page order.
-- [ ] AC4: Each line that
+- [x] AC4: Each line that
       `grep -n '^node tests/.*\(large_test\|shared_test\)\.html' CLAUDE.md`
       finds exits 0 when run.
 - [x] AC5: `quarto render` ends with no error, and
@@ -108,3 +108,22 @@ Pass 1, 2026-10-19, branch at 0dc7558, main at 82f5284 (not moved).
 - AC2: source `files/large-source.md`; CLAUDE.md:250 names `sh tests/make_large_pdf.sh files/large.pdf && cp …`. `sh tests/make_large_pdf.sh "$TMPDIR/rev-large.pdf"` built 14 pages, 142,962 bytes; the same loop: 196 checks, 0 failures.
 - AC3: the filtered grep finds 13 lines; `grep -c -F` of the full `--expect-text "Harbor Lights at Dawn|…|Lantern Room Logbook"` string over them counts 13.
 - AC5: `quarto render` exit 0, no error or warning lines in its log, `git status` clean after it; the AC5 grep exits 1 (no match).
+- AC4: the unfiltered grep finds 14 lines; each exits 0 (render_check with Chromium 155 via `CHROME_PATH`: 7 lines, 20 s to 22 s, and the `--cpu-throttle 70` line, 36 s; ios_check in the iOS 27.0 "embedpdf iPhone" and "embedpdf iPad" simulators: 6 lines, 10 s to 14 s).
+- Consistency gate: `cairn_validate.py` all checks passed; no principle changed, so no `cairn_impact` run; the generic profile names no toolchain checks.
+- spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1: CLAUDE.md:96-98 says every `--expect-text` phrase comes from `pdftotext sample.pdf`, which the large-PDF lines no longer fit — fix now.
+- diff-bug #2: the rebuild command does not run `quarto render`, so after a rebuild the checks would serve the old `docs/files/large*.pdf` — fix now.
+- diff-bug #3: if `pdfinfo` fails, `[ "" -ne 14 ]` errors and the `||` leaves only the byte test, so the script can exit 0 with no page count — fix now.
+- diff-bug #4: the script checks only the total page count, so a part that overflows to two pages plus a missed `\newpage` gives 14 pages with headings on the wrong pages — fix now.
+- diff-bug #5: the `--cpu-throttle 70` paragraph's "59 s to 127 s" was measured on the old PDF — reject (false): it is a dated record of the 2026-10-19 runs, and the line exits 0 on the new PDF (36 s).
+- diff-bug #6: the PDF is 11,890 bytes over the threshold — reject (false as a defect): the script fails if the size drops to 131,072 or less, and every `--expect-ranges` line got range answers.
+- diff-bug #7: each page's footer reads "1" because each part renders apart — reject (false as a defect): no phrase is a number, and the text check passes.
+- diff-bug #8: the reworded CLAUDE.md:20 reads less clearly — reject (style).
+- diff-bug #9: the script and CLAUDE.md do not say it needs `lualatex` — fix now.
+- diff-bug #10: `tests/make_large_pdf.sh` is the first `.sh` in `tests/` and is not executable — reject (style): it is run with `sh`, and no DESIGN or D-entry rule covers it.
+- blame-history #1: the new PDF is 16% smaller than M013's 171 KB, which leaves less margin for the range path — reject (false): `--expect-ranges` sends any whole `.pdf` over 131,072 bytes slowly, and every range line got 3 range answers per PDF.js embed.
+- blame-history #2: the CLAUDE.md and `large_test.qmd` text no longer gives M013's "seven copies" build — reject (planned change).
+- blame-history #3: removing "The text repeats every two pages, so these lines take no `--expect-text`" reverses M013 — reject (planned change).
+- prior-review #1: no prior-review evidence of a regression (M013's lesson is followed; `gh api …/pulls/comments` returned `[]`); a side note on over-long wrapped CLAUDE.md lines — reject (style).
+- ripple #1: cairn/ROADMAP.md:27, the "Large PDF text check" row, still describes the gap — reject (planned change): post-merge hygiene deletes the row this milestone graduates.
+- ripple #2: CLAUDE.md:97, the same stale phrase-source sentence as diff-bug #1 — fix now (with diff-bug #1).
