@@ -97,6 +97,7 @@ text. Desktop Safari byte ranges and real-phone checks stay in CLAUDE.md
 - 2026-10-19: claim audit: not owed — internal tier.
 - 2026-10-19: implement complete; status review.
 - 2026-10-19: review checkpoint (half-done): AC1, AC2, AC3, AC5 evidence recorded; consistency gate green; AC4 runs and the four review lenses still running.
+- 2026-10-19: step-7 approval: m019-large-pdf-text approved for merge
 
 ## Decisions
 
