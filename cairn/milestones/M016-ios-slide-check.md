@@ -157,3 +157,9 @@ Evidence run 2026-10-19 at 2dfe7ab (branch level with main at 1b6918e), after a 
 - ripple #3: ROADMAP row "Self-contained slides on iOS" still open — reject, planned change: post-merge hygiene graduates it.
 - ripple #4: header said the walk runs after the `--expect-text` wait only — fix now, fixed 0ff4919.
 - ripple #5: header did not say a deck run can pass the default timeout — fix now, fixed 0ff4919.
+- Re-verification after the fix-now commits (code at a5deeaa, fresh `quarto render` exit 0):
+- AC1 (rerun): both lines exit 0; iPhone `scrollView` true, iPad false; embeds 1 and 3 each with slide = textSlide = inkSlide (1 and 3) and 2 inked pages.
+- AC2 (rerun): `noslide` exits 1 (embed 3: "ink measured while slide 3 was shown, not its slide 4" and the text line); `blank` exits 1 ("embed 1: pages without ink: 2"); `notext` exits 1 ("embed 1, page 2: text lacks …"); `noslide` on example.html exits 2 ("found nothing to plant in").
+- AC3 (rerun): the six lines exit 0.
+- AC4 (re-recorded at c887772): `grep -c -F` finds each AC1 line once in CLAUDE.md; the "Still unverified" list's only slide line is "Any RevealJS slide deck in desktop Safari", which does not name iPhone or iPad; the ios_check header documents `--plant noslide` (line 178) and deck handling (from line 186).
+- Fix checks: `--plant blank` on selfcontained_failed_test.html (no PDF.js embed) exits 2 ("found nothing to plant in"); `noslide` without `--expect-text` exits 1 on iPhone and iPad (embed 3, ink slide); `blank` on example.html exits 1. The uncounted-slide, stack, and nested-section paths have no test deck (row "Deck walk follow-ups").
