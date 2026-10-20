@@ -185,10 +185,10 @@ Pass 1, 2026-10-19, at b3bf552 (branch level with origin/main bd99b3f).
 - diff-bug #5: a leading `%20` gives a leading space in the LaTeX path, not probed — follow-up, row "Percent path follow-ups".
 - diff-bug #6: `%2F` decodes to `/` in LaTeX but is one segment for a web server — reject, planned change (AC2 and the `a%2fb.pdf` row).
 - diff-bug #7: a raw `data:` URL gets its bare `%` encoded — reject, planned change (AC1's rule, and the result is a valid URL).
-- diff-bug #8: no check for a `%` path given by `file=`, or for `&` with `%`, or for LaTeX inline context — fix now (two checks added); the inline part goes to row "LaTeX inline shortcode".
+- diff-bug #8: no check for a `%` path given by `file=`, or for `&` with `%`, or for LaTeX inline context — fix now (two checks added), fixed fadba70; the inline part goes to row "LaTeX inline shortcode".
 - diff-bug #9: the CLAUDE.md PDF render command may leave files in the repo — reject, false (AC4 evidence: `git status` clean after the render).
 - diff-bug #10: a CLAUDE.md Key files line is long — reject, style.
-- diff-bug #11: the `LATEX_UNSAFE` comment names lualatex only, while pdflatex fails the same way — fix now (comment names both).
+- diff-bug #11: the `LATEX_UNSAFE` comment names lualatex only, while pdflatex fails the same way — fix now (comment names both), fixed fadba70. After it, `pandoc lua tests/test_shortcode.lua` printed "162 passed, 0 failed". The comment-only Lua change leaves the HTML output as it was.
 - diff-bug #12: the native fetch probe is a scratch script that later runs cannot repeat — reject, planned change (plan-gate work-log line).
 - blame-history #1: a kept escape still stops the render against IP2 — follow-up, row "Percent path follow-ups".
 - blame-history #2: percent_test's bare-`%` embed no longer reaches the viewer's name decoding fallback — reject, false: `tests/name_rule_test.mjs:21` checks `files/100%.pdf` → "100%.pdf".
