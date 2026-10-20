@@ -110,8 +110,10 @@
 //                       visible, no aria-hidden on it or an ancestor, and no
 //                       inert attribute or computed content-visibility
 //                       hidden on it or an element that contains it. After
-//                       the pages are scrolled and each has a canvas (a wait
-//                       of at most 10 s per embed), also fail unless Chrome's
+//                       the pages are scrolled and the canvas wait (below)
+//                       ends, the tree check waits again, at most 10 s per
+//                       embed, for each page to have a canvas, then fails
+//                       unless Chrome's
 //                       accessibility tree (puppeteer accessibility.snapshot,
 //                       interestingOnly false) gives each page role group,
 //                       the name "Page i of n", and its phrase, gives no page
@@ -150,7 +152,8 @@
 //                       load on, so no page gets a canvas (meant for a
 //                       RevealJS page: elsewhere each embed's tree-check
 //                       canvas wait runs out in turn). Without
-//                       --expect-text, norender is an ink plant (above).
+//                       --expect-text, norender is an ink plant (its own
+//                       entry below).
 //   --expect-name "<file name>" | "<name 1>|<name 2>|..."
 //                       after the pages are scrolled, fail unless each PDF.js
 //                       embed has role="group" and its expected aria-label
@@ -241,7 +244,10 @@
 //                       to plant in).
 //   --cpu-throttle <n>  slow Chromium's CPU n times (n a whole number above
 //                       1), as on a slow machine; the page load may then
-//                       take up to 120 s
+//                       take up to 120 s. Only that limit grows: the
+//                       --expect-text wait and the --expect-name waits keep
+//                       their limits, so a throttled run with them can fail
+//                       on those limits alone.
 //   --csp               the page's server sends NO_EVAL_CSP (in
 //                       tests/serve_docs.mjs), a Content-Security-Policy
 //                       whose script-src omits 'unsafe-eval'; fail unless
@@ -255,15 +261,18 @@
 //                       on, so no page gets a canvas; the run must then fail
 //                       with "no canvas" on every PDF.js page, after the
 //                       canvas wait below runs out. Needs no other flag; with
-//                       --expect-text it is also a text plant (below).
+//                       --expect-text it is also a text plant (see the
+//                       --plant list of text plants above).
 // Set CHROME_PATH to use another Chrome or Chromium binary.
 //
 // Canvas wait: after the pages scroll, the check waits until every embed is
 // hydrated and every page of its PDF.js embeds has a canvas. Each pass scrolls
 // each page with no canvas into view again. The wait ends when nothing is
 // missing, after 10 s in which no embed newly hydrated and no page newly got
-// a canvas, or after 120 s in all. It waits no fixed time before it measures.
-// The report gives each wait in "canvasWaits".
+// a canvas, or after 120 s in all (each limit checked before each 300 ms
+// scroll step). The ink measure waits for this, not for a fixed time; the
+// 300 ms per page scroll and 1500 ms per slide pauses only pace scrolling and
+// slide changes. The report gives each wait in "canvasWaits".
 //
 // On a RevealJS page the check goes to each slide with Reveal.slide(),
 // scrolls each embed's pages into view, and runs the canvas wait for that
@@ -716,15 +725,20 @@ async function waitForCanvases(page, slide) {
     const start = Date.now();
     let seen = "";
     let changed = start;
-    const stalled = () => Date.now() - changed >= 10000 || Date.now() - start >= 120000;
-    while (unhydrated() || bare().length) {
+    const missing = () => unhydrated() > 0 || bare().length > 0;
+    // read progress, then true when the wait must end; checked before each
+    // scroll, so a pass never runs past a limit by more than one 300 ms step
+    const done = () => {
       const progress = `${unhydrated()} ${pages().length - bare().length}`;
       if (progress !== seen) {
         seen = progress;
         changed = Date.now();
       }
-      if (stalled()) break;
+      return !missing() || Date.now() - changed >= 10000 || Date.now() - start >= 120000;
+    };
+    while (!done()) {
       for (const p of bare()) {
+        if (done()) break;
         p.scrollIntoView({ block: "nearest" });
         await sleep(300);
       }

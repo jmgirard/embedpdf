@@ -6,7 +6,7 @@
 // server listens with a backlog of 5, and a browser opening many connections
 // at once can get some of them reset, so the viewer JS sometimes never loads.
 //
-// serveDocs({ port, transformHtml, routes, root, missingPdfs, slowWhole, noRanges })
+// serveDocs({ port, transformHtml, routes, root, missingPdfs, slowWhole, noRanges, csp })
 // resolves to the listening server, or rejects on a listen error. It answers
 // single byte ranges.
 //   port           0 picks a free port (server.address().port)
@@ -19,6 +19,8 @@
 //                  SLOW_ABOVE bytes slowly (see sendData), so PDF.js loads it
 //                  by ranges
 //   noRanges       true: ignore every Range header and send the whole file
+//   csp            a Content-Security-Policy value sent with every file
+//                  answer, such as NO_EVAL_CSP
 // The server's rangeCounts Map holds the number of 206 answers per request
 // path, as sent (still percent-encoded, no ?query). Its requests array holds
 // one { method, path, search, origin, range, status } entry for each request
@@ -141,9 +143,9 @@ function listen(server, port) {
 
 // A Content-Security-Policy whose script-src omits 'unsafe-eval', so a page
 // served with it cannot run eval or new Function. It allows what a Quarto page
-// and the viewer load: the site's own scripts, inline scripts, and blob:
-// workers.
-export const NO_EVAL_CSP = "script-src 'self' 'unsafe-inline' blob:";
+// and the viewer load: the site's own scripts, inline scripts, blob: workers,
+// and data: scripts (a self-contained page holds its scripts as data: URLs).
+export const NO_EVAL_CSP = "script-src 'self' 'unsafe-inline' blob: data:";
 
 // csp: a Content-Security-Policy header value sent with every answer for a
 // file (200, 206, or 416), such as NO_EVAL_CSP; none when null
