@@ -7,7 +7,7 @@ _Last hygiene check: 2026-10-20 (M025 done: deleted "Name inlined PDFs in Firefo
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M026 | Tag and release every 1.x version | in-progress | — | normal | milestones/M026-tag-and-release-backlog.md |
+| M026 | Tag and release every 1.x version | review | — | normal | milestones/M026-tag-and-release-backlog.md |
 | M025 | Firefox saves inlined PDFs under their file name | done | — | normal | milestones/archive/M025-firefox-save-name.md |
 | M024 | Safari names in the iOS simulators | done | — | normal | milestones/archive/M024-ios-safari-names.md |
 | M023 | Save name of inlined PDFs in native viewers | done | — | normal | milestones/archive/M023-native-save-name.md |

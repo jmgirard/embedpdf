@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M026: Tag and release every 1.x version
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -91,7 +91,7 @@ v1.2.1, v1.2.2, v1.2.3, v1.2.4, v1.2.5, v1.2.6, v1.2.7, v1.2.8, v1.2.9.
 - AC2 → T1, T2, T4
 - AC3 → T5
 - AC4 → T1, T5
-- AC5 → T3, T5
+- AC5 → T3, T5, T7
 
 ## Tasks
 
@@ -120,6 +120,10 @@ v1.2.1, v1.2.2, v1.2.3, v1.2.4, v1.2.5, v1.2.6, v1.2.7, v1.2.8, v1.2.9.
 - [x] T6: Delete the DESIGN.md Known issues entry "GitHub releases stop at
       v0.5.0 and tags stop at v1.0.2 …", since every version then has a tag
       and a release.
+- [x] T7: Review return 1: add a line to the v1.0.1, v1.0.2, v1.0.3, and
+      v1.2.8 bodies for the change their commit subject names outside
+      `_extensions/`, check it against the diff, and edit each release
+      with `gh release edit V --notes-file <file>`.
 
 ## Work log
 
@@ -142,6 +146,9 @@ v1.2.1, v1.2.2, v1.2.3, v1.2.4, v1.2.5, v1.2.6, v1.2.7, v1.2.8, v1.2.9.
 - 2026-10-20: claim audit: not owed — no added lines outside cairn/.
 - 2026-10-20: implement done; verify slot has no check for a `cairn/`-only change; status set to review.
 - 2026-10-20: review return 1: AC5's commit-subject clause fails for v1.0.1 (README and example polish), v1.0.2 (realistic sample PDF in the example), v1.0.3 (iOS simulator check), and v1.2.8 (check of native embeds on self-contained slides); their bodies need a line for each.
+- 2026-10-20: T7 added for review return 1 (minor amendment); Coverage AC5 now maps to T7 too.
+- 2026-10-20: T7 added one line to each of the four bodies and edited the releases with `gh release edit --notes-file`; each body read back equals its file, and `releases/latest` is still v1.2.9. Support: v1.0.1 808b403 changes README.md (badges, `man/figures/mobile-viewer.png`) and example.qmd; v1.0.2 9887d47 adds the two-page `sample.pdf` (pdfinfo: 2 pages, unchanged since) and example.qmd names it 23 times; v1.0.3 8f1c68d adds `tests/ios_check.mjs`, whose header calls it a check in Safari on an iOS simulator; v1.2.8 9c43bf9 changes `tests/native_check.mjs` (RevealJS deck handling) and `selfcontained_slides_test.qmd`.
+- 2026-10-20: implement done again; status set to review.
 
 ## Decisions
 
