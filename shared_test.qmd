@@ -5,7 +5,8 @@ resources:
 ---
 
 Both embeds show `files/large.pdf`, the PDF of 14 pages and over 128 KB that
-`large_test.qmd` also shows. The native embed comes first and the PDF.js
+`large_test.qmd` also shows. Each of its pages has a heading that no other
+page holds. The native embed comes first and the PDF.js
 embed second. The checks in `tests/` serve this PDF from another site
 (`--remote cors`), to check that the PDF.js embed loads it by byte ranges
 while the native embed on the same page shows the same PDF.

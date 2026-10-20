@@ -70,7 +70,7 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p>Both embeds show a PDF of 14 pages and over 128 KB, made of seven copies of <code>sample.pdf</code> with <code>pdfunite</code> (<code>pdfinfo</code> and <code>wc -c</code> give its size). <code>files/large-2.pdf</code> is a copy of <code>files/large.pdf</code>. PDF.js loads a PDF of this size by byte ranges when the server allows it, so the checks in <code>tests/</code> use this page to check that path.</p>
+<p>Both embeds show a PDF of 14 pages and over 128 KB (<code>pdfinfo</code> and <code>wc -c</code> give its size). <code>tests/make_large_pdf.sh</code> builds it from <code>files/large-source.md</code>, and each page has a heading that no other page holds. <code>files/large-2.pdf</code> is a copy of <code>files/large.pdf</code>. PDF.js loads a PDF of this size by byte ranges if the server allows it. The checks in <code>tests/</code> use this page to check that path and the hidden text of each page.</p>
 <section id="pdf.js" class="level2">
 <h2 class="anchored" data-anchor-id="pdf.js">PDF.js</h2>
 <div class="embedpdf" data-src="files/large.pdf" data-renderer="pdfjs"><a href="files/large.pdf" download="">Download PDF file.</a></div>

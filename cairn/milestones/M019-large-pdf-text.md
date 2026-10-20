@@ -67,7 +67,7 @@ text. Desktop Safari byte ranges and real-phone checks stay in CLAUDE.md
       apart and join them, since each part then embeds its own fonts. Copy it
       to `files/large-2.pdf`. Run AC1's loop on the committed file and on a
       fresh build in `$TMPDIR`.
-- [ ] T2: Rewrite `large_test.qmd`, `shared_test.qmd`, and CLAUDE.md's
+- [x] T2: Rewrite `large_test.qmd`, `shared_test.qmd`, and CLAUDE.md's
       large-PDF paragraph (CLAUDE.md:242-262) for the new PDF: its source,
       build command, and phrase list. Grep `cairn/DESIGN.md` and README for
       other mentions of the old PDF. Run `quarto render`.
@@ -92,6 +92,7 @@ text. Desktop Safari byte ranges and real-phone checks stay in CLAUDE.md
 - 2026-10-19: implement: branch m019-large-pdf-text cut from main at 82f5284; status in-progress.
 - 2026-10-19: T1 done: `files/large-source.md` (14 parts split at `\newpage`, a heading phrase each) and `tests/make_large_pdf.sh <out.pdf>` (renders each part with `quarto pandoc` and LuaLaTeX, joins with `pdfunite`, fails unless 14 pages and over 131,072 bytes). One whole render was 25,999 bytes and an uncompressed one 61,357, so the parts are rendered apart. New `large.pdf` 142,962 bytes, `large-2.pdf` a `cmp`-equal copy; 196-check phrase loop clean on it and on a fresh build (142,964 bytes; not byte-identical, so no `cmp` against the build), and it named missing phrases on the old `large.pdf`.
 - 2026-10-19: the `quarto render <file>.md --output-dir` route failed ("only be used when rendering projects"), so the script calls `quarto pandoc`.
+- 2026-10-19: T2 done: `large_test.qmd`, `shared_test.qmd`, and CLAUDE.md (key-files list, large-PDF paragraph with the build command) rewritten; CLAUDE.md points at the `--expect-text` list of the run lines for the phrases instead of a second copy of them. Line 20 ("holds copies of `sample.pdf` under the names they test") matched AC5's grep while still true, so it was reworded with the same meaning. `quarto render` exit 0, no error or warning lines; AC5 grep finds nothing; helpers_test 133 passed, 0 failed. No mention in DESIGN.md or README.
 
 ## Decisions
 

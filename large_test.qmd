@@ -5,10 +5,12 @@ resources:
   - "files/large-2.pdf"
 ---
 
-Both embeds show a PDF of 14 pages and over 128 KB, made of seven copies of
-`sample.pdf` with `pdfunite` (`pdfinfo` and `wc -c` give its size). `files/large-2.pdf` is a copy of
-`files/large.pdf`. PDF.js loads a PDF of this size by byte ranges when the
-server allows it, so the checks in `tests/` use this page to check that path.
+Both embeds show a PDF of 14 pages and over 128 KB (`pdfinfo` and `wc -c`
+give its size). `tests/make_large_pdf.sh` builds it from
+`files/large-source.md`, and each page has a heading that no other page
+holds. `files/large-2.pdf` is a copy of `files/large.pdf`. PDF.js loads a PDF
+of this size by byte ranges if the server allows it. The checks in `tests/`
+use this page to check that path and the hidden text of each page.
 
 ## PDF.js
 

@@ -17,12 +17,12 @@ Key files:
 - `name_test.qmd`, `name_edge_test.qmd`, `percent_test.qmd`, `percent_page_test.qmd`,
   `selfcontained_test.qmd`, `selfcontained_slides_test.qmd`,
   `selfcontained_failed_test.qmd`, `large_test.qmd`, and `shared_test.qmd` are test pages, also
-  rendered into `docs/`. `files/` holds copies of `sample.pdf` under the names
+  rendered into `docs/`. `files/` holds `sample.pdf` again under each name
   they test, and `inlined-sample.md`, the hand-written embed that
   `name_edge_test.qmd` includes. It also holds `broken.pdf` and
   `undecodable-embeds.md` for `selfcontained_failed_test.qmd`, and
-  `large.pdf` and `large-2.pdf` for `large_test.qmd`. `shared_test.qmd` shows
-  `large.pdf` too. `100%.pdf` is for `percent_test.qmd` and `percent_page_test.qmd`, and
+  `large.pdf` and `large-2.pdf` for `large_test.qmd`, and `large-source.md`,
+  the source of `large.pdf`. `shared_test.qmd` shows `large.pdf` too. `100%.pdf` is for `percent_test.qmd` and `percent_page_test.qmd`, and
   `50%off.pdf` is for `percent_page_test.qmd`.
 
 ## Verify before finishing — you are the test runner (no CI)
@@ -240,9 +240,19 @@ node tests/ios_check.mjs --device "embedpdf iPad" --missing-pdfs
 ```
 
 A PDF that PDF.js loads by byte ranges: PDF.js asks for ranges only for a PDF
-over 128 KB (131,072 bytes). `files/large.pdf` is seven copies of `sample.pdf`
-joined with `pdfunite`, 14 pages and over that size. `files/large-2.pdf` is a
-copy of it. `large_test.html` shows `large.pdf` with `renderer=pdfjs` and
+over 128 KB (131,072 bytes). `files/large.pdf` has 14 pages and is over that
+size. Each page's heading is a phrase that no other page holds. The
+`--expect-text` list of the lines below gives these phrases in page order.
+`files/large-2.pdf` is a copy of it. To change the PDF, edit `files/large-source.md` and build both
+files again:
+
+```
+sh tests/make_large_pdf.sh files/large.pdf && cp files/large.pdf files/large-2.pdf
+```
+
+The script renders each page apart and joins the pages with `pdfunite`,
+because one render of the whole source is under 128 KB. It fails unless the
+PDF has 14 pages and is over 131,072 bytes. `large_test.html` shows `large.pdf` with `renderer=pdfjs` and
 `large-2.pdf` with `renderer=auto`, so the two embeds load different
 addresses. `--expect-ranges` (no value) makes the server that serves the PDFs
 send each whole `.pdf` file over 128 KB slowly (with `--remote cors`, see
@@ -258,8 +268,7 @@ or another embed loads the same address, the run exits 2. With `--remote
 cors`, only another PDF.js embed counts here. `--plant noranges` makes that
 server ignore every Range header, and the run must then fail.
 `shared_test.html` shows `large.pdf` in a native embed and then in a PDF.js
-embed. The text repeats every two pages, so these lines take no
-`--expect-text`:
+embed:
 
 ```
 node tests/render_check.mjs large_test.html --expect-ranges --expect-native 1 --expect-pdfjs 1 --expect-pages 14 --expect-name "large.pdf|large-2.pdf"
