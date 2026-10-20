@@ -1,13 +1,13 @@
 # M023: Save name of inlined PDFs in native viewers
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP1, GP1, GP4
 - **Resolves:** —
 - **Surface tier:** user-facing — the file name readers get when they save a PDF from a native embed on a self-contained page, and the README text about it
-- **Branch/PR:** —
+- **Branch/PR:** m023-native-save-name
 
 ## Goal
 
@@ -42,8 +42,8 @@ On a self-contained page, each native embed's own save control saves the in-page
 
 ## Tasks
 
-- [ ] T1: Probe Firefox 158 (headless, puppeteer-core) and desktop Safari 27.0.1 (safaridriver) on `selfcontained_test.html` opened alone. Firefox routes: a click on the pdf.js viewer's download button through the viewer's browsing context, and the save key with focus in the embed, into a download folder set by Firefox prefs. Safari routes: pointer actions on the PDF's hover download control, and the save key with focus in the embed, reading and then deleting the copy in `~/Downloads`. For each native embed, record the saved name for the current `blob:` address and for: a `blob:` address with a fragment naming `sample.pdf` (alone and after `page=2`), a `blob:` of a `File` named `sample.pdf`, and the `data:` address (for the record only, see AC4). For each form that saves as `sample.pdf`, check that each embed still shows its PDF at its page. Log one line per browser, naming each route tried.
-- [ ] T2: If T1 found an AC4 form, give it to the inlined native embeds (`inlinedPdf` and its caller in `embedpdf-viewer.js`), bump the version in `_extension.yml` and `embedpdf.lua`, and run `quarto render`. Skip this task if T1 found none.
+- [x] T1: Probe Firefox 158 (headless, puppeteer-core) and desktop Safari 27.0.1 (safaridriver) on `selfcontained_test.html` opened alone. Firefox routes: a click on the pdf.js viewer's download button through the viewer's browsing context, and the save key with focus in the embed, into a download folder set by Firefox prefs. Safari routes: pointer actions on the PDF's hover download control, and the save key with focus in the embed, reading and then deleting the copy in `~/Downloads`. For each native embed, record the saved name for the current `blob:` address and for: a `blob:` address with a fragment naming `sample.pdf` (alone and after `page=2`), a `blob:` of a `File` named `sample.pdf`, and the `data:` address (for the record only, see AC4). For each form that saves as `sample.pdf`, check that each embed still shows its PDF at its page. Log one line per browser, naming each route tried.
+- [x] T2: If T1 found an AC4 form, give it to the inlined native embeds (`inlinedPdf` and its caller in `embedpdf-viewer.js`), bump the version in `_extension.yml` and `embedpdf.lua`, and run `quarto render`. Skip this task if T1 found none.
 - [ ] T3: Write `tests/save_name_check.mjs`: `--browser chromium|firefox|safari`, `--page`, `--alone file|http`, `--expect-native <n>`, and `--expect-save` with one entry per native embed (`sample.pdf`, another literal name, or a token for "this embed's `blob:` id plus `.pdf`"). It saves one embed at a time into an empty scratch folder (Chromium, Firefox), or in Safari reads the file that appeared in `~/Downloads`, deletes it before the next save, and exits 2 if `~/Downloads` already holds the expected name. Exit 0 on a match, 1 on a mismatch or no saved file, 2 when the browser cannot start. Plants, placed by `--plant-at` on an `<object>` embed and on the `<iframe>` embed: one expecting another embed's `blob:` id, one with a wrong literal name, and one where no file is saved. State them in the header and see each fail in each browser the check runs in.
 - [ ] T4: If T2 changed the viewer, run the AC5 commands. Run `node tests/helpers_test.mjs` if a helper changed.
 - [ ] T5: Add the `save_name_check.mjs` lines (each browser T1 found a route for, x `--alone file|http`) and a short paragraph on the script to CLAUDE.md. Replace the README self-contained bullet's save-button sentences and the DESIGN.md Known issues save-name entry with the AC1 to AC3 results. Narrow the save-name sentence of CLAUDE.md "Still unverified".
@@ -63,6 +63,9 @@ On a self-contained page, each native embed's own save control saves the in-page
 - 2026-10-20: plan gate chose a new script over extending `native_check.mjs` (734 lines, a screenshot check), because a save is a separate action with its own browser plumbing; falsified by the new script copying most of native_check's launch and serve code.
 - 2026-10-20: plan gate excluded a `data:` address from the viewer fix (AC4), because it copies the whole PDF into an attribute value (GP4); falsified by a measured memory cost under 1 MB for a large inlined PDF on a constrained phone.
 - 2026-10-20: version: bumped only if T2 changes the viewer.
+- 2026-10-20: T1 Firefox 158 (puppeteer-core, `selfcontained_test.html` alone, file and HTTP): no route saved a file. Routes: a script click on the viewer's `#downloadButton` (0 x 0 in the 300 x 150 and 600 x 400 embeds); a pointer click on `#secondaryDownload` after opening `#secondaryToolbarToggleButton` (600 x 400 embed only; the menu does not fit 300 x 150); Cmd+S with focus in the viewer. Each ran with a BiDi `browser.setDownloadBehavior` folder and with the default context plus `browser.download.dir` prefs, headless and once with a window. A plain `<a download>` link to the same `blob:` saved at once, so downloads worked. The viewer's own name (`PDFViewerApplication._docFilename`, read in each embed's frame): `document.pdf` for the current `blob:` and for `data:`; `sample.pdf` for a `blob:` of a `File` named sample.pdf and for `#filename=sample.pdf` (also `#page=2&filename=sample.pdf`). So AC2's fallback applies.
+- 2026-10-20: T1 desktop Safari 27.0.1 (safaridriver, `selfcontained_test.html` alone over HTTP): hovering an embed shows the PDF's own control bar at its bottom center, and a pointer click at (width / 2 + 82, height - 62) from the embed's top-left pressed its download button. It saved `~/Downloads/Unknown.pdf` (same bytes as `docs/sample.pdf`) for the current `blob:` (`<iframe>` and an `<object>`), for a `blob:` of a `File` named sample.pdf, and for `#page=2&filename=sample.pdf`; a `data:` address saved no file in 2 tries. The click saved nothing in 2 of 7 tries, so the check must retry. Element screenshots do not show the control bar; window screenshots do. Each copy was deleted.
+- 2026-10-20: T1 result: no form saves as `sample.pdf` in a browser whose save could be read, so AC4's no-change branch applies and T2 is skipped. Firefox's viewer-reported `sample.pdf` for the `File` form is not a saved file under AC4; it goes to a candidate row.
 
 ## Decisions
 
