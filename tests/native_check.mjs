@@ -127,7 +127,7 @@ const STABLE_MS = 20000;
 const STABLE_SPAN_MS = 1500; // screenshots must stay the same this long
 const WD_MS = 60000; // time limit of one safaridriver call
 const VIEWPORT = { width: 1200, height: 900 };
-const PLANTS = ["otherpdf", "broken", "blank", "fileaddr", "nopage", "object", "border", "fallback", "refcontrol"];
+const PLANTS = ["otherpdf", "broken", "blank", "fileaddr", "nopage", "object", "border", "fallback", "refcontrol", "noslide"];
 // plants aimed at an embed whose page option is over 1 (an <iframe>)
 const PAGE_PLANTS = ["nopage", "object", "border", "fallback"];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -419,8 +419,33 @@ try {
   if (st.unhydrated > 0) failures.push(`${st.unhydrated} embed(s) not hydrated after 30 s`);
   if (st.native.length !== expectNative) failures.push(`expected ${expectNative} native embeds, found ${st.native.length}`);
 
-  // --plant refcontrol changes the references, not the page
+  // a RevealJS slide deck: hold Reveal's scale at 1, so each embed has the
+  // CSS size its options give, as the references do (no window size gives a
+  // scale of exactly 1: Reveal scales by the window's width less its margin)
+  const deck = await drv.run(`() => !!(window.Reveal && typeof window.Reveal.slide === "function" && document.querySelector(".reveal .slides"))`);
+  if (deck) {
+    let scale = null;
+    for (let t = 0; t < 50; t++) {
+      scale = await drv.run(`() => {
+        if (!window.Reveal.isReady()) return null;
+        const c = window.Reveal.getConfig();
+        if (c.minScale !== 1 || c.maxScale !== 1) window.Reveal.configure({ minScale: 1, maxScale: 1 });
+        window.Reveal.layout();
+        return window.Reveal.getScale();
+      }`);
+      if (scale !== null) break;
+      await sleep(200);
+    }
+    report.deck = { scale };
+    if (scale !== 1) throw new SetupError(`Reveal's scale is ${scale}, not 1, after setting minScale and maxScale to 1`);
+  }
+  if (plant === "noslide" && !deck) throw new SetupError("--plant noslide needs a RevealJS slide deck");
+  if (plant === "noslide" && (plantAt || 1) > st.native.length) throw new SetupError(`--plant noslide found nothing to plant in (native embed ${plantAt || 1})`);
+
+  // --plant refcontrol changes the references, not the page; --plant noslide
+  // changes which slide the walk below shows
   if (plant === "refcontrol") report.planted = "refcontrol: every reference shows the control";
+  else if (plant === "noslide") report.planted = `noslide in native embed ${plantAt || 1}`;
   // --plant: change the target embed's element
   else if (plant) {
     let k = plantAt;
@@ -482,8 +507,52 @@ try {
   }
 
   // each native embed: its element, address, box, a stable screenshot, its size
+  // on a slide deck: show the slide that holds native embed i (with --plant
+  // noslide, for the target embed, the first slide that does not hold it);
+  // it returns that slide's indices once Reveal reports it current (at most
+  // 5 s), or null
+  const showSlide = async (i, other) => {
+    const at = await drv.run(
+      `(i, other) => {
+        const d = document.querySelectorAll("div.embedpdf-native")[i];
+        const slides = window.Reveal.getSlides();
+        const s = other ? slides.find((x) => !x.contains(d)) : slides.find((x) => x.contains(d));
+        if (!s) return null;
+        const { h, v } = window.Reveal.getIndices(s);
+        window.Reveal.slide(h, v);
+        return { h, v: v || 0 };
+      }`,
+      i,
+      other
+    );
+    if (!at) return null;
+    for (let t = 0; t < 25; t++) {
+      const now = await drv.run(`() => { const { h, v } = window.Reveal.getIndices(); return { h, v: v || 0 }; }`);
+      if (now.h === at.h && now.v === at.v) {
+        await sleep(300);
+        return at;
+      }
+      await sleep(200);
+    }
+    return null;
+  };
+  // whether the current slide holds native embed i
+  const onCurrent = (i) =>
+    drv.run(`(i) => {
+      const c = window.Reveal.getCurrentSlide();
+      return !!c && c.contains(document.querySelectorAll("div.embedpdf-native")[i]);
+    }`, i);
   const embeds = [];
   for (let i = 0; i < st.native.length; i++) {
+    let slide = null;
+    let current = true;
+    if (deck) {
+      slide = await showSlide(i, plant === "noslide" && i === (plantAt || 1) - 1);
+      // the embed's own state on its slide: on a slide that is not shown its
+      // element has no box, and nothing of its placeholder shows
+      st = await state();
+      current = await onCurrent(i);
+    }
     const e = st.native[i];
     const data = e.address;
     const at = `native embed ${i + 1}`;
@@ -512,6 +581,7 @@ try {
     try {
       const mark = `[data-native-check="${i}"]`;
       shot = await stableShot(drv, mark, 0);
+      if (deck) current = current && (await onCurrent(i));
       // the size once the screenshot settled (a box can grow as its viewer loads)
       size = await drv.run(
         `(css) => {
@@ -525,11 +595,13 @@ try {
     } catch (err) {
       // a box of size 0, for example: this embed fails, the others are still checked
       failures.push(`${at}: no screenshot (${err.message.split("\n")[0]})`);
-      report.embeds.push({ at, tag: e.tag, address: data.slice(0, 40), frag });
+      if (!current) failures.push(`${at}: its slide is not the current slide (Reveal.getCurrentSlide()) at its screenshot`);
+      report.embeds.push({ at, tag: e.tag, address: data.slice(0, 40), frag, ...(deck ? { slide, current } : {}) });
       continue;
     }
+    if (!current) failures.push(`${at}: its slide is not the current slide (Reveal.getCurrentSlide()) at its screenshot`);
     saveShot(`embed-${i + 1}`, shot.png);
-    const entry = { at, tag: e.tag, address: data.slice(0, 40), frag, kind: tag, size, stable: shot.stable, ink: inkInPixels(img.data) };
+    const entry = { at, tag: e.tag, address: data.slice(0, 40), frag, kind: tag, size, stable: shot.stable, ink: inkInPixels(img.data), ...(deck ? { slide, current } : {}) };
     if (!shot.stable) failures.push(`${at}: its screenshot did not settle in ${STABLE_MS / 1000} s`);
     if (!entry.ink) failures.push(`${at}: no ink`);
     embeds.push({ entry, img });
