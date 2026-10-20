@@ -486,7 +486,7 @@ errors.
 - A native embed of a self-contained page in Chromium or Firefox with a
   window. `native_check.mjs` runs them headless. Also such an embed on
   self-contained RevealJS slides in Chromium or Firefox with a window. Also
-  a route to a slide other than showing the slides in order. One Chromium
+  a route to a slide other than the check's walk (slides 1, 2, 4). One Chromium
   probe of a jump from slide 0 opened its `<iframe>` at page 2. Also a tab or
   other part of a page hidden at load. Also the file name that a native
   viewer's save button gives the copy of the PDF in Firefox and Safari. In

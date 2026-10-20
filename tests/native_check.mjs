@@ -432,7 +432,7 @@ try {
 
   // a RevealJS slide deck: hold Reveal's scale at 1, so each embed has the
   // CSS size its options give, as the references do (no window size gives a
-  // scale of exactly 1: Reveal scales by the window's width less its margin)
+  // scale of exactly 1: Reveal scales by the window's size less its margin)
   const deck = await drv.run(`() => !!(window.Reveal && typeof window.Reveal.slide === "function" && document.querySelector(".reveal .slides"))`);
   if (deck) {
     let scale = null;
@@ -573,8 +573,8 @@ try {
     let current = true;
     if (deck) {
       slide = await showSlide(i, plant === "noslide" && i === (plantAt || 1) - 1);
-      // the embed's own state on its slide: on a slide that is not shown its
-      // element has no box, and nothing of its placeholder shows
+      // the embed's own state on its slide: on a slide that RevealJS does not
+      // display, its element has no box, and nothing of its placeholder shows
       st = await state();
       if (plantTarget === i + 1) await applyPlant(plantTarget);
       current = await onCurrent(i);

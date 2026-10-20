@@ -200,7 +200,7 @@ load on the same queue, and a text task runs only when no page render waits
   v1.2.8 the viewer gives such an `<iframe>` its address once it has a box.
   On `selfcontained_slides_test.html` its slide-4 `<iframe>` then opened at
   page 2 in Chromium 155 and Firefox 158 (headless) and desktop Safari
-  27.0.1, when `tests/native_check.mjs` showed the slides in order (M022) —
+  27.0.1, when `tests/native_check.mjs` showed slides 1, 2, and 4 in turn (M022) —
   observed 2026-10-20. A direct jump to that slide from slide 0 opened it at
   page 2 in one Chromium 155 probe. Not checked: that jump in other
   browsers, a slide hidden at load within RevealJS's view distance, a tab or
