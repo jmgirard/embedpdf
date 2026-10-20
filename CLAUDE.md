@@ -255,8 +255,11 @@ after a burst of saves. A locked screen exits 2. Firefox's
 viewer saved no file under automation. So in Firefox the check saves no
 file and reads the name the viewer reports (`_docFilename` in the viewer's
 frame). In Firefox, `--expect-save` takes file names only, not `@blob`. Since 1.2.9 an inlined
-PDF is a `File` named by its download name, and Firefox's viewer reports
-that name. On a RevealJS deck the check shows each embed's slide. The
+PDF is a `File` named by its download name. On 2026-10-20 Firefox 158's
+viewer reported `sample.pdf` for each native embed on the four Firefox
+lines below. A save by hand in a Firefox 158 window gave `sample.pdf` for
+each native embed of `selfcontained_test.html`, as a local file and over
+HTTP. On a RevealJS deck the check shows each embed's slide. The
 header states the plants:
 
 ```
@@ -529,7 +532,8 @@ errors.
   other part of a page hidden at load. Also a save from Firefox's native
   viewer by a check. Under puppeteer-core its save control saved no file
   (DESIGN Known issues). `save_name_check.mjs --browser firefox` reads only
-  the name its viewer reports. On 2026-10-20 a save by hand in a Firefox
+  the name its viewer reports, which was `sample.pdf` on 2026-10-20. On
+  2026-10-20 a save by hand in a Firefox
   158 window gave `sample.pdf` for each native embed of
   `selfcontained_test.html` (1.2.9). The page was opened as a local file
   and over HTTP. No slides were saved by hand. Chromium and desktop Safari saves are checked by

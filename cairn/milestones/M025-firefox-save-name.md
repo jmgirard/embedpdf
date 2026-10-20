@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M025: Firefox saves inlined PDFs under their file name
 
-- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** review   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate; M<xx>, M<yy> or — -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate; RR<NN> whose Binding criteria bind this milestone's ACs (binding-criteria check), or — -->
@@ -85,7 +85,7 @@ Firefox's viewer" row's detail stays the record of the tried forms.
 - AC1 → T1, T2
 - AC2 → T3
 - AC3 → T2, T4, T5
-- AC4 → T5
+- AC4 → T5, T6
 
 ## Tasks
 <!-- owner: plan (create) / implement (check-off, minor edits); substantive
@@ -121,6 +121,9 @@ Firefox's viewer" row's detail stays the record of the tried forms.
       save-name paragraph and the "Still unverified" item, and add the four
       T1 lines. Update the header of `save_name_check.mjs` ("Firefox is not a
       --browser").
+- [x] T6: Review return 1: make CLAUDE.md's save-name paragraph and its
+      "Still unverified" item each state the name Firefox's viewer reports
+      and the hand-save name, with the date.
 
 ## Work log
 <!-- owner: any skill · append-only; one line per entry; absolute dates. -->
@@ -150,6 +153,8 @@ Firefox's viewer" row's detail stays the record of the tried forms.
 - 2026-10-20: review started: no PR, main not moved; all 138 check lines re-running for fresh AC3 evidence; four lenses spawned; fix-now edits from their findings checkpointed here before the Review section is written (half-done: evidence and dispositions not yet recorded).
 - 2026-10-20: the user asked the run to stop using Safari (two Safari windows of theirs were open); no Safari check runs again in this milestone.
 - 2026-10-20: review return 1: AC4 fails as written — CLAUDE.md's save-name paragraph does not state the hand-save name and date, and its "Still unverified" item does not state the name Firefox's viewer reports; both passages must state both names with the date.
+- 2026-10-20: minor amendment: T6 added for review return 1 (Coverage AC4 → T5, T6).
+- 2026-10-20: T6 done: CLAUDE.md's save-name paragraph now states the reported `sample.pdf` (four Firefox lines) and the hand-save `sample.pdf` with 2026-10-20; the "Still unverified" item now states the reported name `sample.pdf` with the date beside the hand saves. Docs only, no check affected; status review.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local. -->
