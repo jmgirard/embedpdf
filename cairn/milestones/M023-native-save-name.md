@@ -73,6 +73,7 @@ On a self-contained page, each native embed's own save control saves the in-page
 - 2026-10-20: claim audit: 52 claims read, 4 corrected — tests/save_name_check.mjs (empty-folder sentence is Chromium-only; `<iframe>` only for some `page` over 1 embeds; gray-pixel rule; exit 130); the one re-read narrowed three of them further. README.md and CLAUDE.md had none.
 - 2026-10-20: stop: the Mac's screen is locked (`lsappinfo front` shows `loginwindow`), so the Safari control bar does not show and the owed Safari wrongname@3 run cannot pass; T3 stays open until the screen is unlocked.
 - 2026-10-20: resume (screen unlocked, main not moved): Safari wrongname@3 exits 1 with embed 3 (`<iframe>`) saved as `dummy.pdf` and embeds 1 and 2 as `Unknown.pdf`; both Safari lines and both Chromium lines exit 0 on the final script; ~/Downloads holds no `Unknown`/`dummy` file. T3 done; status set to review.
+- 2026-10-20: step-7 approval: m023-native-save-name approved for merge
 
 ## Decisions
 
