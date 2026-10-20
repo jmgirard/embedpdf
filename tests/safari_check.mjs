@@ -61,6 +61,7 @@ import net from "node:net";
 import fs from "node:fs";
 import { serveDocs, serveRemote, pointPdfsAt, embedSrcsOffRemote, docsFile } from "./serve_docs.mjs";
 import { expectedNames } from "./expect_names.mjs";
+import { simulatorSocket, openSafariPage } from "./webinspector.mjs";
 
 const args = process.argv.slice(2);
 const flags = {};
@@ -194,7 +195,7 @@ fetch("/__probe", { method: "POST", body: JSON.stringify(r) });
   process.exit(0);
 }
 
-// --- safaridriver -----------------------------------------------------------
+// --- the browser ------------------------------------------------------------
 const freePort = () =>
   new Promise((resolve) => {
     const s = net.createServer().listen(0, "127.0.0.1", () => {
@@ -204,6 +205,10 @@ const freePort = () =>
   });
 // the device and the server first, so an exit there leaves no safaridriver
 const dev = target === "simulator" ? simulator(flags.device) : null;
+if (dev && dev.state !== "Booted") {
+  console.error(`safari_check: the simulator "${dev.name}" is ${dev.state}, not booted; boot it with: xcrun simctl boot ${dev.udid}`);
+  process.exit(2);
+}
 // --remote cors: the PDFs come from a second server (another origin) that
 // sends Access-Control-Allow-Origin: *
 const remoteServer = remote
@@ -223,64 +228,90 @@ if (remoteBase) {
   }
 }
 const server = await startServer(remoteBase ? { transformHtml: (html) => pointPdfsAt(html, remoteBase, page) } : {});
-const sdPort = await freePort();
-const driver = spawn("safaridriver", ["-p", String(sdPort)], { stdio: "ignore" });
-driver.on("error", (err) => {
-  console.error(`safari_check: cannot start safaridriver: ${err.message}`);
-  server.close();
-  process.exit(2);
-});
-const base = `http://127.0.0.1:${sdPort}`;
-async function wd(method, path, body) {
-  const res = await fetch(base + path, {
-    method,
-    headers: { "Content-Type": "application/json" },
-    body: body === undefined ? undefined : JSON.stringify(body),
+let driver = null;
+
+// Each browser gives run(script, ...args), find(css), label(id),
+// attribute(id, name), and close(), and opens `url` before it resolves.
+// Desktop Safari: a safaridriver session.
+async function macBrowser(url) {
+  const sdPort = await freePort();
+  driver = spawn("safaridriver", ["-p", String(sdPort)], { stdio: "ignore" });
+  const started = new Promise((resolve, reject) => {
+    driver.on("error", (err) => reject(new Error(`cannot start safaridriver: ${err.message}`)));
+    driver.on("spawn", resolve);
   });
-  const json = await res.json();
-  if (json.value && json.value.error) throw new Error(`${method} ${path}: ${json.value.error}: ${json.value.message}`);
-  return json.value;
-}
-for (let k = 0; ; k++) {
-  try {
-    await fetch(base + "/status");
-    break;
-  } catch {
-    if (k > 50) {
-      console.error("safari_check: safaridriver did not start");
-      driver.kill();
-      server.close();
-      process.exit(2);
-    }
-    await sleep(100);
+  await started;
+  const base = `http://127.0.0.1:${sdPort}`;
+  async function wd(method, path, body) {
+    const res = await fetch(base + path, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const json = await res.json();
+    if (json.value && json.value.error) throw new Error(`${method} ${path}: ${json.value.error}: ${json.value.message}`);
+    return json.value;
   }
+  for (let k = 0; ; k++) {
+    try {
+      await fetch(base + "/status");
+      break;
+    } catch {
+      if (k > 50) throw new Error("safaridriver did not start");
+      await sleep(100);
+    }
+  }
+  // no session (remote automation off) is a setup failure
+  const session = (await wd("POST", "/session", { capabilities: { alwaysMatch: { browserName: "safari" } } })).sessionId;
+  const s = `/session/${session}`;
+  await wd("POST", `${s}/url`, { url });
+  return {
+    run: (script, ...a) => wd("POST", `${s}/execute/sync`, { script, args: a }),
+    find: async (css) => (await wd("POST", `${s}/elements`, { using: "css selector", value: css })).map((e) => Object.values(e)[0]),
+    label: (id) => wd("GET", `${s}/element/${id}/computedlabel`),
+    attribute: (id, name) => wd("GET", `${s}/element/${id}/attribute/${name}`),
+    close: () => wd("DELETE", s).catch(() => {}),
+  };
+}
+// Safari in the simulator: the page opened with simctl, then read through
+// the simulator's Web Inspector socket (tests/webinspector.mjs). The
+// address carries a token, so a tab left from another run is not read.
+async function simulatorBrowser(url) {
+  const socket = simulatorSocket(dev.udid);
+  const own = `${url}?run=${Date.now().toString(36)}`;
+  try {
+    simctl("openurl", dev.udid, own);
+  } catch {
+    // the first openurl after a boot can time out; a second one works
+    simctl("openurl", dev.udid, own);
+  }
+  const p = await openSafariPage({ socket, url: own });
+  // WebDriver's navigation waits for the load; this read does not
+  const start = Date.now();
+  while ((await p.run(`return document.readyState;`)) !== "complete") {
+    if (Date.now() - start > 30000) throw new Error(`${own} did not finish loading in 30 s`);
+    await sleep(250);
+  }
+  return p;
 }
 
 const failures = [];
-let session = null;
+let browser = null;
 let report = {};
 let page2Tried = 0;
 let page2Read = 0;
-// set when the run cannot start a session or the page is a slide deck: exit 2
+// set when the run cannot reach Safari or the page is a slide deck: exit 2
 let setupError = null;
 try {
-  const caps = { browserName: "safari" };
-  if (dev) {
-    Object.assign(caps, { platformName: "iOS", "safari:useSimulator": true, "safari:deviceUDID": dev.udid });
-    report.device = dev.name;
-  }
+  if (dev) report.device = dev.name;
+  const url = `http://127.0.0.1:${server.address().port}/${page}`;
   try {
-    session = (await wd("POST", "/session", { capabilities: { alwaysMatch: caps } })).sessionId;
+    browser = dev ? await simulatorBrowser(url) : await macBrowser(url);
   } catch (err) {
-    // no session (remote automation off, or no simulator host) is a setup failure
     setupError = err.message;
     throw err;
   }
-  const s = `/session/${session}`;
-  const run = (script, ...a) => wd("POST", `${s}/execute/sync`, { script, args: a });
-  const find = async (css) => (await wd("POST", `${s}/elements`, { using: "css selector", value: css })).map((e) => Object.values(e)[0]);
-  const label = (id) => wd("GET", `${s}/element/${id}/computedlabel`);
-  await wd("POST", `${s}/url`, { url: `http://127.0.0.1:${server.address().port}/${page}` });
+  const { run, find, label, attribute } = browser;
   // the check reads one page at a time and does not move between slides
   if (await run(`return !!document.querySelector(".reveal .slides");`)) {
     setupError = `${page} is a slide deck, which safari_check does not read`;
@@ -359,7 +390,7 @@ try {
   report.native = [];
   for (const [i, id] of objects.entries()) {
     const at = `native embed ${i + 1} (embed ${nativeAt[i] + 1})`;
-    const r = { name: await label(id), title: await wd("GET", `${s}/element/${id}/attribute/title`) };
+    const r = { name: await label(id), title: await attribute(id, "title") };
     report.native.push(r);
     if (r.name !== want[nativeAt[i]]) failures.push(`${at}: Safari's name is ${JSON.stringify(r.name)}, not ${JSON.stringify(want[nativeAt[i]])}`);
     if (r.title !== null) failures.push(`${at}: its element has a title, ${JSON.stringify(r.title)}`);
@@ -383,7 +414,7 @@ try {
       if (own.length !== 3) failures.push(`${at}: ${own.length} toolbar controls, not 3`);
       for (const [j, cid] of own.entries()) {
         const name = await label(cid);
-        const title = await wd("GET", `${s}/element/${cid}/attribute/title`);
+        const title = await attribute(cid, "title");
         r.controls.push({ name, title });
         if (title !== titles[j]) failures.push(`${at}, control ${j + 1}: title ${JSON.stringify(title)}, not ${JSON.stringify(titles[j])}`);
         if (name !== title) failures.push(`${at}, control ${j + 1}: Safari's name ${JSON.stringify(name)} is not its title ${JSON.stringify(title)}`);
@@ -442,10 +473,10 @@ try {
 } catch (err) {
   failures.push(err.message);
 } finally {
-  if (session) await wd("DELETE", `/session/${session}`).catch(() => {});
+  if (browser) await browser.close();
   server.close();
   remoteServer?.close();
-  driver.kill();
+  driver?.kill();
 }
 console.log(JSON.stringify({ target, page, ...report, failures }, null, 2));
 for (const f of failures) console.error("safari_check: " + f);
