@@ -37,35 +37,35 @@ than `attachment` (both compared without case or parameters); any other answer, 
 
 ## Acceptance criteria
 
-- [ ] AC1: On `page_test.html`, a page that is not self-contained, `tests/native_check.mjs` with
+- [x] AC1: On `page_test.html`, a page that is not self-contained, `tests/native_check.mjs` with
       `--expect-native 3 --reference sample.pdf` and no `--same-pages` exits 0 with `--browser chromium`,
       `--browser firefox`, and `--browser safari`. In each run, each native embed with `page=2` is an
       `<iframe>` whose address ends in `#page=2`, with a computed border width of 0, a 600 x 400 CSS-pixel
       box, and no other element of its placeholder with a rendered box. Its screenshot matches the page-2
       reference, the page-1 and page-2 references are both `<iframe>`s and differ, and the native embed with
       no `page` option is an `<object>` with no fragment.
-- [ ] AC2: On `selfcontained_test.html`, `tests/native_check.mjs` with `--expect-native 3 --reference
+- [x] AC2: On `selfcontained_test.html`, `tests/native_check.mjs` with `--expect-native 3 --reference
       sample.pdf` and no `--same-pages` exits 0 with `--alone file` and with `--alone http`, each with
       `--browser chromium`, `--browser firefox`, and `--browser safari`. In each run, the `page=2` native embed
       is an `<iframe>` with a `blob:` address that ends in `#page=2`, with the border, box, and placeholder of
       AC1. Its screenshot matches the page-2 reference, the page-1 and page-2 references are both `<iframe>`s
       and differ, and the other native embeds are `<object>`s.
-- [ ] AC3: On `page_test.html` and `selfcontained_test.html`, each native embed that is an `<iframe>` has the
+- [x] AC3: On `page_test.html` and `selfcontained_test.html`, each native embed that is an `<iframe>` has the
       embed's name as its `aria-label` and has no `title`. On `page_test.html`, `tests/render_check.mjs` with
       `--expect-native 3 --expect-pdfjs 0 --expect-name sample.pdf` exits 0 in Chromium, which reads the names
       in the DOM and in the accessibility tree, and `tests/safari_check.mjs --target mac` with the same flags
       exits 0 in desktop Safari. The `selfcontained_test.html` render_check lines of AC5 hold for that page.
-- [ ] AC4: On iPhone, iPad, and emulated Android, `renderer=native` with `page=2` stays an `<object>`, and
+- [x] AC4: On iPhone, iPad, and emulated Android, `renderer=native` with `page=2` stays an `<object>`, and
       `page=2` with `renderer=auto` uses PDF.js. On `page_test.html`, `tests/render_check.mjs` with `--device
       iphone` and with `--device android` exits 0 with `--expect-native 2 --expect-pdfjs 1 --expect-pages 2
       --expect-name sample.pdf`. `tests/ios_check.mjs` exits 0 on the "embedpdf iPhone" and "embedpdf iPad"
       simulators with `--expect-native 2 --expect-embeds 1 --expect-name sample.pdf`. In each of these runs
       every native embed is an `<object>`.
-- [ ] AC5: Each `node tests/…` and `pandoc lua tests/…` run line exits 0, and `quarto render` ends with no
+- [x] AC5: Each `node tests/…` and `pandoc lua tests/…` run line exits 0, and `quarto render` ends with no
       error. The lines are those in CLAUDE.md's "Verify before finishing" section at commit 49f134c, with
       `--same-pages` removed from the two Safari `native_check.mjs` lines, plus the `page_test.html` lines that
       T6 adds.
-- [ ] AC6: README.md and DESIGN.md Known issues say that, in a desktop browser with a built-in PDF viewer, a
+- [x] AC6: README.md and DESIGN.md Known issues say that, in a desktop browser with a built-in PDF viewer, a
       native embed with a `page` over 1 is an `<iframe>` in the cases the Scope names, and an `<object>`
       otherwise. They name those other cases: a PDF from another site, an answer that is not OK (such as 404 or
       405), another media type, an attachment, a late answer, and a PDF file that is not inlined on a `file:`
@@ -75,7 +75,7 @@ than `attachment` (both compared without case or parameters); any other answer, 
       line says that desktop Safari opens a native embed at page 1 without limiting it to the `<object>` cases.
       DESIGN.md Known issues and README.md hold no sentence that says a native embed of a missing PDF shows a
       blank frame or an error page. CLAUDE.md's file list names `page_test.qmd`.
-- [ ] AC7: On a page served by `tests/frame_rule_check.mjs`, each native embed gets the element its PDF's
+- [x] AC7: On a page served by `tests/frame_rule_check.mjs`, each native embed gets the element its PDF's
       answer calls for. With `page=2`: same-origin `application/pdf` (`<iframe>`), `Application/PDF;
       charset=binary` (`<iframe>`), `application/pdf` with `Content-Disposition: inline; filename="sample.pdf"`
       (`<iframe>`), `application/octet-stream` (`<object>`), `application/pdf` with `Content-Disposition:
@@ -247,3 +247,12 @@ spawned: diff-bug, blame-history, prior-review, ripple
 - ripple #2: ROADMAP row "Run the render checks in Firefox" says only native_check runs in Firefox — fix now.
 - ripple #3: ROADMAP row "Close the native name check gaps" names only `<object>` — fix now.
 - ripple (noted): render_check and ios_check comments cite D-007 for the device rule — fix now: D-008.
+
+Evidence (2026-10-20, branch head b061fe1; `quarto render` rc 0 with no docs/ change; all 102 CLAUDE.md run lines in one run, each exit 0 on the first try):
+
+- AC1: native_check page_test.html, no `--same-pages`: Chromium 155, Firefox 158, Safari 27.0.1 each exit 0 with no failure; embeds 1-2 `<iframe>` `#page=2` matching the page-2 `<iframe>` reference (diff ≤ 0.0001), embed 3 `<object>` with no fragment; page-1 vs page-2 `<iframe>` references differ 0.1371 / 0.0530 / ≥ 0.0952; border, box, and placeholder checks passed (no failure line).
+- AC2: native_check selfcontained_test.html `--alone file` and `--alone http`, no `--same-pages`, in Chromium 155, Firefox 158, Safari 27.0.1: all six exit 0; embeds 1-2 `<object>`, embed 3 (`page=2`) `<iframe>` with a `blob:` address ending `#page=2` (the check fails a non-`blob:` address), matching the page-2 `<iframe>` reference (diff ≤ 0.0035); page-1 vs page-2 `<iframe>` references differ 0.1371 / 0.0530 / 0.0952.
+- AC3: render_check page_test.html `--expect-native 3 --expect-pdfjs 0 --expect-name sample.pdf` exit 0 in Chromium 155 (DOM aria-label, no title, tree name, for embeds 1-2 as `<iframe>`; the nativename/nativetitle/nativedesc plants fail on the `<iframe>`, T5); safari_check `--target mac` same flags exit 0 in Safari 27.0.1; render_check selfcontained_test.html `--alone file` desktop and iphone lines exit 0.
+- AC4: render_check page_test.html `--device iphone` and `--device android` with `--expect-native 2 --expect-pdfjs 1 --expect-pages 2 --expect-name sample.pdf` exit 0, nativeTags ["object","object"]; ios_check "embedpdf iPhone" and "embedpdf iPad" `--expect-native 2 --expect-embeds 1 --expect-name sample.pdf` exit 0, native tags object, object.
+- AC5: the 87 `node tests/…`/`pandoc lua tests/…` lines of CLAUDE.md at 49f134c, with ` --same-pages` cut from the two Safari native_check lines, all appear unchanged in CLAUDE.md at b061fe1 (`comm` of the sorted sets: none missing); the new set adds the 11 page_test.html lines and the 4 frame_rule_check lines (AC7). All 102 exited 0 in this run; `quarto render` rc 0; also percent_page_test PDF render rc 0 with the phrase 5 times, helpers_test 158 passed, 0 failed.
+- AC6: README.md:66 and DESIGN.md Known issues (the item opening "Desktop Safari 27.0.1 opens a native `<object>`") each say that in a desktop browser with a built-in PDF viewer a `page` > 1 native embed is an `<iframe>` in the Scope's cases and an `<object>` otherwise, name the other cases (another origin, not-OK answer such as 404 or 405, another media type, attachment, late answer, a non-inlined PDF on a `file:` page), say desktop Safari opens those at page 1, and name Chromium 155, Firefox 158, desktop Safari 27.0.1, 2026-10-20 (the AC1/AC2 runs above). `grep -n -i -B2 "page 1" README.md CLAUDE.md`: the Safari page-1 statements (README:66, CLAUDE.md:186-187) both name the `<object>`; README:91's hit is "Page 1 of 2". `grep "blank frame\|error page"` over README.md and cairn/DESIGN.md: 0 lines. CLAUDE.md:19 names `page_test.qmd`.
