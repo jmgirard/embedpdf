@@ -42,7 +42,7 @@ Version 1.2.6.
 
 ## Acceptance criteria
 
-- [ ] AC1: In HTML output, and in the link of output formats other than HTML
+- [x] AC1: In HTML output, and in the link of output formats other than HTML
       and LaTeX, the shortcode writes each `%` of the PDF path that is not
       followed by two hex digits as `%25`. It writes a `%` that is followed
       by two hex digits as given, in one pass. This holds in `data-src`, the
@@ -55,7 +55,7 @@ Version 1.2.6.
       `a%5C%7D%23%24%26%7E%5E%5F.pdf`, `a%7Cb.pdf`, `a%1Fb.pdf`,
       `a%7Fb.pdf`, and `%C3%A9.pdf`. `pandoc lua tests/test_shortcode.lua`
       prints "N passed, 0 failed".
-- [ ] AC2: In LaTeX output the shortcode decodes, in one pass, each `%XX`
+- [x] AC2: In LaTeX output the shortcode decodes, in one pass, each `%XX`
       escape whose byte is printable ASCII (0x20 to 0x7E) other than
       `\ { } # $ & ~ ^ _ " ,`. It keeps every other `%` as written. When the
       path then holds a `%`, the line is
@@ -89,7 +89,7 @@ Version 1.2.6.
       61d6f12 passes (9 lines). In that CLAUDE.md, the first command block
       that names `example.html` holds one `example.html` line with no
       `--device` and one with `--device iphone`. Those two lines pass too.
-- [ ] AC6: `_extensions/embedpdf/_extension.yml` holds `version: 1.2.6`, and
+- [x] AC6: `_extensions/embedpdf/_extension.yml` holds `version: 1.2.6`, and
       `_extensions/embedpdf/embedpdf.lua` holds `VERSION = "1.2.6"`.
       README.md says that a `%` in a PDF file name can be given bare unless
       two hex digits follow it, and that `%25` always works.
@@ -165,3 +165,9 @@ Version 1.2.6.
 ## Decisions
 
 ## Review
+
+Pass 1, 2026-10-19, at b3bf552 (branch level with origin/main bd99b3f).
+
+- AC1: `pandoc lua tests/test_shortcode.lua` printed "160 passed, 0 failed". The path table holds 24 rows, and a grep found each of the 22 AC1 paths in it. Each row checks `data-src`, the no-JavaScript link, the `button` link, and the other-format (docx) link target.
+- AC2: the same run checks the whole LaTeX line for each of the 24 rows (`grouped()` or `plain()` expected strings), and `LATEX_UNSAFE` holds `\ { } # $ & ~ ^ _ " ,` (embedpdf.lua:34-36). Mutant probes from implement (work log): per-path `url_path`, per-path `latex_path`, and a dropped `_` each fail the table.
+- AC6: `_extension.yml:3` is `version: 1.2.6`, `embedpdf.lua:46` is `local VERSION = "1.2.6"`, and README.md:57 says a bare `%` works unless two hex digits follow it and that `%25` always works.
