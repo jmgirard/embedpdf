@@ -36,7 +36,7 @@ Make `render_check.mjs` measure ink when the pages have rendered rather than aft
 - [ ] AC2: `tests/ios_check.mjs` reports each PDF.js page's ink as "ok", "no canvas", "no ink", or "unreadable (…)", and its failure line names the state of each failing page. In the "embedpdf iPhone" simulator, `node tests/ios_check.mjs --device "embedpdf iPhone" --plant blank` exits 1 with a line naming "no ink" for the last page of the first PDF.js embed (`blank` counts as planted only where that page has a canvas), and the same line with a new `--plant nocanvas`, which removes that page's canvas and keeps the page, exits 1 with a line naming "no canvas".
 - [ ] AC3: `tests/render_check.mjs` measures ink without eval in the page. With a new `--csp` option, the test server sends a Content-Security-Policy header whose `script-src` omits `'unsafe-eval'`, and `node tests/render_check.mjs example.html --csp --expect-native 9 --expect-pdfjs 2 --expect-pages 2` exits 0.
 - [ ] AC4: Every `node tests/render_check.mjs` and `node tests/ios_check.mjs` line in CLAUDE.md "Verify before finishing" as it stands at the milestone's end, with the extra runs each block names for its own lines, exits 0, and `node tests/helpers_test.mjs` prints "N passed, 0 failed".
-- [ ] AC5: The render_check header names `--cpu-throttle` and `--csp`, the ios_check header names `nocanvas`, and CLAUDE.md names all three. `grep -nE '4 s|4000|four seconds'` over CLAUDE.md, `tests/render_check.mjs`, and `tests/ios_check.mjs` shows no line that describes a fixed wait before render_check's ink measure.
+- [x] AC5: The render_check header names `--cpu-throttle` and `--csp`, the ios_check header names `nocanvas`, and CLAUDE.md names all three. `grep -nE '4 s|4000|four seconds'` over CLAUDE.md, `tests/render_check.mjs`, and `tests/ios_check.mjs` shows no line that describes a fixed wait before render_check's ink measure.
 
 ## Coverage
 <!-- owner: plan · create/amend-via-gate -->
@@ -86,3 +86,7 @@ Make `render_check.mjs` measure ink when the pages have rendered rather than aft
 
 ## Review
 <!-- owner: review · exclusive. -->
+
+Pass 1, 2026-10-19, branch head 03e0a2e (main 55820d4 already merged in; Copilot round off).
+
+- AC5: the render_check header (before its first `import`) names `--cpu-throttle` (line 242) and `--csp` (line 245); the ios_check header names `nocanvas` (lines 35, 46-47); CLAUDE.md names `--cpu-throttle` (2 lines), `--csp` (2), `nocanvas` (1). `grep -nE '4 s|4000|four seconds' CLAUDE.md tests/render_check.mjs tests/ios_check.mjs` prints no line. Pass.
