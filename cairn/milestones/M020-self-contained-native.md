@@ -117,7 +117,7 @@ true or stale.
       embed; `otherpdf` and `broken` must fail as a mismatch, not as no ink.
       `nopage` is expected to pass in Safari (it ignores the fragment);
       record that.
-- [ ] T4: Add the six `native_check.mjs` lines and a short paragraph to
+- [x] T4: Add the six `native_check.mjs` lines and a short paragraph to
       CLAUDE.md "Verify before finishing": what the check compares,
       `--same-pages`, the plants, and that Firefox started from Claude Code
       first needs its folder made by one `open -g -a Firefox` launch. Run the
@@ -143,3 +143,4 @@ true or stale.
 - 2026-10-19: T2: wrote `tests/native_check.mjs`; the PNG reader and comparison live in a new `tests/png_diff.mjs`, tested in `tests/helpers_test.mjs` (every filter type, RGB and RGBA, split IDAT, refused formats, shift and block cases; 154 passed, 0 failed). Choices: the reference `<object>` copies the embed's size and fractional position; screenshots compare by 4 x 4 block averages at the best shift of up to 2 pixels, because desktop Safari drew the same page 1 pixel apart and Firefox at scale 1 drew text edges a fraction of a pixel apart (2-4% of single pixels); the expected fragment comes from the embed's `data-page`, not its address, so a lost fragment fails; Firefox runs with `pdfjs.viewOnLoad` 1, because by default it reopened a PDF at the page last shown; `NATIVE_CHECK_SHOTS` saves screenshots.
 - 2026-10-19: minor amendment to T1: the `page=2` embed got `width=600 height=400`; at the default 300 x 150 Firefox's toolbar and outline panel filled most of the box, and its page-1 and page-2 references differed in only 3% of pixels. helpers_test's count of the page's inlined embeds went from 3 to 4.
 - 2026-10-19: T3: every plant run in Chromium 155, Firefox 158, and desktop Safari 27.0.1 (`--alone http`), and in Chromium at `--plant-at 1`, `2`, `3` (`--alone file`): each exits 1 naming the planted embed; otherpdf and broken fail as a mismatch in every browser; nopage at embeds 1 and 2 exits 2 (no page option there). Deviation: nopage fails in desktop Safari too, on the address's missing fragment, since the expected fragment now comes from `data-page`.
+- 2026-10-19: T4: added the six `native_check.mjs` lines and their paragraph to CLAUDE.md, and `tests/png_diff.mjs` to the helper-change rule in CLAUDE.md and PROFILE.md's verify slot. All six exit 0 (Chromium 155.0.8059.39, Firefox 158.0, Safari 27.0.1): embed vs reference at most 0.0035 of blocks (Firefox page-2 embed); page-1 vs page-2 references 0.1371 (Chromium), 0.0530 (Firefox), 0.0000 (Safari). The T1 lines (10 render_check, 2 ios_check) exit 0 again with the resized page-2 embed.

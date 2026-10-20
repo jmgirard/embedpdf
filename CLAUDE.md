@@ -177,6 +177,30 @@ takes one count for every embed not set to `renderer=native`. It also takes a
 `revealjs_test.html` these are `dummy2.pdf` (2 pages) and then `dummy.pdf`
 with `renderer=auto` (1 page).
 
+The native embeds of a self-contained page: `native_check.mjs` opens
+`selfcontained_test.html` alone and takes a screenshot of each native
+`<object>`. The reference is a screenshot of an `<object>` of
+`docs/sample.pdf` on the check's own server, at the embed's size. It shows
+the page that the embed's `page` option names. The check also fails unless
+each `<object>` address is a `blob:` URL with that `#page` fragment. The
+fourth embed has `page=2`. In Chromium and Firefox the page-1 and page-2
+references must differ. Desktop Safari 27.0.1 opens a native embed at page 1
+whatever the fragment says. So the Safari lines take `--same-pages`, and
+there the two references must match. Chromium and Firefox run headless. The
+header states the plants (`otherpdf`, `broken`, `blank`, `fileaddr`,
+`nopage`, placed by `--plant-at <k>`). Firefox started from Claude Code fails
+with "Could not find profile folder" until one `open -g -a Firefox` launch
+makes its folder. If Firefox is not in `/Applications`, set `FIREFOX_PATH`:
+
+```
+node tests/native_check.mjs --browser chromium --page selfcontained_test.html --alone file --expect-native 3 --reference sample.pdf
+node tests/native_check.mjs --browser chromium --page selfcontained_test.html --alone http --expect-native 3 --reference sample.pdf
+node tests/native_check.mjs --browser firefox --page selfcontained_test.html --alone file --expect-native 3 --reference sample.pdf
+node tests/native_check.mjs --browser firefox --page selfcontained_test.html --alone http --expect-native 3 --reference sample.pdf
+node tests/native_check.mjs --browser safari --page selfcontained_test.html --alone file --expect-native 3 --reference sample.pdf --same-pages
+node tests/native_check.mjs --browser safari --page selfcontained_test.html --alone http --expect-native 3 --reference sample.pdf --same-pages
+```
+
 A self-contained page whose embeds cannot show their PDF:
 `selfcontained_failed_test.html` holds `files/broken.pdf`, a text file that
 PDF.js cannot load. It also holds two hand-written embeds
@@ -339,9 +363,10 @@ xcrun simctl create "embedpdf iPhone" "iPhone 17" com.apple.CoreSimulator.SimRun
 xcrun simctl create "embedpdf iPad" "iPad Air 11-inch (M4)" com.apple.CoreSimulator.SimRuntime.iOS-27-0
 ```
 
-**After any change to `tests/ink.mjs`, `tests/serve_docs.mjs`, or
-`tests/expect_names.mjs`**, run the
-helper tests (Node only, no browser), then the browser checks above:
+**After any change to a check helper** (`tests/ink.mjs`,
+`tests/serve_docs.mjs`, `tests/expect_names.mjs`, or `tests/png_diff.mjs`),
+run the helper tests (Node only, no browser). Then run the browser checks
+above:
 
 ```
 node tests/helpers_test.mjs              # must print "N passed, 0 failed"

@@ -29,8 +29,8 @@ finishing". Run them from the repo root:
   `CHROME_PATH` for Chromium) and serves `docs/` itself. It needs `npm install
   puppeteer-core` once. `ios_check.mjs` drives Safari in the "embedpdf iPhone"
   and "embedpdf iPad" iOS simulators.
-- After a change to `tests/ink.mjs`, `tests/serve_docs.mjs`, or
-  `tests/expect_names.mjs`, run
+- After a change to `tests/ink.mjs`, `tests/serve_docs.mjs`,
+  `tests/expect_names.mjs`, or `tests/png_diff.mjs`, run
   `node tests/helpers_test.mjs`. It must print `N passed, 0 failed`. Then run
   the browser check lines above.
 - After a doc or example change, run `quarto render`. It must finish with no
