@@ -4,14 +4,14 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M026: Tag and release every 1.x version
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP2
 - **Resolves:** —
 - **Surface tier:** user-facing — the tags, the GitHub releases page, and the README version badge are what users see
-- **Branch/PR:** —
+- **Branch/PR:** m026-tag-and-release-backlog
 
 ## Goal
 
@@ -95,7 +95,7 @@ v1.2.1, v1.2.2, v1.2.3, v1.2.4, v1.2.5, v1.2.6, v1.2.7, v1.2.8, v1.2.9.
 
 ## Tasks
 
-- [ ] T1: Record the before-state in the work log: the five releases'
+- [x] T1: Record the before-state in the work log: the five releases'
       name, published_at, and a SHA-256 of each body (`gh api ... releases
       --paginate`), and `git ls-remote --tags origin`. Check both against the
       values in AC2 and AC4.
@@ -132,6 +132,8 @@ v1.2.1, v1.2.2, v1.2.3, v1.2.4, v1.2.5, v1.2.6, v1.2.7, v1.2.8, v1.2.9.
 - 2026-10-20: criteria audit round 2: the option rule is empty for v1.0.3–v1.2.9, so AC5 adds the commit-subject clause (fixed); old tag SHAs and release dates written into AC2 and AC4 (fixed); new tags must be annotated (fixed); optional `local VERSION` match in `embedpdf.lua` not added (narrower promise); tag pushes need user approval (covered by the question-set line above).
 - 2026-10-20: plan gate chose publishing at implement over draft releases published after the merge, because the user asked for the fix now and review then reads live releases; falsified by a review finding in a note that an edit of the release cannot repair.
 - 2026-10-20: plan gate chose the first commit whose `_extension.yml` carries the version as each tag's target over the later "review M0NN: done" commits, because the squash merge is the shipped code; falsified by a version whose shipped files differ between those two commits outside `cairn/`.
+- 2026-10-20: implement started on branch m026-tag-and-release-backlog, cut from main at e0b7be8.
+- 2026-10-20: T1 before-state: releases v0.5.0 2025-11-26T01:09:39Z, v0.4.1 2024-03-19T01:14:59Z, v0.4.0 2024-03-18T23:41:34Z, v0.2.0 2023-04-14T14:32:15Z, v0.1.0 2023-04-14T00:19:20Z, each named by its tag, none draft or prerelease; body SHA-256 prefixes v0.5.0 c1c9358b1e82fd5a, v0.4.1 403229f58d485754, v0.4.0 0daf0cca7e6c3c56, v0.2.0 21030e8ccbc6afc1, v0.1.0 dd95d5e454acab6d; `git ls-remote --tags origin` gave the eight tag objects and three `^{}` commits that AC2 lists. All match AC2 and AC4.
 
 ## Decisions
 
