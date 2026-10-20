@@ -52,7 +52,7 @@ scroll.
 ## Coverage
 
 - AC1 → T1, T2, T3
-- AC2 → T4
+- AC2 → T4, T5
 
 ## Tasks
 
@@ -60,6 +60,7 @@ scroll.
 - [x] T2: Switch `safari_check.mjs --target simulator` to it: open the page with `xcrun simctl openurl`, and run scripts, find elements, and read names and attributes through Web Inspector. `--target mac` stays on safaridriver. Run the AC1 lines on both simulators, and the CLAUDE.md `--target mac` lines. If Safari on iOS gives a name the viewer gets wrong, stop: it is a viewer defect.
 - [x] T3: Show that the simulator runs can fail: on the iPhone simulator, `--plant rawindicator`, `nonumber`, `nativename`, and `nativetitle` each make the `example.html` line exit 1 with a failure line naming the planted defect. A `--device` that names a shut-down simulator exits 2 with a line naming that cause.
 - [x] T4: Docs. In CLAUDE.md, add the four AC1 run lines to the verify block, and update the `safari_check.mjs` paragraph, the screen-reader entries of "Still unverified" (the toolbar-control and computed-name entries), and the helper list. Update README.md line 91 and the header of `tests/safari_check.mjs`. Correct the M010 lesson in `cairn/LESSONS.md` in place (safaridriver still finds no simulator session host; Web Inspector reads the names). Run the AC2 `grep`.
+- [x] T5: Review return 1: README.md item 91 names `example.html` and `page_test.html` and says the indicator was read with role heading.
 
 ## Work log
 
@@ -95,3 +96,6 @@ scroll.
 - 2026-10-20: T4: CLAUDE.md gains the four AC1 lines (example.html in the first verify block, page_test.html in the page_test block), a rewritten safari_check paragraph, and rewritten screen-reader entries in "Still unverified" (the computed-names entry removed). README item 91 and the safari_check header updated; M010 lesson corrected in place. AC2 grep prints nothing (exit 1); helpers_test 169 passed, 0 failed; cairn_validate passes. The simple-english hook's counts did not rise from the new text (CLAUDE.md 40 to 39, after one long sentence of mine was split).
 - 2026-10-20: claim audit: 32 claims read, 4 corrected — tests/webinspector.mjs (10 s is per protocol message; openSafariPage waits up to 30 s), tests/safari_check.mjs (exit-2 list gains an unreachable socket and a 30 s load timeout; stale indicator comment names the Web Inspector label), tests/helpers_test.mjs (fixture made on macOS 27.0.1). The reader's own page_test.html run on the iPhone simulator exited 0.
 - 2026-10-20: implement done; status review. helpers_test 169 passed, 0 failed after the comment fixes.
+- 2026-10-20: review: AC1's four lines re-run fresh, all exit 0.
+- 2026-10-20: review return 1: AC2 fails as written: README.md item 91 says the names were checked "on two test pages" and does not name `example.html` and `page_test.html`, nor that the indicator was read with role heading (CLAUDE.md states both). Status in-progress.
+- 2026-10-20: T5 added for review return 1 (minor amendment; Coverage AC2 → T4, T5). README item 91 now names both pages and "read with the role heading"; AC2 grep still prints nothing. Status review.
