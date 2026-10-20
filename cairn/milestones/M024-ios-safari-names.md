@@ -99,6 +99,7 @@ scroll.
 - 2026-10-20: review: AC1's four lines re-run fresh, all exit 0.
 - 2026-10-20: review return 1: AC2 fails as written: README.md item 91 says the names were checked "on two test pages" and does not name `example.html` and `page_test.html`, nor that the indicator was read with role heading (CLAUDE.md states both). Status in-progress.
 - 2026-10-20: T5 added for review return 1 (minor amendment; Coverage AC2 → T4, T5). README item 91 now names both pages and "read with the role heading"; AC2 grep still prints nothing. Status review.
+- 2026-10-20: step-7 approval: m024-ios-safari-names approved for merge
 
 ## Review
 
