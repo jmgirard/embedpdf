@@ -21,7 +21,13 @@
 //   --expect-embeds <n>    embeds not set to renderer=native (default 10)
 //   --expect-native <n>    embeds set to renderer=native (default 0); checked
 //                          when given, and always with --expect-name
-//   --expect-pages <n>     pages per PDF.js embed (default 2: sample.pdf)
+//   --expect-pages <n> | "<n1>|<n2>|…"
+//                          pages per PDF.js embed (default 2: sample.pdf):
+//                          one count for every embed not set to
+//                          renderer=native, or one count per such embed in
+//                          page order. A list must have --expect-embeds
+//                          entries, and each entry must be a whole number,
+//                          or the run exits 2
 //   --port <n>             server port on 127.0.0.1 (default: a free port the
 //                          system picks); a port in use, or any server that
 //                          cannot start, exits 2 with a message
@@ -214,7 +220,7 @@
 // ink after.
 //
 // Exits 0 only when every embed not set to renderer=native used PDF.js, has
-// exactly --expect-pages page containers, and every page canvas has ink, and
+// exactly its --expect-pages page containers, and every page canvas has ink, and
 // the number of such embeds equals --expect-embeds. With --expect-download,
 // every embed must show the inlined failure state that flag describes instead
 // of using PDF.js with ink (the --expect-embeds count still applies); without
@@ -275,7 +281,19 @@ if (!/^\d+$/.test(expectNativeArg)) {
   console.error("ios_check: --expect-native needs a whole number");
   process.exit(2);
 }
-const expectPages = Number(opt("expect-pages", "2"));
+// one page count for every embed not set to renderer=native, or one per such
+// embed in page order
+const expectPagesList = opt("expect-pages", "2").split("|");
+if (!expectPagesList.every((s) => /^\d+$/.test(s))) {
+  console.error("ios_check: --expect-pages needs a whole number, or a \"|\" list of whole numbers");
+  process.exit(2);
+}
+if (expectPagesList.length > 1 && expectPagesList.length !== expectEmbeds) {
+  console.error(`ios_check: --expect-pages gives ${expectPagesList.length} counts for --expect-embeds ${expectEmbeds}`);
+  process.exit(2);
+}
+// the page count expected of the k-th embed not set to renderer=native
+const expectPagesOf = (k) => Number(expectPagesList.length === 1 ? expectPagesList[0] : expectPagesList[k]);
 // 0: the system picks a free port
 const portArg = opt("port", "0");
 const port = Number(portArg);
@@ -994,7 +1012,7 @@ try {
     } else if (expectDownloads) {
       // judged below, with every embed on the page
     } else if (e.renderer !== "pdfjs") failures.push(`embed ${e.index}: renderer ${e.renderer}, expected pdfjs`);
-    else if (e.pages !== expectPages) failures.push(`embed ${e.index}: ${e.pages} page containers, expected ${expectPages}`);
+    else if (e.pages !== expectPagesOf(i)) failures.push(`embed ${e.index}: ${e.pages} page containers, expected ${expectPagesOf(i)}`);
     // on a deck the ink is measured on the slide, and the pages counted at the
     // report, so an embed that hydrated after its slide has fewer ink entries
     else if (e.ink.length !== e.pages) failures.push(`embed ${e.index}: ink measured for ${e.ink.length} pages, but it has ${e.pages}`);

@@ -1,13 +1,13 @@
 # M018: iOS deck and link checks
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** —
 - **Resolves:** —
 - **Surface tier:** internal — test scripts and CLAUDE.md check lines change, and the extension does not
-- **Branch/PR:** —
+- **Branch/PR:** m018-ios-deck-and-links
 
 ## Goal
 
@@ -41,7 +41,7 @@
 
 ## Tasks
 
-- [ ] T1: Add the `--expect-pages` list to ios_check: parse it and its exit-2 cases near `tests/ios_check.mjs:278`, check each embed against its own entry at the `e.pages !== expectPages` site (`tests/ios_check.mjs:997`), and update the header comment. Run the AC1 runs.
+- [x] T1: Add the `--expect-pages` list to ios_check: parse it and its exit-2 cases near `tests/ios_check.mjs:278`, check each embed against its own entry at the `e.pages !== expectPages` site (`tests/ios_check.mjs:997`), and update the header comment. Run the AC1 runs.
 - [ ] T2: Add the two `revealjs_test.html` ios_check lines to CLAUDE.md and run both. If the deck needs more than the 180 s report timeout, add `--timeout` to the lines. Replace the CLAUDE.md sentence that says the page has no ios_check line.
 - [ ] T3: Add `--expect-links` to ios_check. The probe reads the links by render_check's selector, with each href's scheme. Node checks the count and the schemes. Add the plants `nolink` and `linkfile` and update the header comment. Run the AC3 runs.
 - [ ] T4: Add `--expect-links 4` to the four self-contained ios_check lines in CLAUDE.md and run them.
@@ -58,6 +58,7 @@
 - 2026-10-19: plan gate chose a `|` list in `--expect-pages` over a new per-embed flag, because `--expect-name` and `--expect-download` already take `|` lists in page order. Falsified by a page whose report lists embeds out of page order.
 - 2026-10-19: lessons harvested: M016 (the iPhone simulator shows RevealJS in its scrolled view, and `Reveal.getSlides()` skips uncounted slides), M010 (the first `simctl openurl` after a boot can time out, and a repeat passes).
 - 2026-10-19: no version bump and no changelog entry: the viewer does not change, and the profile's changelog slot is none.
+- 2026-10-19: T1 done: `--expect-pages` takes a `|` list, judged by each embed's position among the embeds not set to `renderer=native`. On revealjs_test.html (iPhone, `--expect-embeds 2 --expect-native 1`): "2|1" exit 0 in 17 s, "1|2" exit 1 naming embeds 2 and 3, "2" exit 1 naming embed 3, "2|1|1" and "2|x" exit 2.
 
 ## Decisions
 
