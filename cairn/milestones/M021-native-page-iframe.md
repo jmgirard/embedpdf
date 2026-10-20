@@ -21,6 +21,10 @@ built-in PDF viewer (`nativeSupported()` true) and `page` is over 1, the viewer 
 and `aria-label` that the `<object>` gets, no `title`, and no border. The no-JS fallback content stays in the
 placeholder, hidden. Every other native embed stays an `<object>`. Version 1.2.7. A new normal test page,
 `page_test.qmd`. The check scripts learn the `<iframe>` form. README, DESIGN.md, and CLAUDE.md state the result.
+The `<iframe>` is used only when the PDF is inlined (AC2), or comes from the page's own non-opaque origin and a
+HEAD request for it answers OK within 5 s with a media type of `application/pdf` and a disposition type other
+than `attachment` (both compared without case or parameters); any other answer, a failed or late request, a
+`file:` page, or a PDF from another origin gets an `<object>` (review return 1, D-008).
 
 **Out:**
 - A check that a PDF.js embed opens at its `page`, iOS Safari's handling of `#page` on a `renderer=native`
@@ -61,21 +65,38 @@ placeholder, hidden. Every other native embed stays an `<object>`. Version 1.2.7
       error. The lines are those in CLAUDE.md's "Verify before finishing" section at commit 49f134c, with
       `--same-pages` removed from the two Safari `native_check.mjs` lines, plus the `page_test.html` lines that
       T6 adds.
-- [ ] AC6: README.md and CLAUDE.md no longer say that desktop Safari opens a native embed at page 1. README.md
-      and DESIGN.md Known issues say that a native embed with a `page` over 1 is an `<iframe>`, and name the
-      browsers, versions, and date of the AC1 and AC2 runs (recorded in the Review section) in which such an
-      embed opened at page 2. DESIGN.md Known issues says that such an embed of a PDF missing at view time
-      shows a blank frame or the server's error page, where an `<object>` shows its download link. CLAUDE.md's
-      file list names `page_test.qmd`.
+- [ ] AC6: README.md and DESIGN.md Known issues say that, in a desktop browser with a built-in PDF viewer, a
+      native embed with a `page` over 1 is an `<iframe>` in the cases the Scope names, and an `<object>`
+      otherwise. They name those other cases: a PDF from another site, an answer that is not OK (such as 404 or
+      405), another media type, an attachment, a late answer, and a PDF file that is not inlined on a `file:`
+      page. They say that desktop Safari opens those `<object>` embeds at page 1. They name the browsers,
+      versions, and date of the AC1 and AC2 runs (recorded in the Review section) in which such an embed opened
+      at page 2. Read by `grep -n -i -B2 "page 1" README.md CLAUDE.md` with each hit and the lines before it, no
+      line says that desktop Safari opens a native embed at page 1 without limiting it to the `<object>` cases.
+      DESIGN.md Known issues and README.md hold no sentence that says a native embed of a missing PDF shows a
+      blank frame or an error page. CLAUDE.md's file list names `page_test.qmd`.
+- [ ] AC7: On a page served by `tests/frame_rule_check.mjs`, each native embed gets the element its PDF's
+      answer calls for. With `page=2`: same-origin `application/pdf` (`<iframe>`), `Application/PDF;
+      charset=binary` (`<iframe>`), `application/pdf` with `Content-Disposition: inline; filename="sample.pdf"`
+      (`<iframe>`), `application/octet-stream` (`<object>`), `application/pdf` with `Content-Disposition:
+      Attachment; filename="sample.pdf"` (`<object>`), HTTP 405 with `Content-Type: application/pdf` to a HEAD
+      request and `application/pdf` to a GET (`<object>`), and `application/pdf` from a second origin that
+      sends `Access-Control-Allow-Origin: *` (`<object>`). With no `page`: same-origin `application/pdf`
+      (`<object>`). Each of these embeds' addresses ends in `#page=2` where `page=2` is set. The page's server
+      logs at least one HEAD request for each same-origin `page=2` embed's address and none for the page-1
+      embed's address, and the second server logs no HEAD request. The script exits 0 with `--browser
+      chromium`, `--browser firefox`, and `--browser safari`. README.md's `page` row says which PDFs get an
+      `<iframe>` and that the others open at page 1 in desktop Safari.
 
 ## Coverage
 
-- AC1 → T1, T2, T3, T5, T7
-- AC2 → T1, T3, T5, T7
-- AC3 → T1, T4, T5, T7
-- AC4 → T2, T4, T7
-- AC5 → T6, T7
-- AC6 → T6
+- AC1 → T1, T2, T3, T5, T7, T11
+- AC2 → T1, T3, T5, T7, T11
+- AC3 → T1, T4, T5, T7, T11
+- AC4 → T2, T4, T7, T11
+- AC5 → T6, T7, T9, T11
+- AC6 → T6, T10
+- AC7 → T8, T9, T10, T11
 
 ## Tasks
 
@@ -108,6 +129,18 @@ placeholder, hidden. Every other native embed stays an `<object>`. Version 1.2.7
       Safari native_check lines without `--same-pages`, and the native_check paragraph. README `page` row and
       self-contained paragraph; DESIGN.md architecture and Known issues.
 - [x] T7: Run every AC5 line and `quarto render`; record each result in the Review section.
+- [ ] T8: Viewer (review return 1): before `hydrateNative()`, choose the element by the Scope rule (HEAD with a
+      5 s limit; opaque origins never match). 1.2.7 is unreleased, so the version stays.
+- [ ] T9: `tests/frame_rule_check.mjs` (Chromium, Firefox, Safari): AC7's cases plus an HTTP 404 case, each
+      embed at its own address; the octet-stream, Attachment, and 405 addresses end in `.pdf`, one `<iframe>`
+      address does not. Plants in the served viewer (origin check skipped, `ok` ignored, any disposition as
+      attachment, GET for HEAD, case-sensitive compare) and a server-side answer swap must fail; a 3 s HEAD
+      delay must pass. CLAUDE.md lines. Review fix-now items: native_check per-placeholder screenshots,
+      `data:` embeds without `--alone`, box from `data-width`/`data-height`; ios_check fails a native embed
+      with no element; `allowfullscreen` on the `<iframe>`.
+- [ ] T10: Docs per AC6 and AC7 (README, DESIGN.md, CLAUDE.md incl. the ripple lines and "Still unverified":
+      `file:` pages, GitHub Pages' HEAD answer); follow-ups into row "Check embeds open at their page option".
+- [ ] T11: `quarto render`, then every CLAUDE.md run line.
 
 ## Work log
 
@@ -144,6 +177,7 @@ placeholder, hidden. Every other native embed stays an `<object>`. Version 1.2.7
 - 2026-10-20: re-audit: AC7 (full) — 5 findings on the second draft: distinct addresses and `.pdf` endings (moved to the tasks), AC6's missing-PDF sentence now false (moved to AC6), `file:` pages unchecked (recorded in CLAUDE.md "Still unverified"), no HEAD time limit (5 s added to the Scope rule), 404 case (added to the tasks); AC7 wording unchanged.
 - 2026-10-20: re-audit: AC6 (full) — 5 findings on the first amended wording (dangling AC7 reference, missing-PDF text left in docs, page-1 cases unnamed, no procedure for "no longer say", D-007 contradiction); fixed in the second wording, D-008 to supersede D-007.
 - 2026-10-20: re-audit: AC6 (full) — 7 findings on the second wording (cross-reference to Scope, not-OK answers, `file:` pages with inlined PDFs, desktop qualifier, wrapped lines for grep, "every" unclear, phrase vs claim); a third wording is the second-re-audit stop, posed to the user.
+- 2026-10-20: substantive amendment: Scope In gains the header rule; AC6 reworded (third wording, approved by the user at the second-re-audit stop); AC7 added (adopted at the user's review decision, a widening); tasks T8-T11 added; D-008 supersedes D-007's rule.
 - 2026-10-20: the Goal stays as written (never edited in place); after the user's review decision it holds for PDFs that pass the header rule, and the docs name the rest (AC6).
 
 ## Decisions
