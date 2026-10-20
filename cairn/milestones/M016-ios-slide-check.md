@@ -82,7 +82,7 @@ the viewer, so no version bump.
       plants do). Update the header comment.
 - [x] T2: `quarto render`, then run both AC1 lines and read the report's
       slide fields.
-- [ ] T3: Run the AC2 plant lines and see each fail for its own embed.
+- [x] T3: Run the AC2 plant lines and see each fail for its own embed.
 - [ ] T4: Run the six AC3 lines.
 - [ ] T5: CLAUDE.md: add the AC1 lines to the self-contained block, drop the
       self-contained slides bullet from "Still unverified", and correct the
@@ -104,6 +104,7 @@ the viewer, so no version bump.
 - 2026-10-19: implement: branch m016-ios-slide-check cut from main at 1b6918e; status in-progress.
 - 2026-10-19: T1: probe walks the deck when `window.Reveal` exists (waits for `Reveal.isReady()`), reads text and measures ink per slide, records `slide`/`textSlide`/`inkSlide` and `scrollView` in the report; `blank`/`missing` now plant just before the first PDF.js embed's ink measure; `--plant noslide` added; no edit to `embedpdf.css` or the viewer.
 - 2026-10-19: T2: first iPhone run failed "embed 3: text read while slide 3 was shown, not its slide 4": RevealJS used its scrolled view there (`Reveal.isScrollView()` true), and `Reveal.slide()` to the last slide did not make it current; the probe now waits for the slide to be current and, after 3 s, scrolls its embeds into view. Then both AC1 lines exit 0 (iPhone 17 iOS 27.0, scrolled view; iPad Air 11-inch M4 iOS 27.0, slide view), each PDF.js embed with slide = textSlide = inkSlide.
+- 2026-10-19: T3: iPhone AC1 line exits 1 with `--plant noslide` ("embed 3: text read while slide 3 was shown, not its slide 4"), `blank` ("embed 1: pages without ink: 2"), and `notext` ("embed 1, page 2: text lacks …"); `--plant noslide` on example.html exits 2 ("found nothing to plant in"). In the iPhone's scrolled view the unshown slide's embed still got ink, so only the slide check names it; on the iPad (slide view) `noslide` fails embed 3 on the ink slide, the text slide, and aria-hidden text, with no ink failure (RevealJS keeps nearby slides laid out).
 
 ## Decisions
 
