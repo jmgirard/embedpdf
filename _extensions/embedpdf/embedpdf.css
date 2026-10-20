@@ -4,6 +4,11 @@
   margin: 1rem 0;
 }
 
+/* a native embed with page > 1 is an iframe: no border, as an object has none */
+.embedpdf.embedpdf-native > iframe {
+  border: 0;
+}
+
 .embedpdf.embedpdf-pdfjs {
   border: 1px solid rgba(128, 128, 128, 0.35);
   border-radius: 4px;

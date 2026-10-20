@@ -43,7 +43,7 @@ local function latex_path(s)
   end))
 end
 
-local VERSION = "1.2.6"
+local VERSION = "1.2.7"
 local dependency_injected = false
 local pdfjs_injected = false
 

@@ -1,13 +1,13 @@
 # M021: Native embeds open at their page in Safari
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP2, GP5
 - **Resolves:** —
 - **Surface tier:** user-facing — it changes the element that readers' browsers get for a native embed with a `page` option
-- **Branch/PR:** —
+- **Branch/PR:** m021-native-page-iframe
 
 ## Goal
 
@@ -79,7 +79,7 @@ placeholder, hidden. Every other native embed stays an `<object>`. Version 1.2.7
 
 ## Tasks
 
-- [ ] T1: Viewer. In `hydrateNative()` (`embedpdf-viewer.js:109`), make an `<iframe>` when `opts.page > 1` and
+- [x] T1: Viewer. In `hydrateNative()` (`embedpdf-viewer.js:109`), make an `<iframe>` when `opts.page > 1` and
       `nativeSupported()`, with `src` `${href}#page=${page}`, the width, height, and `aria-label` of the
       `<object>`, and no `title`. Move the no-JS fallback children into a hidden element in the placeholder, so
       the self-contained download links stay in the page. Give the `<iframe>` no border in `embedpdf.css`.
@@ -124,6 +124,8 @@ placeholder, hidden. Every other native embed stays an `<object>`. Version 1.2.7
 - 2026-10-20: lessons harvested: M020 (Safari page-1, Firefox `pdfjs.viewOnLoad` and profile folder, screenshot shift), M011 (puppeteer-core probes from the repo root), M014 (`CHROME_PATH` for Chromium), M010 (safaridriver needs remote automation).
 - 2026-10-20: criteria audit (full mode, fresh Opus reader): 12 findings, all fixed: both references `<iframe>` for an `<iframe>` embed (AC1, AC2, T3); every failure reported and Safari plants (T5); iframe border, box, and hidden fallback checked (AC1, T1, T3, T5); exact flags (AC3, AC4); AC3 bounded to two pages; v1.2.6 clause dropped and Android marked emulated (AC4); AC5 pinned to commit 49f134c; AC6 widened to CLAUDE.md and the file list; missing-PDF difference recorded in AC6, D-007, and Known issues rather than kept as an IP2 break, because IP2's missing-file warning is the shortcode's at render time and the `<object>` link points at the same missing file; D-007 not an AC, since the plan commit lands it.
 - 2026-10-20: new candidate row "Check embeds open at their page option" holds the PDF.js, iOS `renderer=native`, and framing-refused checks left out of this scope.
+- 2026-10-20: implement started on branch m021-native-page-iframe; status in-progress.
+- 2026-10-20: T1 done: `hydrateNative()` makes an `<iframe>` (`src`, width, height, `aria-label`) when `page` > 1 and `nativeSupported()`; fallback children go to a hidden `div.embedpdf-fallback` after it; `embedpdf.css` gives `.embedpdf-native > iframe` border 0; version 1.2.7; shortcode tests 162 passed, 0 failed. Browser checks run at T7.
 
 ## Decisions
 

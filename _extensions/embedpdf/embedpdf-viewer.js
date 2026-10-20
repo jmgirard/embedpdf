@@ -5,6 +5,9 @@
 //                   always PDF.js on iPhone and iPad
 // renderer=native -> always <object type="application/pdf">
 // renderer=pdfjs  -> always the PDF.js canvas viewer
+// A native embed with page > 1 is an <iframe> instead of an <object> where the
+// browser has a built-in PDF viewer, because desktop Safari opens an <object>
+// at page 1 whatever its #page= says (hydrateNative).
 //
 // PDF.js core (pdf.min.mjs + pdf.worker.min.mjs, vendored from pdfjs-dist) is
 // added by the shortcode as two scripts whose types are not JavaScript types,
@@ -35,7 +38,7 @@ function loadPdfjs() {
 
 // An inlined (data:) PDF as a Blob and its blob: URL. The browser decodes the
 // data: URL itself (fetch), so the viewer makes no copy of the PDF in
-// JavaScript. The native <object> and the download links get the blob: URL, so
+// JavaScript. The native <object> or <iframe> and the download links get the blob: URL, so
 // a large PDF is not copied into more attribute values.
 async function inlinedPdf(src) {
   const blob = await (await fetch(src)).blob();
@@ -107,17 +110,38 @@ function nativeSupported() {
 }
 
 function hydrateNative(el, opts) {
-  const object = document.createElement("object");
-  object.type = "application/pdf";
-  object.data = opts.page > 1 ? `${opts.href}#page=${opts.page}` : opts.href;
-  if (opts.width) object.setAttribute("width", opts.width);
-  if (opts.height) object.setAttribute("height", opts.height);
+  const address = opts.page > 1 ? `${opts.href}#page=${opts.page}` : opts.href;
+  // Desktop Safari 27.0.1 opens an <object> or <embed> of a PDF at page 1
+  // whatever #page= says, and an <iframe> at that page, as Chromium 155 and
+  // Firefox 158 do (2026-10-20, a file and a blob: URL alike). So an embed with
+  // page > 1 is an <iframe> where the browser has a built-in PDF viewer (D-007).
+  // Elsewhere (iPhone, iPad, Android with renderer=native) it stays an <object>,
+  // whose fallback content shows when the browser cannot display the PDF.
+  const framed = opts.page > 1 && nativeSupported();
+  const frame = document.createElement(framed ? "iframe" : "object");
+  if (framed) {
+    frame.src = address;
+  } else {
+    frame.type = "application/pdf";
+    frame.data = address;
+  }
+  if (opts.width) frame.setAttribute("width", opts.width);
+  if (opts.height) frame.setAttribute("height", opts.height);
   // a screen reader names the embed by its file, as it names a PDF.js embed;
   // aria-label alone, since a title equal to it is read again as a description
-  if (opts.name) object.setAttribute("aria-label", opts.name);
-  // keep the no-JS fallback content (image or download link) inside the object
-  while (el.firstChild) object.appendChild(el.firstChild);
-  el.appendChild(object);
+  if (opts.name) frame.setAttribute("aria-label", opts.name);
+  // keep the no-JS fallback content (image or download link): inside the
+  // object, or hidden beside the iframe, which shows no child content (so a
+  // self-contained page keeps its download links)
+  let keep = frame;
+  if (framed && el.firstChild) {
+    keep = document.createElement("div");
+    keep.className = "embedpdf-fallback";
+    keep.hidden = true;
+  }
+  while (el.firstChild) keep.appendChild(el.firstChild);
+  el.appendChild(frame);
+  if (keep !== frame) el.appendChild(keep);
   el.classList.add("embedpdf-native");
 }
 
@@ -155,7 +179,8 @@ function showFailure(el, opts) {
 // other site sends Access-Control-Allow-Origin (desktop Safari 27.0.1, iOS
 // 27.0); a read of the same address with an added query works (desktop Safari
 // 27.0.1, and PDF.js in iOS 27.0). So for a PDF on
-// another site that a native embed on the page also shows, PDF.js adds
+// another site that a native embed on the page also shows (an <object>, or an
+// <iframe> for page > 1, whose read was not tried in Safari), PDF.js adds
 // "embedpdf=pdfjs" to the query, in every browser, and still loads the PDF by
 // byte ranges.
 function pdfjsAddress(src) {
