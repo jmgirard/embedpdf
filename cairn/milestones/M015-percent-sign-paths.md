@@ -1,6 +1,6 @@
 # M015: Percent sign in PDF paths
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -159,6 +159,8 @@ Version 1.2.6.
 - 2026-10-19: re-audit: AC2 (full) — same probe gaps as AC1; a kept escape names a file not on disk, so the render stops (IP2), now a DESIGN Known issues entry; "as in v1.2.5" fit only the form; only lualatex probed (pdflatex and xelatex probed since).
 - 2026-10-19: re-audit: AC1 (full) — no path mixes a valid escape with a bare `%`, so a per-path rule passed the table. Closed in the test table with `sample%20100%.pdf`, with no change to the AC wording.
 - 2026-10-19: re-audit: AC2 (full) — no path mixes a decoded and a kept escape. Closed in the test table with `a%20%7B.pdf`, with no change to the AC wording. Mutants (scratch): a per-path `url_path` fails 4 checks on `sample%20100%.pdf`, a per-path `latex_path` fails on `a%20%7B.pdf`, and removing `_` from `LATEX_UNSAFE` fails the all-kept path. The per-path `url_path` passes the table at 90b8754 (110 passed). Unit tests: 160 passed, 0 failed.
+- 2026-10-19: claim audit: 29 claims read, 2 corrected — _extensions/embedpdf/embedpdf.lua, README.md, tests/test_shortcode.lua, CLAUDE.md (re-read once by the same reader: both correct).
+- 2026-10-19: implement done; status review.
 
 ## Decisions
 
