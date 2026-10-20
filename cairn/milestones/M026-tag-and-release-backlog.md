@@ -108,7 +108,7 @@ v1.2.1, v1.2.2, v1.2.3, v1.2.4, v1.2.5, v1.2.6, v1.2.7, v1.2.8, v1.2.9.
       lists, per sentence, the diff hunk, file, or commit that supports it, and run the option
       rule of AC5. Commit subjects give the change; the diff decides what a
       sentence claims. Link the PR number where a squash subject names one.
-- [ ] T4: Create the 13 annotated tags, `git tag -a vX.Y.Z <commit> -m
+- [x] T4: Create the 13 annotated tags, `git tag -a vX.Y.Z <commit> -m
       "embedpdf vX.Y.Z — <one-line summary>"`, as the v1.0.x tags are, and
       push them with `git push origin <tags>` (tags only, never a branch
       push or `--tags`). Read back with `git ls-remote --tags origin`.
@@ -136,6 +136,7 @@ v1.2.1, v1.2.2, v1.2.3, v1.2.4, v1.2.5, v1.2.6, v1.2.7, v1.2.8, v1.2.9.
 - 2026-10-20: T1 before-state: releases v0.5.0 2025-11-26T01:09:39Z, v0.4.1 2024-03-19T01:14:59Z, v0.4.0 2024-03-18T23:41:34Z, v0.2.0 2023-04-14T14:32:15Z, v0.1.0 2023-04-14T00:19:20Z, each named by its tag, none draft or prerelease; body SHA-256 prefixes v0.5.0 c1c9358b1e82fd5a, v0.4.1 403229f58d485754, v0.4.0 0daf0cca7e6c3c56, v0.2.0 21030e8ccbc6afc1, v0.1.0 dd95d5e454acab6d; `git ls-remote --tags origin` gave the eight tag objects and three `^{}` commits that AC2 lists. All match AC2 and AC4.
 - 2026-10-20: T2 confirmed the Scope table: each of the 13 commits is the first in the `git log --reverse` whose `_extension.yml` carries its version, is on main's first-parent line with one parent, and is the only commit touching `_extensions/` since the version before; the `embedpdf.lua` version marker matches at each (`version = "1.0.3"` at 1.0.3, `local VERSION` from 1.1.0).
 - 2026-10-20: T3 drafted the 16 notes in the session scratchpad and checked each sentence against its diff (Decisions entry); two drafts changed: the v1.0.0 escaping line now says only `button` was escaped before (v0.5.0 lua), and a v1.2.0 line on toolbar names was cut, since the v1.1.1 controls already had `title` names.
+- 2026-10-20: T4 created the 13 annotated tags (message `embedpdf vX.Y.Z — <summary>`, as v1.0.x) and pushed them by explicit `refs/tags/` names; `git ls-remote --tags origin` then listed the 21 tags, each new `^{}` line on its Scope-table commit, and the eight older tag objects unchanged.
 
 ## Decisions
 
