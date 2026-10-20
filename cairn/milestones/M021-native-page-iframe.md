@@ -1,6 +1,6 @@
 # M021: Native embeds open at their page in Safari
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -107,7 +107,7 @@ placeholder, hidden. Every other native embed stays an `<object>`. Version 1.2.7
       `android`; ios_check iPhone and iPad; safari_check `--target mac`; native_check in three browsers), the
       Safari native_check lines without `--same-pages`, and the native_check paragraph. README `page` row and
       self-contained paragraph; DESIGN.md architecture and Known issues.
-- [ ] T7: Run every AC5 line and `quarto render`; record each result in the Review section.
+- [x] T7: Run every AC5 line and `quarto render`; record each result in the Review section.
 
 ## Work log
 
@@ -132,6 +132,10 @@ placeholder, hidden. Every other native embed stays an `<object>`. Version 1.2.7
 - 2026-10-20: T4 done: render_check, safari_check, and ios_check read a native embed's `<object>` or `<iframe>` (names, title, name plants, link selector with `.embedpdf-fallback`, alone and remote addresses); render_check reports `nativeTags` and fails on iphone, ipad, or android when one is not `<object>`; ios_check fails on any native `<iframe>`; safari_check now takes `--expect-pdfjs 0` when native embeds are expected. page_test.html passes: render_check desktop and iphone/android, safari_check `--target mac`, ios_check iPhone and iPad.
 - 2026-10-20: T5 done: on page_test.html render_check nativename, nativetitle, nativedesc and safari_check nativename, nativetitle each exit 1 naming the `<iframe>` of embed 1; with the docs/ viewer copy changed to give an `<iframe>` on every device (restored after), render_check `--device iphone` and ios_check "embedpdf iPhone" each exit 1 naming a native `<iframe>`.
 - 2026-10-20: T6 done: CLAUDE.md native_check paragraph rewritten for the `<iframe>` rule, 3 page_test native_check lines added, `--same-pages` dropped from the Safari lines, 8 page_test lines for render_check, ios_check, and safari_check, and a "Still unverified" item for the `<iframe>` form; README `page` row and self-contained paragraph; DESIGN.md Viewer, architecture, and Known issues (with the missing-PDF difference). The simple-english hook reports the same 39 CLAUDE.md hits as before this milestone; README hits left are in untouched text.
+- 2026-10-20: T7 done: all 98 `node tests/…` and `pandoc lua tests/…` lines in CLAUDE.md (the 49f134c set, Safari native_check lines without `--same-pages`, plus 11 page_test lines) exited 0 on the first try; percent_page_test PDF render rc 0 with the phrase 5 times; helpers_test 158 passed, 0 failed. Results are logged here, not in the Review section, which review owns; review gathers its own evidence.
+- 2026-10-20: claim audit: 81 claims read, 5 corrected — tests/native_check.mjs (control margin and match figures re-measured from the T7 run, refcontrol sentence moved, percent sizes not box-checked, code too), embedpdf-viewer.js and embedpdf.css comments (the `nativeSupported()` condition), README `page` row (Safari version, built-in viewer condition).
+- 2026-10-20: after the claim-audit fixes (comments, the README row, and native_check's percent-size skip), `quarto render` ran again (docs/ library copies changed in comments only); native_check chromium page_test, render_check example.html desktop, and render_check selfcontained `--alone file` exited 0 again.
+- 2026-10-20: implement complete; status review.
 
 ## Decisions
 

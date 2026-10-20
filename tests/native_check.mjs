@@ -22,8 +22,8 @@
 // unless, for each one: its address's fragment is #page=<k> where the embed's
 // data-page (the page option) is k > 1, and empty otherwise; it is an <iframe>
 // where k > 1 and an <object> otherwise; an <iframe> has a computed border
-// width of 0 and the box its width and height attributes give (300 x 150 when
-// they are missing); and no other element of its placeholder has a rendered
+// width of 0 and the box its pixel width and height attributes give (300 x 150
+// when they are missing; a percent size is not checked); and no other element of its placeholder has a rendered
 // box (an <iframe> shows no child content, so the viewer hides the no-JS
 // fallback beside it). Every failure of an embed is reported, not only the
 // first.
@@ -41,23 +41,27 @@
 // files/broken.pdf (a text file sent as a PDF, which the viewer cannot draw).
 // It fails unless the reference differs from the control by more than
 // TOLERANCE, so a reference caught before its viewer drew the PDF, which a
-// broken embed would match, fails. On 2026-10-20 every reference on the six
-// selfcontained_test.html lines in CLAUDE.md differed from its control in at
-// least 0.0401 of the blocks (desktop Safari 27.0.1, 300 x 150).
+// broken embed would match, fails. On 2026-10-20, with v1.2.7, every
+// reference on the nine native_check lines in CLAUDE.md differed from its
+// control in at least 0.0401 of the blocks (desktop Safari 27.0.1, an <object>
+// of 300 x 150), and every <iframe> reference in at least 0.0447 (desktop
+// Safari 27.0.1, 600 x 400).
 //
 // Two screenshots match when, at the best shift of up to SHIFT device pixels
 // each way, at most TOLERANCE of their BLOCK x BLOCK pixel blocks differ by
 // more than PIXEL_DIFF in a channel's average (diffShare in
-// tests/png_diff.mjs). On 2026-10-19, on the six selfcontained_test.html lines
-// in CLAUDE.md, an embed and its reference differed in at most 0.0035 of the
-// blocks (Firefox 158). Each plant below that failed as a mismatch differed in
+// tests/png_diff.mjs). On 2026-10-20, with v1.2.7, on the nine native_check
+// lines in CLAUDE.md, an embed and its reference differed in at most 0.0035 of
+// the blocks (Firefox 158). Each plant below that failed as a mismatch differed in
 // at least 0.0397 (desktop Safari 27.0.1, blank and broken), and otherpdf in
 // at least 0.0676 (Chromium 155).
 //
 // For each embed whose page option is k > 1, the check also takes a page-1
 // reference (no fragment) of the same element at that size. It fails unless
 // the page-1 and page-k references differ, so the browser opens the element
-// at the fragment's page.
+// at the fragment's page (on 2026-10-20 the <iframe> references differed in
+// 0.1371 of the blocks in Chromium 155, 0.0530 in Firefox 158, and at least
+// 0.0952 in desktop Safari 27.0.1).
 //
 // --browser chromium and firefox run headless through puppeteer-core:
 // Chromium from CHROME_PATH (default Google Chrome's path), Firefox from
@@ -86,12 +90,12 @@
 //             of an <iframe>
 //   border    gives an <iframe> a 2px inset border, as a browser's default
 //   fallback  shows the hidden fallback content beside an <iframe>
-// --plant refcontrol instead points every reference at the control, as a
-// reference caught before its viewer drew the PDF would look; the run must
-// fail on "matches the control".
 // The run must then fail and name that embed; otherpdf and broken must fail as
 // a mismatch, and in desktop Safari, nopage and object must fail as a
 // mismatch too.
+// --plant refcontrol instead points every reference at the control, as a
+// reference caught before its viewer drew the PDF would look; the run must
+// fail on "matches the control", which names the reference, not an embed.
 // NATIVE_CHECK_SHOTS=<dir> also saves every screenshot there as a PNG.
 //
 // Exits 0 on a pass, 1 on a failed check, 2 on a bad argument, when --plant
@@ -482,8 +486,11 @@ try {
     if (!alone && data.split("#")[0] !== e.src) failures.push(`${at}: its address ${data.slice(0, 80)} is not its data-src ${e.src.slice(0, 80)}`);
     if (e.tag === "iframe") {
       if (e.border.some((b) => b !== 0)) failures.push(`${at}: its <iframe> has a border (${e.border.join(" ")} px)`);
+      // pixel sizes only: a percent width depends on the page's layout
       const want = [Number(e.attrs[0] ?? 300), Number(e.attrs[1] ?? 150)];
-      if (e.box[0] !== want[0] || e.box[1] !== want[1]) failures.push(`${at}: its <iframe> box is ${e.box.join(" x ")}, not ${want.join(" x ")}`);
+      if (want.every(Number.isFinite) && (e.box[0] !== want[0] || e.box[1] !== want[1])) {
+        failures.push(`${at}: its <iframe> box is ${e.box.join(" x ")}, not ${want.join(" x ")}`);
+      }
     }
     if (e.shown > 0) failures.push(`${at}: ${e.shown} other element(s) of its placeholder show`);
     let shot, size, img;

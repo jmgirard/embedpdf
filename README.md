@@ -63,7 +63,7 @@ You can give a file name that holds a `%` with a bare `%`, as in `files/100%.pdf
 | `renderer` | `auto` | `auto` uses PDF.js on iPhone and iPad and in browsers with no built-in PDF viewer, such as Chrome on Android. Other browsers get their native viewer. `native` and `pdfjs` force one or the other. |
 | `width` | | Width of the viewer (pixels or percent) |
 | `height` | | Height of the viewer (pixels or percent) |
-| `page` | `1` | Initial page to display. Desktop Safari opens a native `<object>` at page 1. So on desktop, a native embed with a `page` over 1 is an `<iframe>`. On 2026-10-20 such an embed opened at its page in Chromium 155, Firefox 158 (both headless), and desktop Safari 27.0.1. |
+| `page` | `1` | Initial page to display. Desktop Safari 27.0.1 opens a native `<object>` at page 1. So in a desktop browser with a built-in PDF viewer, a native embed with a `page` over 1 is an `<iframe>`. On 2026-10-20 such an embed opened at its page in Chromium 155, Firefox 158 (both headless), and desktop Safari 27.0.1. |
 | `toolbar` | `true` | Show the PDF.js toolbar (zoom, page indicator, download) |
 | `border` | | Border width in pixels around the viewer |
 | `class` | | Extra CSS class(es) for the viewer container |

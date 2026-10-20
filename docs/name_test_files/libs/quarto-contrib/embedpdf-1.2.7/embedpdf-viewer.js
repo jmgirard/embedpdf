@@ -5,9 +5,10 @@
 //                   always PDF.js on iPhone and iPad
 // renderer=native -> always <object type="application/pdf">
 // renderer=pdfjs  -> always the PDF.js canvas viewer
-// A native embed with page > 1 is an <iframe> instead of an <object> where the
-// browser has a built-in PDF viewer, because desktop Safari opens an <object>
-// at page 1 whatever its #page= says (hydrateNative).
+// A native embed with page > 1 is an <iframe> instead of an <object> where
+// nativeSupported() is true (a desktop browser with a built-in PDF viewer; not
+// iPhone or iPad), because desktop Safari opens an <object> at page 1 whatever
+// its #page= says (hydrateNative).
 //
 // PDF.js core (pdf.min.mjs + pdf.worker.min.mjs, vendored from pdfjs-dist) is
 // added by the shortcode as two scripts whose types are not JavaScript types,
@@ -114,9 +115,10 @@ function hydrateNative(el, opts) {
   // Desktop Safari 27.0.1 opens an <object> or <embed> of a PDF at page 1
   // whatever #page= says, and an <iframe> at that page, as Chromium 155 and
   // Firefox 158 do (2026-10-20, a file and a blob: URL alike). So an embed with
-  // page > 1 is an <iframe> where the browser has a built-in PDF viewer (D-007).
-  // Elsewhere (iPhone, iPad, Android with renderer=native) it stays an <object>,
-  // whose fallback content shows when the browser cannot display the PDF.
+  // page > 1 is an <iframe> where nativeSupported() is true (D-007). Elsewhere
+  // (renderer=native on iPhone, iPad, or a browser with no built-in PDF viewer)
+  // it stays an <object>, whose fallback content shows when the browser cannot
+  // display the PDF.
   const framed = opts.page > 1 && nativeSupported();
   const frame = document.createElement(framed ? "iframe" : "object");
   if (framed) {
