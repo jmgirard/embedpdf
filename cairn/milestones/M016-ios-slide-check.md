@@ -38,7 +38,7 @@ the viewer, so no version bump.
 
 ## Acceptance criteria
 
-- [ ] AC1: After `quarto render`, these two lines exit 0:
+- [x] AC1: After `quarto render`, these two lines exit 0:
       ```
       node tests/ios_check.mjs --device "embedpdf iPhone" --page selfcontained_slides_test.html --alone yes --expect-embeds 2 --expect-native 1 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
       node tests/ios_check.mjs --device "embedpdf iPad" --page selfcontained_slides_test.html --alone yes --expect-embeds 2 --expect-native 1 --expect-name sample.pdf --expect-text "On the Origin of Coastlines|Why It Matters"
@@ -46,18 +46,18 @@ the viewer, so no version bump.
       Each run's printed report gives, for each PDF.js embed, the slide
       RevealJS showed when the probe measured that embed's ink and checked
       its hidden text, and that slide is the one that holds the embed.
-- [ ] AC2: The iPhone line of AC1 exits 1 with each of `--plant noslide`
+- [x] AC2: The iPhone line of AC1 exits 1 with each of `--plant noslide`
       (the probe never shows the last slide that holds a PDF.js embed),
       `--plant blank`, and `--plant notext`. Its failure lines name embed 3
       for `noslide` and embed 1 for `blank` and `notext`. `--plant noslide`
       on `example.html`, a page with no slides, exits 2 with a line saying
       there was nothing to plant in.
-- [ ] AC3: These ios_check lines of CLAUDE.md at commit 2397d39 still exit 0
+- [x] AC3: These ios_check lines of CLAUDE.md at commit 2397d39 still exit 0
       after the change: the two `example.html` lines with `--expect-text`,
       the two `selfcontained_test.html --alone yes` lines, the
       `large_test.html` line for "embedpdf iPhone", and the
       `selfcontained_failed_test.html` line for "embedpdf iPhone".
-- [ ] AC4: CLAUDE.md's self-contained command block holds the two AC1 lines,
+- [x] AC4: CLAUDE.md's self-contained command block holds the two AC1 lines,
       and its "Still unverified" list no longer names self-contained RevealJS
       slides in Safari on iPhone and iPad. The header comment of
       `tests/ios_check.mjs` says how it handles a RevealJS page and documents
@@ -115,3 +115,11 @@ the viewer, so no version bump.
 ## Decisions
 
 ## Review
+
+Evidence run 2026-10-19 at 2dfe7ab (branch level with main at 1b6918e), after a fresh `quarto render` (exit 0, docs/ unchanged); iOS 27.0 simulators "embedpdf iPhone" (iPhone 17) and "embedpdf iPad" (iPad Air 11-inch M4).
+
+- AC1: both lines exit 0. iPhone: RevealJS scrolled view (`scrollView` true), 4 slides; embed 1 slide 1 = textSlide 1 = inkSlide 1, embed 3 slide 3 = textSlide 3 = inkSlide 3 (0-based), each 2 pages with ink. iPad: slide view (`scrollView` false), same slide fields and ink.
+- AC2: iPhone AC1 line with `--plant noslide` exits 1: "embed 3: ink measured while slide 3 was shown, not its slide 4" and "embed 3: text read while slide 3 was shown, not its slide 4"; with `--plant blank` exits 1: "embed 1: pages without ink: 2"; with `--plant notext` exits 1: "embed 1, page 2: text lacks "Why It Matters""; `--plant noslide` on example.html exits 2: "ios_check: --plant noslide found nothing to plant in" (report `slides` 0).
+- AC3: the six lines, taken from `git show 2397d39:CLAUDE.md` by pattern (6 matched), exit 0: example.html with `--expect-text` on iPhone and iPad, selfcontained_test.html `--alone yes` on iPhone and iPad, selfcontained_failed_test.html on iPhone, large_test.html on iPhone (14 pages, all inked).
+- AC4: `grep -c -F` finds each AC1 line once in CLAUDE.md's self-contained block; the "Still unverified" list holds no "RevealJS" or "slide" line; `tests/ios_check.mjs` header documents `--plant noslide` (line 172) and the RevealJS deck handling (lines 179-194).
+- Consistency gate: `cairn_validate.py` exit 0, all checks passed; profile consistency-gate slot names no toolchain checks; no principle changed, so no impact report.
