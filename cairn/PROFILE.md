@@ -1,34 +1,31 @@
-# Toolchain profile: generic
+# Toolchain profile: quarto-extension
 
-<!-- A cairn *toolchain profile*: the language/toolchain-specific slots the
-     operational skills read. cairn-init instantiates the chosen reference
-     profile into the repo's `cairn/PROFILE.md`. The oracle / Validation
-     doctrine is UNIVERSAL and deliberately NOT a slot here — it is the
-     orthogonal domain axis (D-024/D-025), stated once in
-     skills/shared/validation-doctrine.md (referenced from tracking-rules).
-     Every profile defines all seven `## <slot>` sections below; a slot with no
-     toolchain-specific content says so explicitly rather than being omitted
-     (cairn_validate FAILs on a missing or empty slot). -->
+<!-- A cairn toolchain profile: the toolchain slots that the operational
+     skills read, made from cairn's quarto-extension profile. The validation
+     doctrine is not a slot. It applies to every toolchain and lives in
+     cairn's skills/shared/validation-doctrine.md. All seven `## <slot>`
+     sections are present. cairn_validate fails on a missing or empty slot. -->
 
-The language-agnostic default: cairn's core with no toolchain-specific gates.
-Selected by `cairn-init` when no `DESCRIPTION` (or other recognized toolchain
-marker) is present. A repo replaces the placeholder in `verify` with its own
-test command; the other slots stand as-is until a richer profile is authored.
+The Quarto extension toolchain. This repo's deliverable is the `embedpdf`
+shortcode under `_extensions/embedpdf/`, installed with
+`quarto add jmgirard/embedpdf`. Quarto 1.10 installs from the branch named
+`main`, which is this repo's default branch, so a merge reaches users at once.
+A `v<version>` tag and a GitHub release mark the version for
+`quarto add jmgirard/embedpdf@v<version>` and the releases page.
 
 ## verify
-The command(s) `/milestone-implement` and `/hotfix` run to check a task before
-ticking it off. This repo uses the checks in CLAUDE.md "Verify before
-finishing". Run them from the repo root:
+Run by `/milestone-implement` (per task) and `/hotfix` (gate-lite). This repo
+uses the checks in CLAUDE.md "Verify before finishing". Run them from the repo
+root:
 - After a change to `embedpdf.lua`, run `pandoc lua tests/test_shortcode.lua`.
   It must print `N passed, 0 failed`.
 - After a change to `embedpdf-viewer.js` or `embedpdf.css`, run `quarto
-  render`. Then run every `node tests/render_check.mjs`,
+  render`. Then run each check line in CLAUDE.md "Verify before finishing",
+  the self-contained lines included: every `node tests/render_check.mjs`,
   `node tests/ios_check.mjs`, `node tests/name_rule_test.mjs`,
   `node tests/safari_check.mjs`, `node tests/native_check.mjs`,
   `node tests/frame_rule_check.mjs`, and
-  `node tests/save_name_check.mjs` line in
-  CLAUDE.md "Verify before finishing",
-  the self-contained lines included. Each one must exit 0. `render_check.mjs` drives Chrome (set
+  `node tests/save_name_check.mjs` line. Each one must exit 0. `render_check.mjs` drives Chrome (set
   `CHROME_PATH` for Chromium) and serves `docs/` itself. It needs `npm install
   puppeteer-core` once. `ios_check.mjs` drives Safari in the "embedpdf iPhone"
   and "embedpdf iPad" iOS simulators.
@@ -41,44 +38,76 @@ finishing". Run them from the repo root:
 
 ## consistency-gate
 Toolchain checks `/milestone-review` runs *in addition to* the universal
-cairn-file checks (`cairn_validate`, coverage completeness, `cairn_impact`).
-Generic default: **none** — the universal cairn-file checks are the whole
-consistency gate.
+cairn-file checks (`cairn_validate`, coverage completeness, `cairn_impact`):
+- The two version markers that `release-walk` names hold the same version.
+- `quarto render` finishes with no errors on the review head.
+- The changelog slot says "none", so no changelog entry is checked.
 
 ## test-doctrine
-Toolchain-specific test expectations layered on the universal "What gets a
-test" rules in tracking-rules. Generic default: **none beyond the universal
-rules** — every bug fix gets a regression test, every documented claim a test,
-contract-not-implementation, and the oracle doctrine for any numeric result.
+Test expectations layered on the universal "What gets a test" rules in
+tracking-rules. An extension is checked by rendering, not by calling functions:
+- A shortcode change gets a `check(...)` in `tests/test_shortcode.lua`. A
+  change that shows in a browser is also tested by rendering a page that uses
+  it and running the browser checks over it.
+- A bug fix gets a check or a fixture page that fails before the fix.
+- A change to `embedpdf-viewer.js` or `embedpdf.css` raises the version in both
+  markers that `release-walk` names, because the version is the asset path and
+  browsers cache by it.
 
 ## release-walk
-The release procedure `/cairn-release` follows. Generic default: a minimal
-language-agnostic walk — no package-registry submission; the tag is the release:
-- Decide the version bump (patch/minor/major) from the declared changelog
-  (`## changelog` slot; "none" → derive the bump from git history).
-- Consolidate the declared changelog: retitle the dev heading to the version,
-  group entries, prune noise ("none" → skip this step).
-- Bump the repo's version marker and commit the release prep to the default
-  branch (docs/metadata only).
-- Tag `v<version>` and push the tag at the user's approval — no registry step.
-- Where the `origin` remote is GitHub and `gh` is available, the handoff also
-  provides a `gh release create` command whose body is the new changelog
-  section (provided, never run — the universal step 4).
+The release procedure `/cairn-release` follows. The version markers are
+`version:` in `_extensions/embedpdf/_extension.yml` and `local VERSION` in
+`_extensions/embedpdf/embedpdf.lua`, which its `add_html_dependency` calls
+read. Both hold the same version. The version rises at each merge that changes a
+shipped asset (CLAUDE.md), so the tag-only arm is the usual path.
+Before step 1 of `/cairn-release`,
+run `git fetch --tags <base>` and read the remote default branch's tip:
+`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/cairn_versions.py" _extensions/embedpdf/_extension.yml --at <base>/<default-branch>`.
+When `CLAUDE_PLUGIN_ROOT` is unset, use the cairn plugin's install directory.
+The script refuses a shallow clone. It prints the tip's
+version, the first commit of that version's unbroken run of first-parent
+commits (`start`), and whether a `v<version>` tag exists.
+- **Tag-only arm.** With no tag, the tip's version is unreleased:
+  merged work raised it, or it was never tagged. Raise nothing and make no
+  prep commit. First check that `embedpdf.lua` holds the version at `start`
+  (`git show <start>:_extensions/embedpdf/embedpdf.lua`). Then step 1 asks
+  the user to accept the version and `start` (its subject) instead of
+  choosing a bump. Step 2 makes no edit. Tag the run's start:
+  `git tag -a v<version> <start> -m "v<version>"`, pushed at the user's
+  approval.
+- **Stops.** A marker mismatch or a refused version ends the run with
+  the reason and no tag. A marker mismatch at `start` cannot be fixed for this
+  version: only a merge that raises the version again clears it, and this
+  version then stays untagged.
+- **Release-time arm.** With the tag present, run the generic walk. With
+  changelog "none", decide the bump (patch/minor/major) from git history and
+  skip the consolidation. Raise both markers and commit the release prep to
+  the default branch. Tag that commit `v<version>`, pushed at the user's
+  approval.
+- **Release notes.** With changelog "none", the notes are the commit subjects
+  on the default branch since the previous `v*` tag:
+  `git log --first-parent --format='- %s' <previous tag>..<tagged commit>`.
+  The previous tag is
+  `git describe --first-parent --tags --abbrev=0 --match 'v*' <tagged commit>^`.
+  Where the `origin` remote is GitHub and `gh` is available, the handoff
+  provides a `gh release create` command with these notes. cairn never runs
+  it (the universal step 4). No registry step: the tag is the release.
 
 ## init-detection
-How `cairn-init` recognizes this toolchain. Generic is the **fallback**: no
-`DESCRIPTION` and no other recognized toolchain marker.
+Recognized by `cairn-init` from `_extensions/*/_extension.yml` or
+`_extensions/*/_extension.yaml`. The repo must also have no `DESCRIPTION`, no
+`pyproject.toml`/`setup.py`/`setup.cfg`, and no
+`.claude-plugin/plugin.json`/`.claude-plugin/marketplace.json`. It ranks ahead
+of docker-image and generic. This repo has `_extensions/embedpdf/_extension.yml`
+and none of the other markers.
 
 ## greenfield-openers
-Opener questions `cairn-init` asks in a new/empty repo of this type. Generic
-default: **no language-specific openers** — the universal opener layer
-(distribution ambition, rendered here as a **tagged public release** vs.
-internal-only choice, and numeric-work-needs-oracle-verification) is the whole
-greenfield flow for a generic repo; a richer profile adds its own on top.
+None for this repo: it is not new. The extension type is a shortcode. The
+version rises at each merge that changes a shipped asset. The reason is that
+browsers cache `embedpdf-viewer.js` and `embedpdf.css` by a path that holds
+the version (CLAUDE.md).
 
 ## changelog
 none. This repo keeps no changelog file. Release notes go on GitHub releases.
 `/hotfix` skips the changelog entry. The release-walk skips consolidation and
-derives the version bump from git history. The version marker is `version:` in
-`_extensions/embedpdf/_extension.yml`, and it must match the
-`add_html_dependency` version in `embedpdf.lua`.
+writes its release notes from git history.
