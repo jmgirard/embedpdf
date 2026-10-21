@@ -1,16 +1,15 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-20 (M025 done: deleted "Name inlined PDFs in Firefox's viewer"; added "Close the Firefox save check gaps" at review; M022 row pruned; one lesson added; validate green)_
+_Last hygiene check: 2026-10-20 (M026 done: deleted "Publish GitHub releases for 1.0 tags"; M023 row pruned; one lesson added; validate green)_
 
 ## Milestones
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M026 | Tag and release every 1.x version | review | — | normal | milestones/M026-tag-and-release-backlog.md |
+| M026 | Tag and release every 1.x version | done | — | normal | milestones/archive/M026-tag-and-release-backlog.md |
 | M025 | Firefox saves inlined PDFs under their file name | done | — | normal | milestones/archive/M025-firefox-save-name.md |
 | M024 | Safari names in the iOS simulators | done | — | normal | milestones/archive/M024-ios-safari-names.md |
-| M023 | Save name of inlined PDFs in native viewers | done | — | normal | milestones/archive/M023-native-save-name.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
@@ -21,7 +20,6 @@ _Last hygiene check: 2026-10-20 (M025 done: deleted "Name inlined PDFs in Firefo
      the opening token is `[high]`/`[low]` or absent (`normal`) — tracking-rules "Candidate priority token";
      open each row with its short title, the words the cairn pane shows, then `: `;
      tracking-rules "Candidate short title" has the whole rule -->
-- Publish GitHub releases for 1.0 tags: GitHub releases for v1.0.x: publish GitHub releases for tags v1.0.0 to v1.0.2. The README version badge shows the latest release, 0.5.0, while the extension is at 1.2.9, and v1.1.0 to v1.2.9 have no tags, so these releases alone do not make the badge current (corrected M021; corrected M022; corrected M025) — added 2026-10-18 — DESIGN Known issues — started M026
 - Tag and release each version at merge: a milestone or hotfix that bumps `version:` in `_extension.yml` merges with no tag and no GitHub release, which left v1.0.0 to v1.2.9 without releases until M026. The merge step could tag the squash commit and publish its release, or `/cairn-release` could run after each bump (M026 plan) — added 2026-10-20
 - [low] Check embeds open at their page option: a PDF.js embed scrolls to its `page` (`hydratePdfjs` in `embedpdf-viewer.js`; corrected M022), but no check reads which page it shows first; on iPhone and iPad a `renderer=native` embed stays an `<object>`, and whether iOS Safari opens it at its `page` is not checked; a native embed with a `page` over 1 can become an `<iframe>` (D-008), and a PDF whose own site forbids framing (`X-Frame-Options`, `frame-ancestors`) is not checked in that form (M021 plan); the viewer appends `#page=N` to an address that may already hold a fragment; while the HEAD request waits (up to 5 s, which also counts time waiting for a connection) the no-JS download link shows, and then the embed replaces it; a page whose CSP allows `object-src` but limits `frame-src` gets a blank `<iframe>`; an Android browser that reports a built-in PDF viewer would get the `<iframe>` too, not checked (M021 review; narrowed 2026-10-20 by M022) — added 2026-10-20
 - [low] Check native frames hidden at page load: see "Check embeds open at their page option". Since v1.2.8 a native `<iframe>` gets its PDF once it has a box, and only the self-contained slide deck walked by `native_check.mjs` at Reveal scale 1 is checked. Not checked: a frame that has a box while hidden (`visibility:hidden` or opacity 0, as on a Reveal future slide, or a closed `<details>` in Chromium), which loads at hydration; a framed embed hidden at load on a normal page (a tab) or on a deck that is not self-contained; a direct jump to such a slide outside one Chromium probe; other Reveal scales. A ResizeObserver of a hidden frame removed before it gets a box stays alive, with no effect found (M022 review) — added 2026-10-20
