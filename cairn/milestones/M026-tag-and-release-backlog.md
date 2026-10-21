@@ -149,6 +149,7 @@ v1.2.1, v1.2.2, v1.2.3, v1.2.4, v1.2.5, v1.2.6, v1.2.7, v1.2.8, v1.2.9.
 - 2026-10-20: T7 added for review return 1 (minor amendment); Coverage AC5 now maps to T7 too.
 - 2026-10-20: T7 added one line to each of the four bodies and edited the releases with `gh release edit --notes-file`; each body read back equals its file, and `releases/latest` is still v1.2.9. Support: v1.0.1 808b403 changes README.md (badges, `man/figures/mobile-viewer.png`) and example.qmd; v1.0.2 9887d47 adds the two-page `sample.pdf` (pdfinfo: 2 pages, unchanged since) and example.qmd names it 23 times; v1.0.3 8f1c68d adds `tests/ios_check.mjs`, whose header calls it a check in Safari on an iOS simulator; v1.2.8 9c43bf9 changes `tests/native_check.mjs` (RevealJS deck handling) and `selfcontained_slides_test.qmd`.
 - 2026-10-20: implement done again; status set to review.
+- 2026-10-20: step-7 approval: m026-tag-and-release-backlog approved for merge
 
 ## Decisions
 
