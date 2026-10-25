@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-20 (M026 done: deleted "Publish GitHub releases for 1.0 tags"; M023 row pruned; one lesson added; validate green)_
+_Last hygiene check: 2026-10-25 (lessons pass, 37 to 20: dropped by planner test 2026-10-20 (M020) Firefox profile folder, 2026-10-19 (M013) unique text phrases, 2026-10-19 (M017) CPU throttle rates, 2026-10-19 (M017) eval under CSP, 2026-10-19 (M013) slow whole-PDF answer, 2026-10-19 (M018) native.html probe, 2026-10-20 (M020) screenshot shift; dropped by rank M008, M006, M005 x2, M004 x2, M003, M002 x2, M001 (all 2026-10-18); compressed 2026-10-19 (M010, M011, M014, M015, M016, M019) and 2026-10-20 (M020, M021, M022 x2, M023 x2, M025, M024); no decision entry; validate green)_
 
 ## Milestones
 
