@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-26 (triage, 32 items: dropped "Harden the Web Inspector check client" (rejected on principle, D-006); routed "Check native frames hidden at page load" and "Apple touch detection edge cases" to Known issues; compressed "Close the name and indicator check gaps" → "Check the names of failed embeds", "Close the inlined failure check gaps", "Close the shared remote check gaps"; decision entry D-009; validate green)_
+_Last hygiene check: 2026-10-26 (/milestone audit: validate green; no open issues, PRs, or outside merges; nothing changed since the triage pass in b2e39b4)_
 
 ## Milestones
 
