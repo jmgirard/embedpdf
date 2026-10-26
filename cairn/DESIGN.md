@@ -206,6 +206,13 @@ load on the same queue, and a text task runs only when no page render waits
   browsers, a slide hidden at load within RevealJS's view distance, a tab or
   other part of a page hidden at load, and slides of a deck that is not
   self-contained.
+- A native `<iframe>` (a `page` over 1) that has a box while hidden, such as
+  one with `visibility:hidden` or opacity 0, or inside a closed `<details>`
+  in Chromium, gets its address at hydration. That case, RevealJS scales
+  other than 1, and a ResizeObserver left on a frame removed before it got a
+  box (no effect found) are not checked. The desktop Safari `<object>` entry
+  above lists the other unchecked hidden-frame cases (routed from candidates
+  2026-10-26; added 2026-10-20 — M022 review).
 - Chromium's and desktop Safari's own PDF viewers do not save the in-page
   copy of an inlined PDF under the PDF's file name. On `selfcontained_test.html` opened
   alone (local file and HTTP), each `<object>` embed and the `page=2`
@@ -251,3 +258,7 @@ load on the same queue, and a text task runs only when no page render waits
   such as `%C3%A9` (ROADMAP row "Handle escaped and special LaTeX paths") — observed 2026-10-19.
 - First paint is fragile. v1.0.1 and v1.0.2 both fixed pages that never
   rendered on load, and the timer-based first paint may still miss cases.
+- `isAppleMobile()` treats any Macintosh user agent with `maxTouchPoints > 1`
+  as an iPad, so Safari on visionOS or a Mac with a third-party touch driver
+  may get PDF.js where its native viewer would work. Not verified (routed
+  from candidates 2026-10-26; added 2026-10-18 — M001 review).
